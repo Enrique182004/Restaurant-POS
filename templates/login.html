@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Iniciar Sesión</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+</head>
+
+<body>
+    <div class="container login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">🍱</div>
+                <h1 class="login-title">Sistema de Órdenes</h1>
+                <p class="login-subtitle">Inicia sesión para continuar</p>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <div class="alert-content">{{ message }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Usuario</label>
+                    <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="login-button">
+                    <span class="button-icon">🔐</span> Iniciar Sesión
+                </button>
+            </form>
+            
+            <div class="login-info">
+                <h3>Cuentas de Prueba:</h3>
+                <div class="demo-accounts">
+                    <div class="demo-account">
+                        <strong>Admin:</strong> admin / admin123
+                    </div>
+                    <div class="demo-account">
+                        <strong>Usuario:</strong> user / user123
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .login-card {
+            background-color: #1E1E1E;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .login-header {
+            margin-bottom: 30px;
+        }
+        
+        .login-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #FF9800;
+        }
+        
+        .login-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f5f5f5;
+            margin-bottom: 10px;
+        }
+        
+        .login-subtitle {
+            color: #CCC;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .login-form {
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #f5f5f5;
+            font-size: 1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #3D3D3D;
+            background-color: #2D2D2D;
+            color: #f5f5f5;
+            font-size: 1.1rem;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #FF9800;
+        }
+        
+        .form-input::placeholder {
+            color: #888;
+        }
+        
+        .login-button {
+            width: 100%;
+            background-color: #FF9800;
+            color: #121212;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .login-button:hover {
+            background-color: #F57C00;
+        }
+        
+        .login-button:active {
+            transform: translateY(2px);
+        }
+        
+        .button-icon {
+            margin-right: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .login-info {
+            background-color: #2A2A2A;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .login-info h3 {
+            margin: 0 0 15px 0;
+            color: #FF9800;
+            font-size: 1.1rem;
+        }
+        
+        .demo-accounts {
+            text-align: left;
+        }
+        
+        .demo-account {
+            margin-bottom: 8px;
+            color: #CCC;
+            font-size: 0.95rem;
+        }
+        
+        .demo-account strong {
+            color: #f5f5f5;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .alert-success {
+            background-color: #1B5E20;
+            color: #f5f5f5;
+            border-left: 5px solid #4CAF50;
+        }
+        
+        .alert-error {
+            background-color: #B71C1C;
+            color: #f5f5f5;
+            border-left: 5px solid #F44336;
+        }
+        
+        .alert-content {
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-content::before {
+            content: "✓";
+            font-size: 1.2rem;
+            margin-right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .alert-error .alert-content::before {
+            content: "!";
+            background-color: #F44336;
+        }
+        
+        @keyframes slideIn {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 30px 20px;
+            }
+            
+            .login-title {
+                font-size: 1.7rem;
+            }
+            
+            .login-icon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on username input
+            document.getElementById('username').focus();
+            
+            // Handle form submission
+            const form = document.querySelector('.login-form');
+            const loginButton = document.querySelector('.login-button');
+            
+            form.addEventListener('submit', function() {
+                loginButton.style.opacity = '0.7';
+                loginButton.innerHTML = '<span class="button-icon">⏳</span> Iniciando...';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Personaliza Tus Complementos</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+    <script src="/static/js/tablet.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="page-title">¿Cómo Armar Tus Complementos?</h1>
+        
+        <form action="{{ url_for('update_item', item_index=item_index) if item else url_for('customize_complementos') }}" method="POST" id="customizationForm">
+            
+            <!-- Step 1: Select Extra Sauces -->
+            <div class="customization-step">
+                <h2 class="step-title">1. Selecciona las Salsas Extra ($10 c/u)</h2>
+                <div class="option-grid sauce-options">
+                    {% set extra_sauces = [
+                        {"id": "anguila", "name": "Anguila", "icon": "🐍"},
+                        {"id": "soya", "name": "Soya", "icon": "🟤"},
+                        {"id": "sriracha", "name": "Sriracha", "icon": "🌶️"},
+                        {"id": "mango_habanero", "name": "Mango Habanero", "icon": "🥭"},
+                        {"id": "bufalo", "name": "Búfalo", "icon": "🦬"},
+                        {"id": "bbq", "name": "BBQ", "icon": "🍖"},
+                        {"id": "agridulce", "name": "Agridulce", "icon": "🍯"}
+                    ] %}
+                    
+                    {% for sauce in extra_sauces %}
+                    <div class="option-card complement-card {% if item and item.sauces and sauce.name in item.sauces %}selected{% endif %}">
+                        <input type="checkbox" id="{{ sauce.id }}" name="sauces" value="{{ sauce.name }}" 
+                            {% if item and item.sauces and sauce.name in item.sauces %} checked {% endif %} class="hidden-input sauce-checkbox">
+                        <label for="{{ sauce.id }}" class="card-content">
+                            <div class="option-icon">{{ sauce.icon }}</div>
+                            <div class="option-name">{{ sauce.name }}</div>
+                            <div class="extra-price">$10</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Sauce Counter Display -->
+                <div class="sauce-counter">
+                    <span class="counter-text">Salsas seleccionadas: <span id="selected-sauce-count">0</span></span>
+                    <span class="counter-cost">Costo total: $<span id="sauce-cost">0</span></span>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="customization-step">
+                <h2 class="step-title">Notas (Opcional)</h2>
+                <div class="notes-container">
+                    <textarea name="notes" id="notes" rows="3" placeholder="Añade detalles o solicitudes adicionales..." class="notes-input">{% if item and item.notes %}{{ item.notes }}{% endif %}</textarea>
+                </div>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="action-buttons">
+                <button type="button" id="cancel-btn" class="action-button cancel-button" data-url="{% if item %}{{ url_for('view_cart') }}{% else %}/{% endif %}">
+                    <span class="button-icon">✕</span> Cancelar
+                </button>
+                <button type="submit" class="action-button submit-button">
+                    <span class="button-icon">✓</span> {% if item %}Actualizar{% else %}Agregar al Carrito{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <style>
+        /* Complement sauce styling to match other menus */
+        .complement-card {
+            position: relative;
+            border: 2px solid #3D3D3D;
+            background-color: #2D2D2D;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .complement-card:active {
+            transform: scale(0.98);
+        }
+        
+        .complement-card.selected {
+            border-color: #FF9800;
+            background-color: #3D3D3D;
+        }
+        
+        .complement-card.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background-color: #FF9800;
+            color: #121212;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        
+        .extra-price {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #FF9800;
+            color: #121212;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1;
+        }
+        
+        /* Sauce counter styling */
+        .sauce-counter {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 15px;
+            background-color: #2A2A2A;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .counter-text {
+            font-weight: 600;
+            color: #f5f5f5;
+            font-size: 1rem;
+        }
+        
+        .counter-cost {
+            font-weight: 700;
+            color: #FF9800;
+            font-size: 1.1rem;
+        }
+        
+        #selected-sauce-count {
+            color: #FF9800;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        #sauce-cost {
+            color: #FF9800;
+            font-weight: 700;
+        }
+        
+        /* Sauce grid layout to match other menus */
+        .sauce-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Responsive adjustments to match other menus */
+        @media (max-width: 768px) {
+            .sauce-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .sauce-counter {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sauce-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Ensure consistent card content styling */
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0.5rem;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            text-align: center;
+            min-height: 100px;
+        }
+        
+        .option-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .option-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #f5f5f5;
+            text-align: center;
+            line-height: 1.2;
+        }
+    </style>
+
+    <!-- Enhanced JavaScript to match other menus -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Complementos page loaded - matching other menu designs');
+            
+            // CANCEL BUTTON FIX - Add direct event listener
+            const cancelBtn = document.getElementById('cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    const url = this.getAttribute('data-url');
+                    
+                    if (url) {
+                        window.location.href = url;
+                    } else {
+                        console.error('No URL provided for cancel button');
+                        window.location.href = '/';
+                    }
+                });
+            }
+            
+            // Initialize form validation for minimum sauces
+            setupFormValidation();
+            
+            // Apply initial selection states based on input checked status
+            initializeSelections();
+            
+            // Set up option card selection
+            setupOptionCardSelection();
+            
+            // Initialize sauce counter
+            updateSauceCounter();
+            
+            // Function to setup form validation
+            function setupFormValidation() {
+                const form = document.getElementById('customizationForm');
+                if (form) {
+                    form.addEventListener('submit', function(event) {
+                        const saucesSelected = document.querySelectorAll('input[name="sauces"]:checked');
+                        
+                        // Check minimum (at least 1 sauce)
+                        if (saucesSelected.length === 0) {
+                            event.preventDefault();
+                            alert('Por favor selecciona al menos 1 salsa extra.');
+                            
+                            // Add visual indication for the error
+                            const sauceOptions = document.querySelector('.sauce-options');
+                            if (sauceOptions) {
+                                sauceOptions.style.border = '2px solid #e74c3c';
+                                sauceOptions.style.backgroundColor = 'rgba(231, 76, 60, 0.05)';
+                                
+                                // Scroll to the sauce options section
+                                sauceOptions.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Remove the visual indication after 3 seconds
+                                setTimeout(function() {
+                                    sauceOptions.style.border = '';
+                                    sauceOptions.style.backgroundColor = '';
+                                }, 3000);
+                            }
+                            return;
+                        }
+                    });
+                }
+            }
+            
+            // Function to initialize selection states
+            function initializeSelections() {
+                // For sauce options (checkboxes)
+                document.querySelectorAll('.sauce-options .option-card input[type="checkbox"]').forEach(checkbox => {
+                    const card = checkbox.closest('.option-card');
+                    if (card && checkbox.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+            }
+            
+            // Function to handle option card selection
+            function setupOptionCardSelection() {
+                // Handle checkbox cards (sauces)
+                document.querySelectorAll('.option-card').forEach(card => {
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        card.addEventListener('click', function(e) {
+                            // Skip if click was directly on input or label
+                            if (e.target === checkbox || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                                return;
+                            }
+                            
+                            // Toggle checkbox
+                            checkbox.checked = !checkbox.checked;
+                            card.classList.toggle('selected', checkbox.checked);
+                            
+                            // Update sauce counter
+                            updateSauceCounter();
+                            
+                            // Dispatch change event
+                            const changeEvent = new Event('change', { bubbles: true });
+                            checkbox.dispatchEvent(changeEvent);
+                        });
+                    }
+                });
+                
+                // Also add listeners to inputs themselves
+                document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const card = this.closest('.option-card');
+                        if (card) {
+                            card.classList.toggle('selected', this.checked);
+                        }
+                        updateSauceCounter();
+                    });
+                });
+            }
+            
+            // Function to update sauce counter
+            function updateSauceCounter() {
+                const sauceCheckboxes = document.querySelectorAll('input[name="sauces"]:checked');
+                const count = sauceCheckboxes.length;
+                
+                const countElement = document.getElementById('selected-sauce-count');
+                const costElement = document.getElementById('sauce-cost');
+                
+                if (countElement) {
+                    countElement.textContent = count;
+                }
+                
+                if (costElement) {
+                    const totalCost = count * 10;
+                    costElement.textContent = totalCost;
+                }
+                
+                // Update count color based on selection
+                if (countElement) {
+                    if (count === 0) {
+                        countElement.style.color = '#888';
+                    } else {
+                        countElement.style.color = '#FF9800';
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

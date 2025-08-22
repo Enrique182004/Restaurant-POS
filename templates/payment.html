@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Método de Pago</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+    <script src="/static/js/tablet.js"></script>
+</head>
+
+<body>
+    <div class="container payment-container">
+        <h1 class="page-title">Método de Pago</h1>
+        
+        <div class="payment-summary">
+            <div class="summary-icon">💰</div>
+            <div class="summary-details">
+                <div class="summary-label">Total a Pagar:</div>
+                <div class="summary-total">${{ "%.2f"|format(total_price) }}</div>
+            </div>
+        </div>
+        
+        <div class="payment-options">
+            <h2 class="section-title">Selecciona un método de pago</h2>
+            
+            <div class="payment-methods">
+                <a href="{{ url_for('cash_payment') }}" class="payment-method-card">
+                    <div class="method-icon">💵</div>
+                    <div class="method-name">Efectivo</div>
+                    <div class="method-description">Pago con dinero en efectivo</div>
+                </a>
+                
+                <a href="{{ url_for('ticket', payment_method='card') }}" class="payment-method-card">
+                    <div class="method-icon">💳</div>
+                    <div class="method-name">Tarjeta</div>
+                    <div class="method-description">Pago con tarjeta de débito/crédito</div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="{{ url_for('view_cart') }}" class="action-button cancel-button">
+                <span class="button-icon">←</span> Regresar a la Orden
+            </a>
+        </div>
+    </div>
+    
+    <style>
+        /* Additional styles specific to the payment page */
+        .payment-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .payment-summary {
+            background-color: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin: 30px 0;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .summary-icon {
+            font-size: 3rem;
+            margin-right: 20px;
+            color: #f39c12;
+        }
+        
+        .summary-details {
+            flex: 1;
+        }
+        
+        .summary-label {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .summary-total {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #2c3e50;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin: 30px 0 20px;
+            color: #333;
+            font-weight: 700;
+        }
+        
+        .payment-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .payment-method-card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 25px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .payment-method-card:hover {
+            border-color: #3498db;
+        }
+        
+        .payment-method-card:active {
+            transform: scale(0.98);
+        }
+        
+        .method-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .method-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .method-description {
+            color: #666;
+            text-align: center;
+        }
+        
+        .payment-method-card:nth-child(1) .method-icon {
+            color: #27ae60;
+        }
+        
+        .payment-method-card:nth-child(2) .method-icon {
+            color: #3498db;
+        }
+        
+        @media (max-width: 480px) {
+            .payment-methods {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-icon {
+                font-size: 2.5rem;
+            }
+            
+            .summary-total {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</body>
+</html>

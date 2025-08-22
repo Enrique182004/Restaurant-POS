@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Selecciona Tu Bebida</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="page-title">Selecciona Tu Bebida</h1>
+        
+        <form action="{{ url_for('update_item', item_index=item_index) if item else url_for('customize_beverages') }}" method="POST" id="customizationForm">
+            
+            <!-- Step 1: Select Beverage -->
+            <div class="customization-step">
+                <h2 class="step-title">1. Escoge tu Bebida</h2>
+                <div class="option-grid beverage-options">
+                    {% set beverages = [
+                        {"id": "agua", "name": "Agua", "icon": "💧", "price": 10},
+                        {"id": "coca_cola", "name": "Coca Cola", "icon": "🥤", "price": 25},
+                        {"id": "sprite", "name": "Sprite", "icon": "🍋", "price": 25},
+                        {"id": "pepsi", "name": "Pepsi", "icon": "🥤", "price": 25},
+                        {"id": "fanta", "name": "Fanta", "icon": "🍊", "price": 25}
+                    ] %}
+                    
+                    {% for beverage in beverages %}
+                    <div class="option-card radio-card {% if item and item.beverage_type == beverage.name %}selected{% endif %}" data-price="{{ beverage.price }}">
+                        <input type="radio" id="{{ beverage.id }}" name="beverage_type" value="{{ beverage.name }}" required 
+                            {% if item and item.beverage_type == beverage.name %} checked {% endif %} class="hidden-input">
+                        <label for="{{ beverage.id }}" class="card-content">
+                            <div class="option-icon">{{ beverage.icon }}</div>
+                            <div class="option-name">{{ beverage.name }}</div>
+                            <div class="option-price">${{ beverage.price }}</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="customization-step">
+                <h2 class="step-title">Notas (Opcional)</h2>
+                <div class="notes-container">
+                    <textarea name="notes" id="notes" rows="3" placeholder="Añade detalles o solicitudes adicionales..." class="notes-input">{% if item and item.notes %}{{ item.notes }}{% endif %}</textarea>
+                </div>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="action-buttons">
+                <button type="button" id="cancel-btn" class="action-button cancel-button" data-url="{% if item %}{{ url_for('view_cart') }}{% else %}/{% endif %}">
+                    <span class="button-icon">✕</span> Cancelar
+                </button>
+                <button type="submit" class="action-button submit-button">
+                    <span class="button-icon">✓</span> {% if item %}Actualizar{% else %}Agregar al Carrito{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <style>
+        /* Additional styles specific to beverages */
+        .beverage-options {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .option-price {
+            font-weight: 600;
+            color: #FF9800;
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .beverage-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .beverage-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    
+    <!-- Beverages-specific JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // CANCEL BUTTON FIX - Add direct event listener
+            const cancelBtn = document.getElementById('cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    const url = this.getAttribute('data-url');
+                    
+                    if (url) {
+                        window.location.href = url;
+                    } else {
+                        console.error('No URL provided for cancel button');
+                        window.location.href = '/';
+                    }
+                });
+            }
+            
+            // Setup form validation
+            const form = document.getElementById('customizationForm');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    // Check if beverage is selected
+                    const beverageSelected = document.querySelector('input[name="beverage_type"]:checked');
+                    if (!beverageSelected) {
+                        event.preventDefault();
+                        alert('Por favor selecciona una bebida.');
+                        
+                        // Add visual indication for the error
+                        const beverageOptions = document.querySelector('.beverage-options');
+                        if (beverageOptions) {
+                            beverageOptions.style.border = '2px solid #e74c3c';
+                            beverageOptions.style.backgroundColor = 'rgba(231, 76, 60, 0.05)';
+                            
+                            // Scroll to the beverage options section
+                            beverageOptions.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Remove the visual indication after 3 seconds
+                            setTimeout(function() {
+                                beverageOptions.style.border = '';
+                                beverageOptions.style.backgroundColor = '';
+                            }, 3000);
+                        }
+                        return;
+                    }
+                });
+            }
+        
+            // Apply initial selection states based on input checked status
+            initializeSelections();
+            
+            // Set up option card selection
+            setupOptionCardSelection();
+            
+            // Function to initialize selection states
+            function initializeSelections() {
+                // For beverage options
+                document.querySelectorAll('.beverage-options .option-card input[type="radio"]').forEach(radio => {
+                    const card = radio.closest('.option-card');
+                    if (card && radio.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+            }
+            
+            // Function to handle option card selection
+            function setupOptionCardSelection() {
+                // Handle all option cards with radio inputs
+                document.querySelectorAll('.option-card').forEach(card => {
+                    const radio = card.querySelector('input[type="radio"]');
+                    if (!radio) return;
+                    
+                    card.addEventListener('click', function(e) {
+                        // Skip if click was directly on input or label
+                        if (e.target === radio || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                            return;
+                        }
+                        
+                        // Select the radio
+                        radio.checked = true;
+                        
+                        // Update visual selection for all radios in the same group
+                        const name = radio.getAttribute('name');
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                            const c = r.closest('.option-card');
+                            if (c) {
+                                c.classList.remove('selected');
+                            }
+                        });
+                        
+                        // Select this card
+                        this.classList.add('selected');
+                        
+                        // Dispatch change event
+                        const changeEvent = new Event('change', { bubbles: true });
+                        radio.dispatchEvent(changeEvent);
+                    });
+                });
+                
+                // Also add listeners to the radio inputs themselves
+                document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const name = this.getAttribute('name');
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                            const c = r.closest('.option-card');
+                            if (c) {
+                                c.classList.toggle('selected', r.checked);
+                            }
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

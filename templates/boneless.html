@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Personaliza Tus Boneless</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="page-title">¿Cómo Armar Tus Boneless?</h1>
+        
+        <form action="{{ url_for('update_item', item_index=item_index) if item else url_for('customize_boneless') }}" method="POST" id="customizationForm">
+            
+            <!-- Step 1: Select Sauces (Multiple Selection) -->
+            <div class="customization-step">
+                <h2 class="step-title">1. Escoge de 1 a 2 Salsas</h2>
+                <div class="option-grid sauce-options">
+                    {% set sauces = [
+                        {"id": "naturales", "name": "Naturales", "icon": "🍗"},
+                        {"id": "salsa_mango_habanero", "name": "Salsa Mango Habanero", "icon": "🥭"},
+                        {"id": "salsa_bufalo", "name": "Salsa Búfalo", "icon": "🦬"},
+                        {"id": "salsa_bbq", "name": "Salsa BBQ", "icon": "🍖"},
+                        {"id": "salsa_agridulce", "name": "Salsa Agridulce", "icon": "🍯"}
+                    ] %}
+                    
+                    {% for sauce in sauces %}
+                    <div class="option-card {% if item and item.sauces and sauce.name in item.sauces %}selected{% elif item and item.sauce and item.sauce == sauce.name %}selected{% endif %}">
+                        <input type="checkbox" id="{{ sauce.id }}" name="sauce" value="{{ sauce.name }}" 
+                            {% if item and item.sauces and sauce.name in item.sauces %} checked {% elif item and item.sauce and item.sauce == sauce.name %} checked {% endif %} class="hidden-input">
+                        <label for="{{ sauce.id }}" class="card-content">
+                            <div class="option-icon">{{ sauce.icon }}</div>
+                            <div class="option-name">{{ sauce.name }}</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Step 2: Acompañantes (Optional) -->
+            <div class="customization-step">
+                <h2 class="step-title">2. Acompañantes</h2>
+                <div class="option-grid accompaniment-options">
+                    <div class="option-card radio-card {% if item and item.accompaniment == 'Zanahoria' %}selected{% endif %}">
+                        <input type="radio" id="zanahoria" name="accompaniment" value="Zanahoria" 
+                            {% if item and item.accompaniment == "Zanahoria" %} checked {% endif %} class="hidden-input">
+                        <label for="zanahoria" class="card-content">
+                            <div class="option-icon">🥕</div>
+                            <div class="option-name">Zanahoria</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card radio-card {% if item and item.accompaniment == 'Apio' %}selected{% endif %}">
+                        <input type="radio" id="apio" name="accompaniment" value="Apio" 
+                            {% if item and item.accompaniment == "Apio" %} checked {% endif %} class="hidden-input">
+                        <label for="apio" class="card-content">
+                            <div class="option-icon">🥬</div>
+                            <div class="option-name">Apio</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card radio-card {% if item and item.accompaniment == 'Zanahoria y Apio' %}selected{% endif %}">
+                        <input type="radio" id="zanahoria_apio" name="accompaniment" value="Zanahoria y Apio" 
+                            {% if item and item.accompaniment == "Zanahoria y Apio" %} checked {% endif %} class="hidden-input">
+                        <label for="zanahoria_apio" class="card-content">
+                            <div class="option-icon">🥕🥬</div>
+                            <div class="option-name">Zanahoria y Apio</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="customization-step">
+                <h2 class="step-title">Notas (Opcional)</h2>
+                <div class="notes-container">
+                    <textarea name="notes" id="notes" rows="3" placeholder="Añade detalles o solicitudes adicionales..." class="notes-input">{% if item and item.notes %}{{ item.notes }}{% endif %}</textarea>
+                </div>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="action-buttons">
+                <button type="button" id="cancel-btn" class="action-button cancel-button" data-url="{% if item %}{{ url_for('view_cart') }}{% else %}/{% endif %}">
+                    <span class="button-icon">✕</span> Cancelar
+                </button>
+                <button type="submit" class="action-button submit-button">
+                    <span class="button-icon">✓</span> {% if item %}Actualizar{% else %}Agregar al Carrito{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <style>
+        /* Responsive adjustments and basic styling */
+        @media (max-width: 768px) {
+            .sauce-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sauce-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Special styling for Naturales option */
+        .option-card:has(input[value="Naturales"]) {
+            background: linear-gradient(135deg, #2D2D2D, #3A3A3A);
+        }
+        
+        .option-card:has(input[value="Naturales"]).selected {
+            background: linear-gradient(135deg, #3D3D3D, #4A4A4A);
+            border-color: #4CAF50;
+        }
+    </style>
+    
+    <!-- Boneless-specific JavaScript with multiple sauce support -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // CANCEL BUTTON FIX - Add direct event listener
+            const cancelBtn = document.getElementById('cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    const url = this.getAttribute('data-url');
+                    
+                    if (url) {
+                        window.location.href = url;
+                    } else {
+                        console.error('No URL provided for cancel button');
+                        window.location.href = '/';
+                    }
+                });
+            }
+            
+            // Initialize form validation for sauce limits
+            setupFormValidation();
+            
+            // Apply initial selection states based on input checked status
+            initializeSelections();
+            
+            // Set up option card selection with sauce limits
+            setupOptionCardSelection();
+            
+            // Add sauce change listeners for limit enforcement
+            const sauceCheckboxes = document.querySelectorAll('input[name="sauce"]');
+            sauceCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        handleSauceLimit(this, this.closest('.option-card'));
+                    }
+                });
+            });
+            
+            // Function to handle sauce limits with Naturales special logic
+            function handleSauceLimit(checkbox, card) {
+                const selectedSauces = document.querySelectorAll('input[name="sauce"]:checked');
+                const naturalesSelected = document.querySelector('input[value="Naturales"]:checked');
+                const otherSaucesSelected = Array.from(selectedSauces).filter(sauce => sauce.value !== 'Naturales');
+                
+                // Special logic for Naturales
+                if (checkbox.value === 'Naturales') {
+                    // If selecting Naturales, check if other sauces are already selected
+                    if (otherSaucesSelected.length > 1) {
+                        checkbox.checked = false;
+                        card.classList.remove('selected');
+                        alert('Si eliges Naturales, solo puedes seleccionar 1 salsa adicional como acompañante.');
+                        return;
+                    }
+                } else {
+                    // If selecting a regular sauce
+                    if (naturalesSelected && otherSaucesSelected.length > 1) {
+                        checkbox.checked = false;
+                        card.classList.remove('selected');
+                        alert('Con Naturales solo puedes seleccionar 1 salsa adicional como acompañante.');
+                        return;
+                    } else if (!naturalesSelected && otherSaucesSelected.length > 2) {
+                        checkbox.checked = false;
+                        card.classList.remove('selected');
+                        alert('Solo puedes seleccionar hasta 2 salsas.');
+                        return;
+                    }
+                }
+            }
+            
+            // Function to setup form validation
+            function setupFormValidation() {
+                const form = document.getElementById('customizationForm');
+                if (form) {
+                    form.addEventListener('submit', function(event) {
+                        const saucesSelected = document.querySelectorAll('input[name="sauce"]:checked');
+                        const naturalesSelected = document.querySelector('input[value="Naturales"]:checked');
+                        const otherSauces = Array.from(saucesSelected).filter(sauce => sauce.value !== 'Naturales');
+                        
+                        // Check minimum (at least 1 selection)
+                        if (saucesSelected.length === 0) {
+                            event.preventDefault();
+                            alert('Por favor selecciona al menos 1 opción (Naturales o salsas).');
+                            
+                            // Add visual indication for the error
+                            const sauceOptions = document.querySelector('.sauce-options');
+                            if (sauceOptions) {
+                                sauceOptions.style.border = '2px solid #e74c3c';
+                                sauceOptions.style.backgroundColor = 'rgba(231, 76, 60, 0.05)';
+                                
+                                // Scroll to the sauce options section
+                                sauceOptions.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                
+                                // Remove the visual indication after 3 seconds
+                                setTimeout(function() {
+                                    sauceOptions.style.border = '';
+                                    sauceOptions.style.backgroundColor = '';
+                                }, 3000);
+                            }
+                            return;
+                        }
+                        
+                        // Check combinations
+                        if (naturalesSelected && otherSauces.length > 1) {
+                            event.preventDefault();
+                            alert('Con Naturales solo puedes seleccionar 1 salsa adicional como acompañante.');
+                            return;
+                        }
+                        
+                        if (!naturalesSelected && otherSauces.length > 2) {
+                            event.preventDefault();
+                            alert('Solo puedes seleccionar hasta 2 salsas.');
+                            return;
+                        }
+                    });
+                }
+            }
+            
+            // Function to update sauce counter
+            function updateSauceCounter() {
+                const sauceCheckboxes = document.querySelectorAll('input[name="sauce"]:checked');
+                const count = sauceCheckboxes.length;
+                
+                document.getElementById('selected-sauce-count').textContent = count;
+                
+                // Calculate additional sauce cost (first sauce is free)
+                const additionalSauces = Math.max(0, count - 1);
+                const sauceCost = additionalSauces * 10;
+                
+                document.getElementById('sauce-cost').textContent = sauceCost;
+            }
+            
+            // Function to initialize selection states
+            function initializeSelections() {
+                // For sauce options (checkboxes)
+                document.querySelectorAll('.sauce-options .option-card input[type="checkbox"]').forEach(checkbox => {
+                    const card = checkbox.closest('.option-card');
+                    if (card && checkbox.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+                
+                // For accompaniment options (radio buttons)
+                document.querySelectorAll('.accompaniment-options .option-card input[type="radio"]').forEach(radio => {
+                    const card = radio.closest('.option-card');
+                    if (card && radio.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+            }
+            
+            // Function to handle option card selection
+            function setupOptionCardSelection() {
+                // Handle checkbox cards (sauces)
+                document.querySelectorAll('.option-card').forEach(card => {
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        card.addEventListener('click', function(e) {
+                            // Skip if click was directly on input or label
+                            if (e.target === checkbox || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                                return;
+                            }
+                            
+                            // Toggle checkbox
+                            checkbox.checked = !checkbox.checked;
+                            card.classList.toggle('selected', checkbox.checked);
+                            
+                            // Handle sauce limit if checking
+                            if (checkbox.checked && checkbox.name === 'sauce') {
+                                handleSauceLimit(checkbox, card);
+                            }
+                            
+                            // Dispatch change event
+                            const changeEvent = new Event('change', { bubbles: true });
+                            checkbox.dispatchEvent(changeEvent);
+                        });
+                    }
+                    
+                    // Handle radio cards (accompaniments)
+                    const radio = card.querySelector('input[type="radio"]');
+                    if (radio) {
+                        card.addEventListener('click', function(e) {
+                            // Skip if click was directly on input or label
+                            if (e.target === radio || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                                return;
+                            }
+                            
+                            // Select the radio
+                            radio.checked = true;
+                            
+                            // Update visual selection for all radios in the same group
+                            const name = radio.getAttribute('name');
+                            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                                const c = r.closest('.option-card');
+                                if (c) {
+                                    c.classList.remove('selected');
+                                }
+                            });
+                            
+                            // Select this card
+                            this.classList.add('selected');
+                            
+                            // Dispatch change event
+                            const changeEvent = new Event('change', { bubbles: true });
+                            radio.dispatchEvent(changeEvent);
+                        });
+                    }
+                });
+                
+                // Also add listeners to inputs themselves
+                document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const card = this.closest('.option-card');
+                        if (card) {
+                            card.classList.toggle('selected', this.checked);
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const name = this.getAttribute('name');
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                            const c = r.closest('.option-card');
+                            if (c) {
+                                c.classList.toggle('selected', r.checked);
+                            }
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

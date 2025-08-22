@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Personaliza Tu Bola de Arroz</title>
+    <link rel="stylesheet" href="/static/css/tablet.css">
+    <script src="/static/js/tablet.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("Applying selection fix with Ostión special handling");
+            
+            // Apply initial selection states based on input checked status
+            initializeSelections();
+            
+            // Add selection handlers
+            setupSelectionHandlers();
+            
+            // Initialize ingredient counter (removed display but keep validation)
+            initializeIngredientValidation();
+            
+            // Set up cancel button
+            setupCancelButton();
+            
+            // Function to handle the cancel button
+            function setupCancelButton() {
+                const cancelBtn = document.getElementById('cancel-btn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', function() {
+                        const url = this.getAttribute('data-url');
+                        if (url) {
+                            window.location.href = url;
+                        } else {
+                            window.location.href = '/';
+                        }
+                    });
+                }
+            }
+            
+            // Function to initialize ingredient validation (without display)
+            function initializeIngredientValidation() {
+                // Update the validation for ingredient checkboxes
+                const ingredientCheckboxes = document.querySelectorAll('.ingredient-checkbox');
+                
+                ingredientCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        if (this.checked) {
+                            handleIngredientLimit(this, this.closest('.option-card'));
+                        }
+                    });
+                });
+            }
+            
+            // Function to initialize selection states
+            function initializeSelections() {
+                // Handle checkboxes
+                document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
+                    const card = checkbox.closest('.option-card');
+                    if (card && checkbox.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+                
+                // Handle radio buttons
+                document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+                    const card = radio.closest('.option-card');
+                    if (card && radio.checked) {
+                        card.classList.add('selected');
+                    }
+                });
+            }
+            
+            // Function to set up selection handlers
+            function setupSelectionHandlers() {
+                // Add card click handlers for checkboxes
+                document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
+                    const card = checkbox.closest('.option-card');
+                    if (card) {
+                        card.addEventListener('click', function(e) {
+                            // Skip if click was directly on input or label
+                            if (e.target === checkbox || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                                return;
+                            }
+                            
+                            // Toggle checkbox
+                            checkbox.checked = !checkbox.checked;
+                            card.classList.toggle('selected', checkbox.checked);
+                            
+                            // Handle ingredient limit with Ostión exception
+                            if (checkbox.name === 'ingredients' && checkbox.checked) {
+                                handleIngredientLimit(checkbox, card);
+                            }
+                        });
+                    }
+                });
+                
+                // Add card click handlers for radio buttons
+                document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+                    const card = radio.closest('.option-card');
+                    if (card) {
+                        card.addEventListener('click', function(e) {
+                            // Skip if click was directly on input or label
+                            if (e.target === radio || e.target.tagName === 'LABEL' || e.target.closest('label')) {
+                                return;
+                            }
+                            
+                            // Select radio
+                            radio.checked = true;
+                            
+                            // Update visual selection for all radios in the same group
+                            const name = radio.getAttribute('name');
+                            document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                                const radioCard = r.closest('.option-card');
+                                if (radioCard) {
+                                    radioCard.classList.toggle('selected', r.checked);
+                                }
+                            });
+                        });
+                    }
+                });
+                
+                // Watch for direct changes to checkboxes
+                document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const card = this.closest('.option-card');
+                        if (card) {
+                            card.classList.toggle('selected', this.checked);
+                            
+                            // Update ingredient counter if needed
+                            if (this.name === 'ingredients') {
+                                if (this.checked) {
+                                    handleIngredientLimit(this, card);
+                                }
+                            }
+                        }
+                    });
+                });
+                
+                // Watch for direct changes to radio buttons
+                document.querySelectorAll('.option-card input[type="radio"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        const name = this.getAttribute('name');
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                            const radioCard = r.closest('.option-card');
+                            if (radioCard) {
+                                radioCard.classList.toggle('selected', r.checked);
+                            }
+                        });
+                    });
+                });
+            }
+            
+            // Function to handle ingredient limits with Ostión special rules
+            function handleIngredientLimit(checkbox, card) {
+                const selectedIngredients = document.querySelectorAll('input[name="ingredients"]:checked');
+                const regularIngredients = Array.from(selectedIngredients).filter(input => input.value !== 'Ostión');
+                const ostionIngredients = Array.from(selectedIngredients).filter(input => input.value === 'Ostión');
+                
+                // If trying to add a regular ingredient and already have 6 regular ingredients
+                if (checkbox.value !== 'Ostión' && regularIngredients.length > 6) {
+                    checkbox.checked = false;
+                    card.classList.remove('selected');
+                    alert('Solo puedes seleccionar hasta 6 ingredientes regulares.');
+                    return;
+                }
+                
+                // If trying to add Ostión but already have 6 regular + ostión
+                if (checkbox.value === 'Ostión' && regularIngredients.length >= 6 && ostionIngredients.length > 1) {
+                    checkbox.checked = false;
+                    card.classList.remove('selected');
+                    alert('Solo puedes agregar Ostión como séptimo ingrediente cuando ya tienes 6 ingredientes regulares.');
+                    return;
+                }
+            }
+            
+            // Add form validation for minimum ingredients
+            const form = document.querySelector('#customizationForm');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    const selectedIngredients = document.querySelectorAll('input[name="ingredients"]:checked');
+                    
+                    if (selectedIngredients.length === 0) {
+                        event.preventDefault();
+                        alert('Por favor selecciona al menos 1 ingrediente.');
+                        
+                        // Add visual indication for the error
+                        const ingredientsSection = document.querySelector('.ingredients-grid');
+                        if (ingredientsSection) {
+                            ingredientsSection.style.border = '2px solid #e74c3c';
+                            ingredientsSection.style.backgroundColor = 'rgba(231, 76, 60, 0.05)';
+                            
+                            // Scroll to the ingredients section
+                            ingredientsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Remove the visual indication after 3 seconds
+                            setTimeout(function() {
+                                ingredientsSection.style.border = '';
+                                ingredientsSection.style.backgroundColor = '';
+                            }, 3000);
+                        }
+                        return;
+                    }
+                });
+            }
+        });
+    </script>
+    
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="page-title">¿Cómo Armar Tu Bola de Arroz?</h1>
+        
+        <form action="{{ url_for('update_item', item_index=item_index) if item else url_for('customize_rice_ball') }}" method="POST" id="customizationForm">
+            
+            <!-- Step 1: Select Base -->
+            <div class="customization-step">
+                <h2 class="step-title">1. Selecciona la Base</h2>
+                <div class="option-grid base-options">
+                    <div class="option-card {% if item and 'Queso Crema' in item.base %}selected{% endif %}">
+                        <input type="checkbox" id="queso_crema" name="base" value="Queso Crema" 
+                            {% if item and "Queso Crema" in item.base %} checked {% endif %} class="hidden-input">
+                        <label for="queso_crema" class="card-content">
+                            <div class="option-icon">🧀</div>
+                            <div class="option-name">Queso Crema</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card {% if item and 'Aguacate' in item.base %}selected{% endif %}">
+                        <input type="checkbox" id="aguacate" name="base" value="Aguacate" 
+                            {% if item and "Aguacate" in item.base %} checked {% endif %} class="hidden-input">
+                        <label for="aguacate" class="card-content">
+                            <div class="option-icon">🥑</div>
+                            <div class="option-name">Aguacate</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card {% if item and not item.base %}selected{% endif %}">
+                        <input type="checkbox" id="none_base" name="base" value="None" 
+                            {% if item and not item.base %} checked {% endif %} class="hidden-input">
+                        <label for="none_base" class="card-content">
+                            <div class="option-icon">🚫</div>
+                            <div class="option-name">None</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Select Ingredients -->
+            <div class="customization-step">
+                <h2 class="step-title">2. Selecciona de 1 a 6 ingredientes + Ostión opcional</h2>
+                
+                <!-- Regular Ingredients -->
+                <h3 class="sub-title">Ingredientes Regulares</h3>
+                <div class="option-grid ingredients-grid">
+                    {% set regular_ingredients = [
+                        {"id": "camarón", "name": "Camarón", "icon": "🦐"},
+                        {"id": "arrachera", "name": "Arrachera", "icon": "🥩"},
+                        {"id": "surimi", "name": "Surimi", "icon": "🦀"},
+                        {"id": "pastor", "name": "Pastor", "icon": "🌮"},
+                        {"id": "pollo", "name": "Pollo", "icon": "🍗"},
+                        {"id": "tocino", "name": "Tocino", "icon": "🥓"},
+                        {"id": "jalapeño", "name": "Jalapeño", "icon": "🌶️"},
+                        {"id": "pepino", "name": "Pepino", "icon": "🥒"}
+                    ] %}
+                    
+                    {% for ingredient in regular_ingredients %}
+                    <div class="option-card {% if item and ingredient.name in item.ingredients %}selected{% endif %}">
+                        <input type="checkbox" id="{{ ingredient.id }}" name="ingredients" value="{{ ingredient.name }}" 
+                            {% if item and ingredient.name in item.ingredients %} checked {% endif %} class="hidden-input ingredient-checkbox">
+                        <label for="{{ ingredient.id }}" class="card-content">
+                            <div class="option-icon">{{ ingredient.icon }}</div>
+                            <div class="option-name">{{ ingredient.name }}</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Ostión as Premium Add-on -->
+                <h3 class="sub-title">Ingrediente Premium</h3>
+                <div class="option-grid premium-grid">
+                    <div class="option-card {% if item and 'Ostión' in item.ingredients %}selected{% endif %}">
+                        <input type="checkbox" id="ostion" name="ingredients" value="Ostión" 
+                            {% if item and "Ostión" in item.ingredients %} checked {% endif %} class="hidden-input ingredient-checkbox">
+                        <label for="ostion" class="card-content">
+                            <div class="option-icon">🦪</div>
+                            <div class="option-name">Ostión</div>
+                            <div class="premium-badge">+$10</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Frío o Empanizado -->
+            <div class="customization-step">
+                <h2 class="step-title">3. ¿Fría o Empanizada?</h2>
+                <div class="option-grid style-options">
+                    <div class="option-card radio-card {% if item and item.style == 'Fría' %}selected{% endif %}">
+                        <input type="radio" id="fria" name="style" value="Fría" required 
+                            {% if item and item.style == "Fría" %} checked {% endif %} class="hidden-input">
+                        <label for="fria" class="card-content">
+                            <div class="option-icon">❄️</div>
+                            <div class="option-name">Fría</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card radio-card {% if item and item.style == 'Empanizada' %}selected{% endif %}">
+                        <input type="radio" id="empanizada" name="style" value="Empanizada" required 
+                            {% if item and item.style == "Empanizada" %} checked {% endif %} class="hidden-input">
+                        <label for="empanizada" class="card-content">
+                            <div class="option-icon">🍞</div>
+                            <div class="option-name">Empanizada</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: ¿Bañada? ¿En qué salsa? - UPDATED WITH SECA OPTION -->
+            <div class="customization-step">
+                <h2 class="step-title">4. ¿Bañada? ¿En qué salsa?</h2>
+                <div class="option-grid sauce-options">
+                    {% set sauces = [
+                        {"id": "tradicional", "name": "Tradicional", "icon": "🔴"},
+                        {"id": "flamin_hot", "name": "Flamin Hot", "icon": "🔥"},
+                        {"id": "puff", "name": "Puff", "icon": "💨"},
+                        {"id": "nacha", "name": "Nacha", "icon": "🌮"},
+                        {"id": "bufalo", "name": "Búfalo", "icon": "🦬"},
+                        {"id": "barbecue", "name": "Barbecue", "icon": "🍖"},
+                        {"id": "agridulce", "name": "Agridulce", "icon": "🍯"},
+                        {"id": "frutal", "name": "Frutal", "icon": "🍎"},
+                        {"id": "seca", "name": "Seca", "icon": "🌾"}
+                    ] %}
+                    
+                    {% for sauce in sauces %}
+                    <div class="option-card radio-card {% if item and item.sauce == sauce.name %}selected{% endif %}">
+                        <input type="radio" id="{{ sauce.id }}" name="sauce" value="{{ sauce.name }}" required 
+                            {% if item and item.sauce == sauce.name %} checked {% endif %} class="hidden-input">
+                        <label for="{{ sauce.id }}" class="card-content">
+                            <div class="option-icon">{{ sauce.icon }}</div>
+                            <div class="option-name">{{ sauce.name }}</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Step 5: Toppings (Optional) -->
+            <div class="customization-step">
+                <h2 class="step-title">5. ¿Toppings? (Opcional)</h2>
+                <div class="option-grid topping-options">
+                    <div class="option-card {% if item and 'Mango' in item.toppings %}selected{% endif %}">
+                        <input type="checkbox" id="mango" name="toppings" value="Mango" 
+                            {% if item and "Mango" in item.toppings %} checked {% endif %} class="hidden-input">
+                        <label for="mango" class="card-content">
+                            <div class="option-icon">🥭</div>
+                            <div class="option-name">Mango</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card {% if item and 'Cereza' in item.toppings %}selected{% endif %}">
+                        <input type="checkbox" id="cereza" name="toppings" value="Cereza" 
+                            {% if item and "Cereza" in item.toppings %} checked {% endif %} class="hidden-input">
+                        <label for="cereza" class="card-content">
+                            <div class="option-icon">🍒</div>
+                            <div class="option-name">Cereza</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card {% if item and 'Piña' in item.toppings %}selected{% endif %}">
+                        <input type="checkbox" id="piña" name="toppings" value="Piña" 
+                            {% if item and "Piña" in item.toppings %} checked {% endif %} class="hidden-input">
+                        <label for="piña" class="card-content">
+                            <div class="option-icon">🍍</div>
+                            <div class="option-name">Piña</div>
+                        </label>
+                    </div>
+                    
+                    <div class="option-card {% if item and 'Fresa' in item.toppings %}selected{% endif %}">
+                        <input type="checkbox" id="fresa" name="toppings" value="Fresa" 
+                            {% if item and "Fresa" in item.toppings %} checked {% endif %} class="hidden-input">
+                        <label for="fresa" class="card-content">
+                            <div class="option-icon">🍓</div>
+                            <div class="option-name">Fresa</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes Section -->
+            <div class="customization-step">
+                <h2 class="step-title">Notas (Opcional)</h2>
+                <div class="notes-container">
+                    <textarea name="notes" id="notes" rows="3" placeholder="Añade detalles o solicitudes adicionales..." class="notes-input">{% if item and item.notes %}{{ item.notes }}{% endif %}</textarea>
+                </div>
+            </div>
+
+            <!-- Bottom Action Buttons -->
+            <div class="action-buttons">
+                <button type="button" id="cancel-btn" class="action-button cancel-button" data-url="{% if item %}{{ url_for('view_cart') }}{% else %}/{% endif %}">
+                    <span class="button-icon">✕</span> Cancelar
+                </button>
+                <button type="submit" class="action-button submit-button">
+                    <span class="button-icon">✓</span> {% if item %}Actualizar{% else %}Agregar al Carrito{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <style>
+        /* Additional styles for enhanced ingredient selection */
+        .sub-title {
+            font-size: 1.2rem;
+            color: #f5f5f5;
+            margin: 20px 0 15px 0;
+            font-weight: 600;
+        }
+        
+        .premium-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        
+        .premium-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: #FF9800;
+            color: #121212;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        /* Make sure Ostión card looks like other ingredients */
+        .premium-grid .option-card {
+            position: relative;
+            border: 2px solid #3D3D3D;
+            background-color: #2D2D2D;
+        }
+        
+        .premium-grid .option-card.selected {
+            border-color: #FF9800;
+            background-color: #3D3D3D;
+        }
+        
+        /* Updated sauce grid to accommodate 9 options */
+        .sauce-options {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        @media (max-width: 768px) {
+            .premium-grid {
+                max-width: 250px;
+            }
+            
+            .sauce-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sauce-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</body>
+</html>
