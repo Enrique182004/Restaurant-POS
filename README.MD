@@ -1,9 +1,5 @@
 # Restaurant-POS
 
-A comprehensive Point-of-Sale system for restaurants built with Python Flask, designed to streamline restaurant operations and enhance customer experience through modern web technologies.
-
-# Restaurant-POS
-
 A comprehensive Point-of-Sale system for restaurants built with Python Flask, featuring user authentication, order management, promotional systems, and receipt printing capabilities.
 
 ## 🍽️ Features
