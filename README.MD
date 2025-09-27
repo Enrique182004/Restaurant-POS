@@ -2,7 +2,7 @@
 
 A comprehensive Point-of-Sale system for restaurants built with Python Flask, featuring user authentication, order management, promotional systems, and receipt printing capabilities.
 
-## 🍽️ Features
+## Features
 
 ### Core Functionality
 - **User Authentication**: Login system with admin and user roles
@@ -21,7 +21,7 @@ A comprehensive Point-of-Sale system for restaurants built with Python Flask, fe
 - **Error Handling**: Comprehensive error management and user feedback
 - **Real-time Updates**: AJAX-powered quantity updates and cart management
 
-## 🛠️ Technologies & Languages Used
+## Technologies Used
 
 ### Backend
 - **Python 3.7+**: Core programming language
@@ -34,18 +34,13 @@ A comprehensive Point-of-Sale system for restaurants built with Python Flask, fe
 - **CSS3**: Custom dark theme with responsive grid layouts
 - **JavaScript (ES6+)**: Interactive functionality and AJAX requests
 
-### Database Schema
-- **orders**: Order tracking with JSON item storage, payment details, and customer info
-- **promotions**: Configurable promotion system with multiple types
-- **users**: User authentication with role-based access
-
 ### Architecture
 - **MVC Pattern**: Clean separation of models, views, and controllers
 - **RESTful Routes**: Organized URL structure for all operations
 - **Session-Based State**: Cart and user state management
 - **Component-Based UI**: Reusable card-based interface components
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.7 or higher
@@ -81,7 +76,7 @@ python app.py
 - **Admin**: admin / admin123
 - **User**: user / user123
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Restaurant-POS/
@@ -112,7 +107,7 @@ Restaurant-POS/
 └── README.md             # Project documentation
 ```
 
-## 🔧 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -134,7 +129,7 @@ Restaurant-POS/
 | `GET` | `/cash_payment` | Cash payment interface |
 | `GET/POST` | `/ticket` | Generate receipt and complete order |
 
-## 🎯 Key Features Implementation
+## Key Features Implementation
 
 ### Promotional System
 - **SUSHI4X3**: Buy 4 sushi, pay for 3 (applies to cheapest item)
@@ -158,71 +153,13 @@ Restaurant-POS/
 - Automatic printer integration for Windows/Mac/Linux
 - Fallback file storage if printing fails
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.7 or higher
-- pip (Python package installer)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/YOUR_USERNAME/Restaurant-POS.git
-cd Restaurant-POS
-```
-
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Run the application:
-```bash
-python app.py
-```
-
-5. Open your browser and navigate to `http://localhost:5000`
-
-## 📁 Project Structure
-
-```
-Restaurant-POS/
-├── app.py                 # Main Flask application & routes
-├── restaurant.db          # SQLite database (auto-generated)
-├── static/                # Static assets
-│   ├── css/              # Stylesheets
-│   │   └── style.css     # Main CSS file
-│   ├── js/               # JavaScript files
-│   │   └── script.js     # Client-side functionality
-│   └── images/           # Image assets
-├── templates/             # Jinja2 HTML templates
-│   ├── base.html         # Base template (if exists)
-│   ├── index.html        # Home page
-│   ├── menu.html         # Menu display
-│   └── order.html        # Order processing
-├── requirements.txt       # Python dependencies
-├── .gitignore            # Git ignore rules
-└── README.md             # Project documentation
-```
-
-## 🔧 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Home page |
-| `GET` | `/menu` | Display menu items |
-| `POST` | `/order` | Process new orders |
-
-## 🗄️ Database Schema
+## Database Schema
 
 ### Tables
 - **orders**: Store complete orders with JSON item data, payment methods, customer names, and timestamps
 - **promotions**: Configurable promotion system with buy-x-get-y logic and discount rules
 - **users**: User authentication with username, password, and role-based access control
+
+## License
+
+This project was developed by Enrique Calleros. All rights reserved.
