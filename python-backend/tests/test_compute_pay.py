@@ -45,3 +45,22 @@ def test_compute_employee_pay_zero_when_no_schedule_yet(app_module, conn):
 
     result = app_module.compute_employee_pay(conn, employee_id, "2026-06-22", "2026-06-28")
     assert result == (0.0, 0.0, 0, [])
+
+
+def test_compute_employee_pay_zero_when_no_attendance_marked(app_module, conn):
+    conn.execute("INSERT INTO employees (name) VALUES ('Diego')")
+    employee_id = conn.execute("SELECT id FROM employees WHERE name='Diego'").fetchone()["id"]
+    conn.execute(
+        "INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) "
+        "VALUES (?, ?, ?, ?)",
+        (employee_id, "2026-06-22", "1,2,3", 1000.0),
+    )
+    conn.commit()
+
+    total_pay, per_day_rate, days_worked, scheduled_days = app_module.compute_employee_pay(
+        conn, employee_id, "2026-06-22", "2026-06-28"
+    )
+    assert days_worked == 0
+    assert total_pay == 0.0
+    assert round(per_day_rate, 2) == 333.33  # schedule exists, rate is nonzero, just no attendance yet
+    assert scheduled_days == [1, 2, 3]
