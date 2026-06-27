@@ -95,6 +95,13 @@
         "filter": [
           "inventory-service-1.0.0.jar"
         ]
+      },
+      {
+        "from": "java-services/inventory-service/jre",
+        "to": "inventory-service/jre",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "publish": {

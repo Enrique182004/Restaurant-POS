@@ -30,13 +30,25 @@ jobs:
           pip install -r python-backend/requirements.txt
           pip install pyinstaller
 
-      - name: Construir servidor Flask (PyInstaller)
+      - name: Construir servidor Flask y print-bridge (PyInstaller)
         run: scripts\build-server.bat
 
       - name: Construir jar de inventario (Maven)
         run: |
           cd java-services/inventory-service
           mvn package -DskipTests -q
+
+      - name: Crear JRE mínimo con jlink
+        shell: pwsh
+        run: |
+          $jlink = "$env:JAVA_HOME\bin\jlink.exe"
+          & $jlink `
+            --add-modules java.se,jdk.unsupported `
+            --output java-services/inventory-service/jre `
+            --compress=2 `
+            --no-header-files `
+            --no-man-pages `
+            --strip-debug
 
       - name: Construir e instalar app Windows
         env:
@@ -67,13 +79,23 @@ jobs:
           pip3 install -r python-backend/requirements.txt
           pip3 install pyinstaller
 
-      - name: Construir servidor Flask (PyInstaller)
+      - name: Construir servidor Flask y print-bridge (PyInstaller)
         run: bash scripts/build-server.sh
 
       - name: Construir jar de inventario (Maven)
         run: |
           cd java-services/inventory-service
           mvn package -DskipTests -q
+
+      - name: Crear JRE mínimo con jlink
+        run: |
+          $JAVA_HOME/bin/jlink \
+            --add-modules java.se,jdk.unsupported \
+            --output java-services/inventory-service/jre \
+            --compress=2 \
+            --no-header-files \
+            --no-man-pages \
+            --strip-debug
 
       - name: Construir e instalar app macOS
         env:
