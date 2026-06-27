@@ -2267,7 +2267,7 @@ def toggle_attendance():
         conn.execute('DELETE FROM attendance WHERE id = ?', (existing['id'],))
     else:
         conn.execute(
-            'INSERT INTO attendance (employee_id, work_date) VALUES (?, ?)',
+            'INSERT OR IGNORE INTO attendance (employee_id, work_date) VALUES (?, ?)',
             (employee_id, work_date)
         )
     conn.commit()
