@@ -391,6 +391,26 @@ def resolve_employee_schedule(conn, employee_id, week_start):
     ).fetchone()
 
 
+def compute_employee_pay(conn, employee_id, week_start, week_end):
+    """Returns (total_pay, per_day_rate, days_worked, scheduled_days) for one
+    employee for the Mon-Sun week [week_start, week_end]. Any day marked
+    present counts toward pay, not only the employee's scheduled days."""
+    schedule = resolve_employee_schedule(conn, employee_id, week_start)
+    if schedule is None:
+        return 0.0, 0.0, 0, []
+
+    scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',') if x != '']
+    per_day_rate = (schedule['pay_amount'] / len(scheduled_days)) if scheduled_days else 0.0
+
+    days_worked = conn.execute(
+        'SELECT COUNT(*) FROM attendance WHERE employee_id = ? AND work_date BETWEEN ? AND ?',
+        (employee_id, week_start, week_end)
+    ).fetchone()[0]
+
+    total_pay = round(per_day_rate * days_worked, 2)
+    return total_pay, per_day_rate, days_worked, scheduled_days
+
+
 # Login decorator
 def login_required(f):
     @wraps(f)
