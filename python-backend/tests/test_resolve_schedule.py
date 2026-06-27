@@ -34,3 +34,24 @@ def test_resolve_employee_schedule_returns_none_before_any_version(app_module, c
 
     result = app_module.resolve_employee_schedule(conn, employee_id, "2026-06-15")
     assert result is None
+
+
+def test_resolve_employee_schedule_breaks_ties_by_most_recent_insert(app_module, conn):
+    conn.execute("INSERT INTO employees (name) VALUES ('Ana')")
+    employee_id = conn.execute("SELECT id FROM employees WHERE name='Ana'").fetchone()["id"]
+    # Two versions inserted with the SAME effective_from (simulates editing twice
+    # before that week arrives) - the second insert (higher id) must win.
+    conn.execute(
+        "INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) "
+        "VALUES (?, ?, ?, ?)",
+        (employee_id, "2026-06-29", "1,2,3", 1500.0),
+    )
+    conn.execute(
+        "INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) "
+        "VALUES (?, ?, ?, ?)",
+        (employee_id, "2026-06-29", "1,2,3", 2000.0),
+    )
+    conn.commit()
+
+    result = app_module.resolve_employee_schedule(conn, employee_id, "2026-06-29")
+    assert result["pay_amount"] == 2000.0

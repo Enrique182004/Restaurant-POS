@@ -386,7 +386,7 @@ def resolve_employee_schedule(conn, employee_id, week_start):
     return conn.execute(
         '''SELECT * FROM employee_schedules
            WHERE employee_id = ? AND effective_from <= ?
-           ORDER BY effective_from DESC LIMIT 1''',
+           ORDER BY effective_from DESC, id DESC LIMIT 1''',
         (employee_id, week_start)
     ).fetchone()
 
