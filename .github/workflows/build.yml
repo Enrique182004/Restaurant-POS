@@ -25,10 +25,11 @@ jobs:
       - name: Instalar dependencias Electron
         run: npm install
 
-      - name: Instalar Python y dependencias
+      - name: Preparar venv de Python con dependencias y PyInstaller
         run: |
-          pip install -r python-backend/requirements.txt
-          pip install pyinstaller
+          python -m venv python-backend\venv
+          python-backend\venv\Scripts\pip install --upgrade pip --quiet
+          python-backend\venv\Scripts\pip install -r python-backend\requirements.txt pyinstaller --quiet
 
       - name: Construir servidor Flask y print-bridge (PyInstaller)
         run: scripts\build-server.bat
@@ -52,7 +53,7 @@ jobs:
 
       - name: Construir e instalar app Windows
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build-win -- --publish always
 
   build-mac:
@@ -74,10 +75,11 @@ jobs:
       - name: Instalar dependencias Electron
         run: npm install
 
-      - name: Instalar Python y dependencias
+      - name: Preparar venv de Python con dependencias y PyInstaller
         run: |
-          pip3 install -r python-backend/requirements.txt
-          pip3 install pyinstaller
+          python3 -m venv python-backend/venv
+          python-backend/venv/bin/pip install --upgrade pip --quiet
+          python-backend/venv/bin/pip install -r python-backend/requirements.txt pyinstaller --quiet
 
       - name: Construir servidor Flask y print-bridge (PyInstaller)
         run: bash scripts/build-server.sh
@@ -99,5 +101,5 @@ jobs:
 
       - name: Construir e instalar app macOS
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build-mac -- --publish always
