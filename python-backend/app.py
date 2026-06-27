@@ -2150,17 +2150,17 @@ def add_employee():
 
     if not name:
         flash('El nombre es requerido.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
     if not days_csv:
         flash('Selecciona al menos un día de la semana.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
     try:
         pay_amount = float(pay_amount_raw)
     except ValueError:
         pay_amount = 0
     if pay_amount <= 0:
         flash('El pago semanal debe ser mayor a 0.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
 
     conn = get_db_connection()
     cur = conn.execute('INSERT INTO employees (name) VALUES (?)', (name,))
@@ -2173,7 +2173,7 @@ def add_employee():
     )
     conn.commit()
     flash(f'Empleado "{name}" agregado.', 'success')
-    return redirect('/admin/employees/manage')
+    return redirect(url_for('employees_manage'))
 
 
 @app.route('/admin/employees/update/<int:employee_id>', methods=['POST'])
@@ -2184,7 +2184,7 @@ def update_employee(employee_id):
     employee = conn.execute('SELECT * FROM employees WHERE id = ?', (employee_id,)).fetchone()
     if not employee:
         flash('Empleado no encontrado.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
 
     name = request.form.get('name', '').strip()
     pay_amount_raw = request.form.get('pay_amount', '').strip()
@@ -2192,17 +2192,17 @@ def update_employee(employee_id):
 
     if not name:
         flash('El nombre es requerido.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
     if not days_csv:
         flash('Selecciona al menos un día de la semana.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
     try:
         pay_amount = float(pay_amount_raw)
     except ValueError:
         pay_amount = 0
     if pay_amount <= 0:
         flash('El pago semanal debe ser mayor a 0.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
 
     conn.execute('UPDATE employees SET name = ? WHERE id = ?', (name, employee_id))
 
@@ -2217,7 +2217,7 @@ def update_employee(employee_id):
     )
     conn.commit()
     flash(f'Empleado "{name}" actualizado. Los cambios de horario/pago aplican a partir de la próxima semana.', 'success')
-    return redirect('/admin/employees/manage')
+    return redirect(url_for('employees_manage'))
 
 
 @app.route('/admin/employees/remove/<int:employee_id>', methods=['POST'])
@@ -2228,7 +2228,7 @@ def remove_employee(employee_id):
     employee = conn.execute('SELECT * FROM employees WHERE id = ?', (employee_id,)).fetchone()
     if not employee:
         flash('Empleado no encontrado.', 'error')
-        return redirect('/admin/employees/manage')
+        return redirect(url_for('employees_manage'))
 
     has_attendance = conn.execute(
         'SELECT COUNT(*) FROM attendance WHERE employee_id = ?', (employee_id,)
@@ -2243,7 +2243,7 @@ def remove_employee(employee_id):
         conn.execute('DELETE FROM employees WHERE id = ?', (employee_id,))
         conn.commit()
         flash(f'Empleado "{employee["name"]}" eliminado.', 'success')
-    return redirect('/admin/employees/manage')
+    return redirect(url_for('employees_manage'))
 
 
 @app.route('/admin/employees/attendance/toggle', methods=['POST'])
@@ -2337,6 +2337,37 @@ def employees_attendance():
         next_week=next_week,
         week_total=round(week_total, 2),
     )
+
+
+@app.route('/admin/employees/manage')
+@login_required
+@admin_required
+def employees_manage():
+    conn = get_db_connection()
+    today_week_start, _ = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
+    employees = conn.execute('SELECT * FROM employees ORDER BY active DESC, name').fetchall()
+
+    day_labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    rows = []
+    for emp in employees:
+        schedule = resolve_employee_schedule(conn, emp['id'], today_week_start)
+        scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',')] if schedule else []
+        pay_amount = schedule['pay_amount'] if schedule else 0
+        per_day_rate = (pay_amount / len(scheduled_days)) if scheduled_days else 0
+        has_attendance = conn.execute(
+            'SELECT COUNT(*) FROM attendance WHERE employee_id = ?', (emp['id'],)
+        ).fetchone()[0] > 0
+        rows.append({
+            'id': emp['id'],
+            'name': emp['name'],
+            'active': emp['active'],
+            'scheduled_days': scheduled_days,
+            'pay_amount': pay_amount,
+            'per_day_rate': per_day_rate,
+            'has_attendance': has_attendance,
+        })
+
+    return render_template('employees_manage.html', rows=rows, day_labels=day_labels)
 
 
 # ── Promotions toggle ─────────────────────────────────────────────────────────

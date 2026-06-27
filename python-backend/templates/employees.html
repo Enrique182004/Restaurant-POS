@@ -207,7 +207,9 @@
     <a href="{{ url_for('employees_attendance') }}" class="period-tab active"
       >Asistencia</a
     >
-    <a href="/admin/employees/manage" class="period-tab">Gestionar empleados</a>
+    <a href="{{ url_for('employees_manage') }}" class="period-tab"
+      >Gestionar empleados</a
+    >
   </div>
 
   <div class="week-nav">
