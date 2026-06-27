@@ -1,0 +1,357 @@
+{% extends 'base.html' %} {% block title %}Opciones del Menú{% endblock %} {%
+block styles %}
+<style>
+  .page-wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .page-title-txt {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .alert {
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .alert-success {
+    background: rgba(43, 138, 62, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(43, 138, 62, 0.35);
+  }
+  .alert-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
+  .menu-section {
+    background: #1e1e1e;
+    border-radius: 14px;
+    border: 2px solid #2a2a2a;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .menu-section-title {
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f5f5f5;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.15s;
+  }
+  .menu-section-title:hover {
+    background: #252525;
+  }
+  .menu-section-title::-webkit-details-marker {
+    display: none;
+  }
+  .menu-section-title::after {
+    content: "›";
+    font-size: 1.3rem;
+    color: #555;
+    transition: transform 0.2s;
+    line-height: 1;
+  }
+  details[open] > .menu-section-title::after {
+    transform: rotate(90deg);
+    color: #ff9800;
+  }
+  details[open] > .menu-section-title {
+    color: #ff9800;
+  }
+  .opt-count {
+    color: #555;
+    font-weight: 500;
+    font-size: 0.82rem;
+    margin-left: 8px;
+  }
+  .menu-section-body {
+    padding: 4px 18px 16px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .opt-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 0 10px;
+    min-height: 20px;
+  }
+  .opt-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #2a2a2a;
+    border: 1px solid #3d3d3d;
+    border-radius: 20px;
+    padding: 5px 10px 5px 8px;
+    font-size: 0.88rem;
+  }
+  .opt-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .opt-name {
+    color: #e0e0e0;
+    font-weight: 500;
+  }
+  .opt-price {
+    color: #ff9800;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .opt-del-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0 0 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .opt-del-btn:hover {
+    color: #ff6b6b;
+  }
+  .opt-toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 0 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .opt-toggle-active {
+    color: #4caf50;
+  }
+  .opt-toggle-active:hover {
+    color: #888;
+  }
+  .opt-toggle-inactive {
+    color: #555;
+  }
+  .opt-toggle-inactive:hover {
+    color: #4caf50;
+  }
+  .opt-item-inactive {
+    opacity: 0.45;
+  }
+  .opt-sold-out {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    border-radius: 8px;
+    padding: 2px 6px;
+    letter-spacing: 0.03em;
+  }
+  .add-opt-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-top: 4px;
+  }
+  .opt-input {
+    padding: 8px 12px;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: #2d2d2d;
+    color: #f5f5f5;
+    transition: border-color 0.2s;
+  }
+  .opt-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .opt-input::placeholder {
+    color: #555;
+  }
+  .opt-icon-input {
+    width: 62px;
+    text-align: center;
+  }
+  .opt-name-input {
+    flex: 1;
+    min-width: 130px;
+  }
+  .opt-price-input {
+    width: 84px;
+    text-align: right;
+  }
+  .opt-add-btn {
+    padding: 8px 18px;
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .opt-add-btn:hover {
+    background: #e68900;
+  }
+  @media (max-width: 520px) {
+    .add-opt-form {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .opt-icon-input,
+    .opt-price-input {
+      width: 100%;
+    }
+    .opt-add-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="page-wrap">
+  <div class="page-header">
+    <h1 class="page-title-txt">🍽️ Opciones del Menú</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}{% endif %} {% endwith %} {% set cat_labels = { 'beverage':
+  'Bebidas', 'boneless_sauce': 'Salsas Boneless', 'extra_sauce': 'Salsas Extra
+  (Complementos)', 'rice_ingredient': 'Ingredientes Bola de Arroz',
+  'rice_sauce': 'Salsas Bola de Arroz', 'sushi_ingredient': 'Ingredientes Sushi'
+  } %} {% set cat_icons = { 'beverage': '🥤', 'boneless_sauce': '🍗',
+  'extra_sauce': '🌶️', 'rice_ingredient': '🍙', 'rice_sauce': '🔴',
+  'sushi_ingredient': '🍣' } %} {% for cat, opts in menu_opts.items() %}
+  <details class="menu-section">
+    <summary class="menu-section-title">
+      <span
+        >{{ cat_icons[cat] }} &nbsp;{{ cat_labels[cat] }}
+        <span class="opt-count">{{ opts|length }} opciones</span></span
+      >
+    </summary>
+    <div class="menu-section-body">
+      <div class="opt-list">
+        {% for opt in opts %}
+        <div
+          class="opt-item {% if not opt.active %}opt-item-inactive{% endif %}"
+        >
+          <span class="opt-icon">{{ opt.icon }}</span>
+          <span class="opt-name">{{ opt.name }}</span>
+          {% if cat == 'beverage' %}<span class="opt-price"
+            >${{ "%.0f"|format(opt.price) }}</span
+          >{% endif %} {% if not opt.active %}<span class="opt-sold-out"
+            >Agotado</span
+          >{% endif %}
+          <form
+            method="POST"
+            action="{{ url_for('toggle_menu_option', option_id=opt.id) }}"
+            style="display: inline; margin: 0"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button
+              type="submit"
+              class="opt-toggle-btn {% if opt.active %}opt-toggle-active{% else %}opt-toggle-inactive{% endif %}"
+              title="{{ 'Desactivar' if opt.active else 'Activar' }}"
+            >
+              {{ '●' if opt.active else '○' }}
+            </button>
+          </form>
+          {% if opt.active %}
+          <form
+            method="POST"
+            action="{{ url_for('delete_menu_option', option_id=opt.id) }}"
+            style="display: inline; margin: 0"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button
+              type="submit"
+              class="opt-del-btn"
+              title="Eliminar permanentemente"
+              onclick="event.preventDefault(); showConfirm('¿Eliminar {{ opt.name }}?', () => this.closest('form').submit())"
+            >
+              ✕
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %} {% if not opts %}
+        <span style="color: #555; font-size: 0.85rem; padding: 4px 0"
+          >Sin opciones — agrega una abajo</span
+        >
+        {% endif %}
+      </div>
+      <form
+        method="POST"
+        action="{{ url_for('add_menu_option') }}"
+        class="add-opt-form"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="category" value="{{ cat }}" />
+        <input
+          type="text"
+          name="icon"
+          placeholder="🍽️"
+          class="opt-input opt-icon-input"
+          maxlength="4"
+        />
+        <input
+          type="text"
+          name="name"
+          placeholder="Nombre del item"
+          class="opt-input opt-name-input"
+          required
+        />
+        {% if cat == 'beverage' %}
+        <input
+          type="number"
+          name="price"
+          placeholder="Precio $"
+          class="opt-input opt-price-input"
+          min="0"
+          step="0.5"
+          value=""
+        />
+        {% else %}
+        <input type="hidden" name="price" value="0" />
+        {% endif %}
+        <button type="submit" class="opt-add-btn">+ Agregar</button>
+      </form>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endblock %}

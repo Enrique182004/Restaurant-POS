@@ -605,7 +605,7 @@ def add_menu_option():
 
     if not name or not category:
         flash('Nombre y categoría son requeridos', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_menu_options'))
 
     conn = get_db_connection()
     existing = conn.execute(
@@ -629,7 +629,7 @@ def add_menu_option():
             )
     conn.commit()
     flash(f'"{name}" agregado al menú', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_menu_options'))
 
 @app.route('/admin/menu-options/delete/<int:option_id>', methods=['POST'])
 @login_required
@@ -641,7 +641,7 @@ def delete_menu_option(option_id):
         conn.execute('DELETE FROM menu_options WHERE id=?', (option_id,))
         conn.commit()
         flash(f'"{option["name"]}" eliminado del menú', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_menu_options'))
 
 @app.route('/admin/menu-options/toggle/<int:option_id>', methods=['POST'])
 @login_required
@@ -655,7 +655,28 @@ def toggle_menu_option(option_id):
         conn.commit()
         status = 'activado' if new_active else 'desactivado'
         flash(f'"{option["name"]}" {status}', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_menu_options'))
+
+@app.route('/admin/menu-options')
+@login_required
+@admin_required
+def manage_menu_options():
+    conn = get_db_connection()
+    categories = ['beverage', 'boneless_sauce', 'extra_sauce', 'rice_ingredient', 'rice_sauce', 'sushi_ingredient']
+    menu_opts = {}
+    for cat in categories:
+        rows = conn.execute(
+            'SELECT * FROM menu_options WHERE category=? ORDER BY active DESC, sort_order, name',
+            (cat,)
+        ).fetchall()
+        opts = [dict(r) for r in rows]
+        if cat == 'beverage':
+            for opt in opts:
+                mp = conn.execute('SELECT price FROM menu_prices WHERE key=?', (opt['name'],)).fetchone()
+                if mp:
+                    opt['price'] = mp['price']
+        menu_opts[cat] = opts
+    return render_template('menu_options.html', menu_opts=menu_opts)
 
 def get_item_price(item_type, style=None):
     """Get item price from the database (editable by admin)."""
