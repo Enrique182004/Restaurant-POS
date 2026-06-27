@@ -411,6 +411,15 @@ def compute_employee_pay(conn, employee_id, week_start, week_end):
     return total_pay, per_day_rate, days_worked, scheduled_days
 
 
+def parse_scheduled_days(form):
+    """Reads the 'days' multi-value field from a submitted form and returns
+    a sorted, deduped CSV string of valid weekday ints (0=Mon..6=Sun),
+    or '' if nothing valid was selected."""
+    raw = form.getlist('days')
+    days = sorted({int(d) for d in raw if d.isdigit() and 0 <= int(d) <= 6})
+    return ','.join(str(d) for d in days)
+
+
 # Login decorator
 def login_required(f):
     @wraps(f)
