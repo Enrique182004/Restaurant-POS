@@ -1,0 +1,382 @@
+{% extends 'base.html' %} {% block title %}Gestionar empleados{% endblock %} {%
+block styles %}
+<style>
+  .emp-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .page-title-txt {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .alert-success {
+    background: rgba(43, 138, 62, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(43, 138, 62, 0.35);
+  }
+  .alert-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
+  .period-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+  .period-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #333;
+    color: #aaa;
+    background: #1e1e1e;
+    transition: all 0.15s;
+  }
+  .period-tab:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .period-tab.active {
+    background: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
+  }
+  .section-heading {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff9800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .emp-roster-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    border: 2px solid #2a2a2a;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .emp-roster-card.inactive {
+    opacity: 0.55;
+  }
+  .emp-roster-summary {
+    padding: 16px 20px;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .emp-roster-summary::-webkit-details-marker {
+    display: none;
+  }
+  .emp-roster-name {
+    font-weight: 700;
+    color: #f5f5f5;
+    font-size: 1rem;
+  }
+  .emp-roster-meta {
+    font-size: 0.82rem;
+    color: #aaa;
+  }
+  .inactive-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ff8a80;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+  .emp-roster-body {
+    padding: 0 20px 20px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .field-label {
+    display: block;
+    font-size: 0.78rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+    margin-top: 14px;
+  }
+  .field-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .day-checks {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .day-check-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    font-size: 0.82rem;
+    color: #ccc;
+    cursor: pointer;
+  }
+  .save-hint {
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 8px;
+  }
+  .form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .save-btn {
+    padding: 10px 20px;
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .save-btn:hover {
+    background: #e68900;
+  }
+  .danger-btn {
+    padding: 10px 20px;
+    background: #4a1f1f;
+    color: #ff6b6b;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .danger-btn:hover {
+    background: #5a2f2f;
+  }
+  .add-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    border: 2px solid #2a2a2a;
+    padding: 20px 24px;
+    margin-top: 32px;
+  }
+  .add-btn {
+    width: 100%;
+    padding: 12px;
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  .add-btn:hover {
+    background: #e68900;
+  }
+  .empty-state {
+    text-align: center;
+    color: #888;
+    padding: 40px 20px;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="emp-wrap">
+  <div class="page-header">
+    <h1 class="page-title-txt">💰 Empleados</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}{% endif %} {% endwith %}
+
+  <div class="period-tabs">
+    <a href="{{ url_for('employees_attendance') }}" class="period-tab"
+      >Asistencia</a
+    >
+    <a href="{{ url_for('employees_manage') }}" class="period-tab active"
+      >Gestionar empleados</a
+    >
+  </div>
+
+  <div class="section-heading">Empleados</div>
+
+  {% if not rows %}
+  <div class="empty-state">Todavía no hay empleados. Agrega uno abajo.</div>
+  {% endif %} {% for row in rows %}
+  <details class="emp-roster-card {% if not row.active %}inactive{% endif %}">
+    <summary class="emp-roster-summary">
+      <span>
+        <span class="emp-roster-name">{{ row.name }}</span>
+        {% if not row.active %}<span class="inactive-badge">Desactivado</span>{%
+        endif %}
+      </span>
+      <span class="emp-roster-meta">
+        {% for d in row.scheduled_days %}{{ day_labels[d] }}{% if not loop.last
+        %}/{% endif %}{% endfor %} · ${{ "%.2f"|format(row.pay_amount) }}/sem ·
+        ${{ "%.2f"|format(row.per_day_rate) }}/día
+      </span>
+    </summary>
+    <div class="emp-roster-body">
+      <form
+        method="POST"
+        action="{{ url_for('update_employee', employee_id=row.id) }}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <label class="field-label">Nombre</label>
+        <input
+          type="text"
+          name="name"
+          class="field-input"
+          value="{{ row.name }}"
+          required
+          maxlength="60"
+        />
+
+        <label class="field-label">Días programados</label>
+        <div class="day-checks">
+          {% for d in range(7) %}
+          <label class="day-check-label">
+            <input
+              type="checkbox"
+              name="days"
+              value="{{ d }}"
+              {%
+              if
+              d
+              in
+              row.scheduled_days
+              %}checked{%
+              endif
+              %}
+            />
+            {{ day_labels[d] }}
+          </label>
+          {% endfor %}
+        </div>
+
+        <label class="field-label">Pago semanal ($)</label>
+        <input
+          type="number"
+          name="pay_amount"
+          class="field-input"
+          value="{{ row.pay_amount }}"
+          min="1"
+          step="0.01"
+          required
+        />
+
+        <div class="save-hint">
+          Los cambios de horario y pago aplican a partir de la próxima semana.
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="save-btn">Guardar cambios</button>
+        </div>
+      </form>
+
+      <form
+        method="POST"
+        action="{{ url_for('remove_employee', employee_id=row.id) }}"
+        class="form-actions"
+        data-confirm="{% if row.has_attendance %}¿Desactivar a {{ row.name }}?{% else %}¿Eliminar a {{ row.name }}?{% endif %}"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="danger-btn">
+          {% if row.has_attendance %}Desactivar{% else %}Eliminar{% endif %}
+        </button>
+      </form>
+    </div>
+  </details>
+  {% endfor %}
+
+  <div class="add-card">
+    <div class="section-heading">Agregar empleado</div>
+    <form method="POST" action="{{ url_for('add_employee') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label class="field-label">Nombre</label>
+      <input
+        type="text"
+        name="name"
+        class="field-input"
+        placeholder="Nombre del empleado"
+        required
+        maxlength="60"
+      />
+
+      <label class="field-label">Días programados</label>
+      <div class="day-checks">
+        {% for d in range(7) %}
+        <label class="day-check-label">
+          <input type="checkbox" name="days" value="{{ d }}" />
+          {{ day_labels[d] }}
+        </label>
+        {% endfor %}
+      </div>
+
+      <label class="field-label">Pago semanal ($)</label>
+      <input
+        type="number"
+        name="pay_amount"
+        class="field-input"
+        placeholder="1000"
+        min="1"
+        step="0.01"
+        required
+      />
+
+      <button type="submit" class="add-btn">+ Agregar empleado</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
