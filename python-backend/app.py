@@ -380,6 +380,17 @@ def get_week_bounds(reference_date):
     return monday.strftime('%Y-%m-%d'), sunday.strftime('%Y-%m-%d')
 
 
+def resolve_employee_schedule(conn, employee_id, week_start):
+    """Returns the employee_schedules row in effect for the week starting on
+    week_start ('YYYY-MM-DD', a Monday), or None if no version applies yet."""
+    return conn.execute(
+        '''SELECT * FROM employee_schedules
+           WHERE employee_id = ? AND effective_from <= ?
+           ORDER BY effective_from DESC LIMIT 1''',
+        (employee_id, week_start)
+    ).fetchone()
+
+
 # Login decorator
 def login_required(f):
     @wraps(f)
