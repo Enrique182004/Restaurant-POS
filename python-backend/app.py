@@ -1712,7 +1712,16 @@ def update_prices():
             pass
     conn.commit()
     flash('Precios actualizados correctamente.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_prices'))
+
+
+@app.route('/admin/prices')
+@login_required
+@admin_required
+def manage_prices():
+    conn = get_db_connection()
+    prices = conn.execute('SELECT * FROM menu_prices ORDER BY label').fetchall()
+    return render_template('prices.html', prices=prices)
 
 
 @app.route('/admin/reports')
