@@ -2139,6 +2139,43 @@ def delete_user(user_id):
     return redirect(url_for('manage_users'))
 
 
+# ── Empleados y asistencia ─────────────────────────────────────────────────────
+@app.route('/admin/employees/add', methods=['POST'])
+@login_required
+@admin_required
+def add_employee():
+    name = request.form.get('name', '').strip()
+    pay_amount_raw = request.form.get('pay_amount', '').strip()
+    days_csv = parse_scheduled_days(request.form)
+
+    if not name:
+        flash('El nombre es requerido.', 'error')
+        return redirect('/admin/employees/manage')
+    if not days_csv:
+        flash('Selecciona al menos un día de la semana.', 'error')
+        return redirect('/admin/employees/manage')
+    try:
+        pay_amount = float(pay_amount_raw)
+    except ValueError:
+        pay_amount = 0
+    if pay_amount <= 0:
+        flash('El pago semanal debe ser mayor a 0.', 'error')
+        return redirect('/admin/employees/manage')
+
+    conn = get_db_connection()
+    cur = conn.execute('INSERT INTO employees (name) VALUES (?)', (name,))
+    employee_id = cur.lastrowid
+    week_start, _ = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
+    conn.execute(
+        'INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) '
+        'VALUES (?, ?, ?, ?)',
+        (employee_id, week_start, days_csv, pay_amount)
+    )
+    conn.commit()
+    flash(f'Empleado "{name}" agregado.', 'success')
+    return redirect('/admin/employees/manage')
+
+
 # ── Promotions toggle ─────────────────────────────────────────────────────────
 @app.route('/admin/promotions/add', methods=['POST'])
 @login_required
