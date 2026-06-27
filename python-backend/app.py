@@ -416,7 +416,7 @@ def parse_scheduled_days(form):
     a sorted, deduped CSV string of valid weekday ints (0=Mon..6=Sun),
     or '' if nothing valid was selected."""
     raw = form.getlist('days')
-    days = sorted({int(d) for d in raw if d.isdigit() and 0 <= int(d) <= 6})
+    days = sorted({int(d) for d in raw if d.isascii() and d.isdigit() and 0 <= int(d) <= 6})
     return ','.join(str(d) for d in days)
 
 

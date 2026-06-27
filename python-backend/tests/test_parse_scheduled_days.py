@@ -14,3 +14,8 @@ def test_parse_scheduled_days_ignores_invalid_values(app_module):
 def test_parse_scheduled_days_empty_when_nothing_selected(app_module):
     form = MultiDict([])
     assert app_module.parse_scheduled_days(form) == ""
+
+
+def test_parse_scheduled_days_ignores_non_ascii_digit_characters(app_module):
+    form = MultiDict([("days", "²"), ("days", "1")])  # superscript two: isdigit()==True but int() raises ValueError
+    assert app_module.parse_scheduled_days(form) == "1"
