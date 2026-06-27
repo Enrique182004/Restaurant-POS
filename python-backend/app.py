@@ -529,7 +529,6 @@ def home():
 @admin_required
 def admin_dashboard():
     conn = get_db_connection()
-    prices = conn.execute('SELECT * FROM menu_prices ORDER BY label').fetchall()
     today = datetime.now().strftime('%Y-%m-%d')
     today_total = conn.execute(
         "SELECT COALESCE(SUM(total), 0) FROM orders WHERE date LIKE ? AND status != 'voided'",
@@ -539,8 +538,6 @@ def admin_dashboard():
         "SELECT COUNT(*) FROM orders WHERE date LIKE ? AND status != 'voided'",
         (today + '%',)
     ).fetchone()[0]
-    # Promotions
-    promotions = [dict(p) for p in conn.execute('SELECT * FROM promotions ORDER BY name').fetchall()]
 
     # Low-stock count from Java service (best-effort)
     low_stock_count = 0
@@ -550,22 +547,6 @@ def admin_dashboard():
             low_stock_count = len(inv_resp.json())
     except Exception:
         pass
-
-    # Menu options grouped by category — include inactive so admin can re-enable them
-    categories = ['beverage', 'boneless_sauce', 'extra_sauce', 'rice_ingredient', 'rice_sauce', 'sushi_ingredient']
-    menu_opts = {}
-    for cat in categories:
-        rows = conn.execute(
-            'SELECT * FROM menu_options WHERE category=? ORDER BY active DESC, sort_order, name',
-            (cat,)
-        ).fetchall()
-        opts = [dict(r) for r in rows]
-        if cat == 'beverage':
-            for opt in opts:
-                mp = conn.execute('SELECT price FROM menu_prices WHERE key=?', (opt['name'],)).fetchone()
-                if mp:
-                    opt['price'] = mp['price']
-        menu_opts[cat] = opts
 
     pending_prints = conn.execute(
         "SELECT COUNT(*) FROM print_jobs WHERE status = 'pending'"
@@ -581,11 +562,8 @@ def admin_dashboard():
     ).fetchone()[0]
 
     return render_template('admin_dashboard.html',
-                           prices=prices,
                            today_total=today_total,
                            today_orders=today_orders,
-                           menu_opts=menu_opts,
-                           promotions=promotions,
                            low_stock_count=low_stock_count,
                            pending_prints=pending_prints,
                            printer_name=printer_name,
