@@ -1,0 +1,240 @@
+{% extends 'base.html' %} {% block title %}Pago en Efectivo{% endblock %} {%
+block styles %}
+<style>
+  /* Additional styles specific to the cash payment page */
+  .cash-payment-container {
+    max-width: 650px;
+    margin: 0 auto;
+  }
+
+  .cash-input-section {
+    background-color: white;
+    border-radius: 16px;
+    padding: 25px;
+    margin: 30px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .cash-input-container {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-prefix {
+    font-size: 2rem;
+    font-weight: 700;
+    padding: 0 20px;
+    color: #666;
+  }
+
+  .cash-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 20px 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: left;
+  }
+
+  .cash-input:focus {
+    outline: none;
+  }
+
+  .quick-amounts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 25px;
+    justify-content: center;
+  }
+
+  .quick-amount-btn {
+    background-color: #e9ecef;
+    border: 2px solid #dee2e6;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+  }
+
+  .quick-amount-btn:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  }
+
+  .quick-amount-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+  }
+
+  .change-display {
+    background-color: #ebfbee;
+    border-radius: 16px;
+    padding: 25px;
+    margin: 30px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px dashed #40c057;
+  }
+
+  .change-label {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2b8a3e;
+    margin-bottom: 10px;
+  }
+
+  .change-amount {
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #2b8a3e;
+  }
+
+  .print-button {
+    display: none;
+    background-color: #9775fa;
+    color: white;
+    padding: 20px 0;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-align: center;
+    margin: 30px 0;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(151, 117, 250, 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .print-button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 6px rgba(151, 117, 250, 0.3);
+  }
+
+  .print-icon {
+    margin-right: 10px;
+  }
+
+  /* Hide browser number input controls */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="container cash-payment-container">
+  <h1 class="page-title">Pago en Efectivo</h1>
+
+  <div class="payment-summary">
+    <div class="summary-icon">💵</div>
+    <div class="summary-details">
+      <div class="summary-label">Total a Pagar:</div>
+      <div class="summary-total" id="total-amount">
+        ${{ "%.2f"|format(total_price) }}
+      </div>
+    </div>
+  </div>
+
+  <div class="cash-input-section">
+    <h2 class="section-title">¿Cuánto pagó el cliente?</h2>
+
+    <div class="cash-input-container">
+      <div class="input-prefix">$</div>
+      <input
+        type="number"
+        id="amount-given"
+        class="cash-input"
+        min="{{ total_price }}"
+        step="1"
+        placeholder="Ingresa el monto"
+        autofocus
+      />
+    </div>
+
+    <div class="quick-amounts">
+      {% set quick_amounts = [ total_price|round|int, (total_price|round|int +
+      10 - total_price|round|int % 10), (total_price|round|int + 50 -
+      total_price|round|int % 50), (total_price|round|int + 100 -
+      total_price|round|int % 100) ] %} {% for amount in quick_amounts %} {% if
+      loop.index <= 4 and amount >= total_price %}
+      <button type="button" class="quick-amount-btn" data-amount="{{ amount }}">
+        ${{ amount }}
+      </button>
+      {% endif %} {% endfor %}
+    </div>
+  </div>
+
+  <div class="change-display">
+    <div class="change-label">Cambio a entregar:</div>
+    <div class="change-amount" id="change-due">$0.00</div>
+  </div>
+
+  <a
+    href="{{ url_for('ticket') }}"
+    class="print-button"
+    id="print-ticket"
+    style="display: none"
+  >
+    <span class="print-icon">🖨️</span> Imprimir Ticket
+  </a>
+
+  <div class="action-buttons">
+    <a href="{{ url_for('payment') }}" class="action-button cancel-button">
+      <span class="button-icon">←</span> Regresar
+    </a>
+  </div>
+</div>
+<script>
+  (function () {
+    var totalPrice = {{ total_price }};
+    var amountInput = document.getElementById("amount-given");
+    var changeDue = document.getElementById("change-due");
+    var printBtn = document.getElementById("print-ticket");
+
+    document.querySelectorAll(".quick-amount-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        amountInput.value = this.getAttribute("data-amount");
+        calculate();
+      });
+    });
+
+    amountInput.addEventListener("input", calculate);
+
+    function calculate() {
+      var paid = parseFloat(amountInput.value);
+      if (isNaN(paid) || paid < totalPrice) {
+        changeDue.textContent = "$0.00";
+        printBtn.style.display = "none";
+        if (!isNaN(paid) && paid < totalPrice) {
+          mostrarToast("El monto pagado es menor al total.", "error");
+        }
+        return;
+      }
+      var change = paid - totalPrice;
+      changeDue.textContent = "$" + change.toFixed(2);
+      printBtn.style.display = "block";
+      printBtn.href =
+        "/ticket?payment_method=cash&amount_paid=" + paid.toFixed(2);
+    }
+  })();
+</script>
+{% endblock %}

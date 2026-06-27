@@ -1,0 +1,474 @@
+{% extends 'base.html' %} {% block title %}Menú Principal{% endblock %} {% block
+styles %}
+<style>
+  .customer-name-section {
+    background-color: #1e1e1e;
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 2px solid #2a2a2a;
+    transition: all 0.3s ease;
+  }
+  .customer-name-section.new-order {
+    border: 2px solid #ff9800;
+    background-color: #2a1f00;
+    animation: newOrderPulse 2s ease-in-out infinite;
+  }
+  @keyframes newOrderPulse {
+    0%,
+    100% {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(255, 152, 0, 0.3);
+    }
+  }
+  .section-title {
+    font-size: 1.4rem;
+    color: #ff9800;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+  }
+  .section-icon {
+    margin-right: 12px;
+    font-size: 1.6rem;
+  }
+  .customer-input-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+    align-items: stretch;
+  }
+  .customer-name-input {
+    flex: 1;
+    padding: 15px 20px;
+    border-radius: 12px;
+    border: 2px solid #3d3d3d;
+    background-color: #2d2d2d;
+    color: #f5f5f5;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: border-color 0.2s ease;
+    width: 100%;
+  }
+  .customer-name-input:focus {
+    outline: none;
+    border-color: #ff9800;
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+  }
+  .customer-name-input::placeholder {
+    color: #888;
+  }
+  .customer-status {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+  }
+  .status-ready {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+  .status-required {
+    background-color: rgba(255, 68, 68, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(255, 68, 68, 0.3);
+  }
+  .status-icon {
+    margin-right: 10px;
+    font-size: 1.1rem;
+  }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+  }
+  .menu-item-card {
+    background-color: #1e1e1e;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    text-align: center;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    cursor: pointer;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid transparent;
+  }
+  .menu-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border-color: #ff9800;
+  }
+  .menu-item-card:active {
+    transform: scale(0.97);
+  }
+  .menu-item-icon {
+    font-size: 4rem;
+    margin-bottom: 15px;
+  }
+  .menu-item-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #f5f5f5;
+  }
+  .menu-item-description {
+    font-size: 1rem;
+    color: #888;
+    font-weight: 500;
+  }
+  .cart-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+  }
+  .cart-button {
+    display: flex;
+    align-items: center;
+    background-color: #ff9800;
+    color: #121212;
+    padding: 15px 25px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    text-decoration: none;
+    transition: transform 0.2s ease;
+    font-weight: bold;
+  }
+  .cart-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
+  }
+  .cart-button:active {
+    transform: scale(0.97);
+  }
+  .cart-icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+  .cart-label {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .cart-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #3498db;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  .new-order-index-btn {
+    width: 100%;
+    padding: 10px;
+    background: none;
+    border: 1px solid #4a1f1f;
+    color: #ff6b6b;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .new-order-index-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+  }
+  @media (max-width: 768px) {
+    .customer-input-container {
+      flex-direction: column;
+    }
+    .menu-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+  }
+  @media (max-width: 480px) {
+    .customer-name-section {
+      padding: 20px;
+    }
+    .section-title {
+      font-size: 1.2rem;
+    }
+    .menu-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    .menu-item-card {
+      height: 180px;
+    }
+    .menu-item-icon {
+      font-size: 3rem;
+    }
+    .menu-item-name {
+      font-size: 1.3rem;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="container">
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    "
+  >
+    <h1 class="page-title" style="margin: 0">Menú Principal</h1>
+    <form method="POST" action="{{ url_for('logout') }}" style="margin: 0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button
+        type="submit"
+        style="
+          color: #aaa;
+          font-size: 0.85rem;
+          border: 1px solid #333;
+          padding: 7px 14px;
+          border-radius: 10px;
+          background: #1e1e1e;
+          white-space: nowrap;
+          transition: all 0.2s;
+          cursor: pointer;
+        "
+        onmouseover="
+          this.style.borderColor = '#FF9800';
+          this.style.color = '#FF9800';
+        "
+        onmouseout="
+          this.style.borderColor = '#333';
+          this.style.color = '#aaa';
+        "
+      >
+        Cerrar sesión
+      </button>
+    </form>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div class="alert alert-{{ category }}">
+    <div class="alert-content">{{ message }}</div>
+  </div>
+  {% endfor %} {% endif %} {% endwith %}
+
+  <div
+    class="customer-name-section {% if not session.get('customer_name') %}new-order{% endif %}"
+  >
+    <h2 class="section-title">
+      <span class="section-icon">👤</span>
+      {% if session.get('customer_name') %} Nombre del Cliente {% else %} Nueva
+      Orden - Nombre del Cliente {% endif %}
+    </h2>
+    <div class="customer-input-container">
+      <input
+        type="text"
+        id="customer-name"
+        class="customer-name-input"
+        placeholder="Ingresa el nombre del cliente..."
+        value="{{ session.get('customer_name', '') }}"
+        maxlength="50"
+      />
+    </div>
+    <div class="customer-status" id="customer-status">
+      {% if session.get('customer_name') %}
+      <span class="status-ready">
+        <span class="status-icon">✓</span>
+        Listo para tomar orden
+      </span>
+      {% else %}
+      <span class="status-required">
+        <span class="status-icon">⚠️</span>
+        Nombre del cliente requerido
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="menu-grid">
+    <div class="menu-item-card" data-url="{{ url_for('customize_rice_ball') }}">
+      <div class="menu-item-icon">🍙</div>
+      <div class="menu-item-name">Bola de Arroz</div>
+    </div>
+    <div class="menu-item-card" data-url="{{ url_for('customize_sushi') }}">
+      <div class="menu-item-icon">🍣</div>
+      <div class="menu-item-name">Sushi</div>
+    </div>
+    <div class="menu-item-card" data-url="{{ url_for('customize_boneless') }}">
+      <div class="menu-item-icon">🍗</div>
+      <div class="menu-item-name">Boneless</div>
+    </div>
+    <div class="menu-item-card" data-url="{{ url_for('customize_beverages') }}">
+      <div class="menu-item-icon">🥤</div>
+      <div class="menu-item-name">Bebidas</div>
+    </div>
+    <div
+      class="menu-item-card"
+      data-url="{{ url_for('customize_complementos') }}"
+    >
+      <div class="menu-item-icon">🥄</div>
+      <div class="menu-item-name">Complementos</div>
+      <div class="menu-item-description">Salsas Extra</div>
+    </div>
+  </div>
+
+  {% if session.get('customer_name') or session.get('cart') %}
+  <form
+    method="POST"
+    action="{{ url_for('new_order') }}"
+    style="margin-bottom: 16px"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <button
+      type="submit"
+      class="new-order-index-btn"
+      onclick="
+        event.preventDefault();
+        showConfirm('¿Cancelar la orden actual y comenzar una nueva?', () =>
+          this.closest('form').submit(),
+        );
+      "
+    >
+      🗑️ Nueva Orden
+    </button>
+  </form>
+  {% endif %}
+
+  <div class="cart-container">
+    <div class="cart-indicator">
+      {% if session.get('cart')|length > 0 %}
+      <div class="cart-badge">{{ session.get('cart')|length }}</div>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('view_cart') }}" class="cart-button">
+      <div class="cart-icon">🛒</div>
+      <div class="cart-label">
+        Ver Orden {% if session.get('cart') %}
+        <span
+          style="
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0.85;
+            margin-left: 6px;
+          "
+        >
+          ${{ "%.2f"|format(session.get('cart')|sum(attribute='price')) }}
+        </span>
+        {% endif %}
+      </div>
+    </a>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const menuCards = document.querySelectorAll(".menu-item-card[data-url]");
+    menuCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        const url = this.getAttribute("data-url");
+        if (url) window.location.href = url;
+      });
+    });
+
+    // Cart button requires a name before proceeding
+    const cartBtn = document.querySelector(".cart-button");
+    if (cartBtn) {
+      cartBtn.addEventListener("click", function (e) {
+        const customerName = document
+          .getElementById("customer-name")
+          .value.trim();
+        if (!customerName) {
+          e.preventDefault();
+          mostrarToast(
+            "Ingresa el nombre del cliente antes de ver la orden.",
+            "error",
+          );
+          const nameInput = document.getElementById("customer-name");
+          nameInput.focus();
+          const customerSection = document.querySelector(
+            ".customer-name-section",
+          );
+          customerSection.style.border = "3px solid #FF4444";
+          customerSection.style.transform = "scale(1.02)";
+          setTimeout(() => {
+            customerSection.style.border = "";
+            customerSection.style.transform = "scale(1)";
+          }, 2500);
+        }
+      });
+    }
+
+    const customerNameInput = document.getElementById("customer-name");
+    const customerStatus = document.getElementById("customer-status");
+    let saveTimeout;
+
+    customerNameInput.addEventListener("input", function () {
+      const customerName = this.value.trim();
+      clearTimeout(saveTimeout);
+      const customerSection = document.querySelector(".customer-name-section");
+      const sectionTitle = document.querySelector(".section-title");
+      if (customerName) {
+        customerStatus.innerHTML =
+          '<span class="status-ready"><span class="status-icon">✓</span>Listo para tomar orden</span>';
+        customerSection.classList.remove("new-order");
+        sectionTitle.innerHTML =
+          '<span class="section-icon">👤</span>Nombre del Cliente';
+        saveTimeout = setTimeout(() => {
+          saveCustomerName(customerName);
+        }, 500);
+      } else {
+        customerStatus.innerHTML =
+          '<span class="status-required"><span class="status-icon">⚠️</span>Nombre del cliente requerido</span>';
+        customerSection.classList.add("new-order");
+        sectionTitle.innerHTML =
+          '<span class="section-icon">👤</span>Nueva Orden - Nombre del Cliente';
+      }
+    });
+
+    customerNameInput.addEventListener("blur", function () {
+      const customerName = this.value.trim();
+      if (customerName) {
+        clearTimeout(saveTimeout);
+        saveCustomerName(customerName);
+      }
+    });
+
+    function saveCustomerName(customerName) {
+      fetch("/save_customer_name", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')
+            .content,
+        },
+        body: JSON.stringify({ customer_name: customerName }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.success)
+            console.error("Error saving customer name:", data.message);
+        })
+        .catch((error) => {
+          console.error("Error saving customer name:", error);
+        });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <link rel="icon" href="/favicon.ico" type="image/jpeg" />
+    <title>{% block title %}Ebi Ball POS{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/tablet.css" />
+    {% block styles %}{% endblock %}
+    <script src="/static/js/tablet.js" defer></script>
+    {% block head_scripts %}{% endblock %}
+  </head>
+  <body>
+    {% block body %}{% endblock %}
+
+    <!-- Modal de confirmación personalizado -->
+    <div
+      id="custom-confirm-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.7);
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      "
+    >
+      <div
+        style="
+          background: #1e1e2e;
+          border: 1px solid #333;
+          border-radius: 16px;
+          padding: 32px 28px 24px;
+          max-width: 380px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+          text-align: center;
+          transform: scale(0.95);
+          transition: transform 0.2s ease;
+        "
+      >
+        <div
+          style="
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 152, 0, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 22px;
+          "
+        >
+          ⚠️
+        </div>
+        <p
+          id="custom-confirm-msg"
+          style="
+            color: #e0e0e0;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin: 0 0 24px;
+          "
+        ></p>
+        <div style="display: flex; gap: 12px; justify-content: center">
+          <button
+            id="custom-confirm-cancel"
+            style="
+              flex: 1;
+              padding: 10px 16px;
+              border-radius: 10px;
+              border: 1px solid #444;
+              background: transparent;
+              color: #aaa;
+              font-size: 0.95rem;
+              cursor: pointer;
+              transition: all 0.15s;
+            "
+          >
+            Cancelar
+          </button>
+          <button
+            id="custom-confirm-ok"
+            style="
+              flex: 1;
+              padding: 10px 16px;
+              border-radius: 10px;
+              border: none;
+              background: #e53935;
+              color: #fff;
+              font-size: 0.95rem;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.15s;
+            "
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+    <style>
+      #custom-confirm-modal.confirm-visible > div {
+        transform: scale(1);
+      }
+      #custom-confirm-cancel:hover {
+        background: #2a2a3e;
+        color: #fff;
+      }
+      #custom-confirm-ok:hover {
+        background: #c62828;
+      }
+    </style>
+  </body>
+</html>

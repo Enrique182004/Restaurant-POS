@@ -1,0 +1,104 @@
+{
+  "name": "ebi-ball-pos",
+  "version": "1.0.0",
+  "description": "Ebi Ball — Sistema de Punto de Venta",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win --x64",
+    "build-server": "bash scripts/build-server.sh",
+    "build-server-win": "scripts\\build-server.bat",
+    "build-full-mac": "bash scripts/build-server.sh && electron-builder --mac",
+    "build-full-win": "scripts\\build-server.bat && electron-builder --win --x64"
+  },
+  "author": "Enrique Calleros",
+  "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.ebiball.pos",
+    "productName": "Ebi Ball POS",
+    "icon": "assets/icon.png",
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.business",
+      "icon": "assets/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "portable": {
+      "artifactName": "EbiBall-POS-Portable.exe"
+    },
+    "extraResources": [
+      {
+        "from": "python-backend",
+        "to": "python-backend",
+        "filter": [
+          "**/*",
+          "!venv/**/*",
+          "!__pycache__/**/*",
+          "!*.pyc",
+          "!.secret_key"
+        ]
+      },
+      {
+        "from": "python-backend/dist/ebiball-server",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!.gitkeep"
+        ]
+      },
+      {
+        "from": "python-backend/dist/print-bridge",
+        "to": "print-bridge",
+        "filter": [
+          "**/*",
+          "!.gitkeep"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "GITHUB_USERNAME",
+      "repo": "ebi-ball-pos"
+    },
+    "files": [
+      "main.js",
+      "loading.html",
+      "package.json",
+      "assets/**/*"
+    ]
+  }
+}
