@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  EP_DRAFT: false
+
 jobs:
   build-win:
     runs-on: windows-latest
