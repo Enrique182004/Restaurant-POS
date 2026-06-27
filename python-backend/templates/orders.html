@@ -1,0 +1,503 @@
+{% extends 'base.html' %} {% block title %}Historial de Órdenes{% endblock %} {%
+block styles %}
+<style>
+  .orders-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .back-link {
+    color: #555;
+    text-decoration: none;
+    font-size: 0.95rem;
+  }
+  h1 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+    margin: 0;
+  }
+  .daily-summary {
+    background: #f0f4ff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+  }
+  .daily-summary h2 {
+    font-size: 1rem;
+    color: #555;
+    margin: 0 0 10px;
+  }
+  .daily-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.95rem;
+  }
+  .daily-row strong {
+    color: #2c3e50;
+  }
+  .order-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .order-card.voided {
+    opacity: 0.5;
+  }
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+  }
+  .order-id {
+    font-weight: 700;
+    color: #e74c3c;
+    font-size: 1rem;
+  }
+  .order-meta {
+    font-size: 0.85rem;
+    color: #666;
+  }
+  .order-total {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #2c3e50;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .badge-cash {
+    background: #d3f9d8;
+    color: #2b8a3e;
+  }
+  .badge-card {
+    background: #dbe4ff;
+    color: #3b5bdb;
+  }
+  .badge-voided {
+    background: #ffe3e3;
+    color: #c92a2a;
+  }
+  .order-items {
+    padding: 12px 18px;
+  }
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed #f0f0f0;
+  }
+  .item-row:last-child {
+    border-bottom: none;
+  }
+  .item-name {
+    color: #333;
+  }
+  .item-price {
+    color: #555;
+  }
+  .order-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 18px;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+  }
+  .void-btn {
+    background: none;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .void-btn:hover {
+    background: #ffe3e3;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #aaa;
+    font-size: 1.1rem;
+  }
+  .filtros-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    background: #1e1e1e;
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .filtro-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    background: #2d2d2d;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+  }
+  .filtro-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .filtro-select {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    background: #2d2d2d;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .filtro-select:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .filtro-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    background: #ff9800;
+    color: #121212;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  .filtro-limpiar {
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    background: none;
+    color: #aaa;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+  }
+  .resultados-label {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 16px;
+  }
+  .delete-btn {
+    background: none;
+    border: 1px solid #c0392b;
+    color: #c0392b;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .delete-btn:hover {
+    background: #ffe3e3;
+  }
+  .bulk-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .btn-danger {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #c0392b;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .btn-danger:hover {
+    background: #a93226;
+  }
+  .btn-danger-outline {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #c0392b;
+    background: none;
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .btn-danger-outline:hover {
+    background: #ffe3e3;
+  }
+  .order-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #c0392b;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="orders-container">
+  <div class="page-header">
+    <h1>Historial de Órdenes</h1>
+    <div style="display: flex; gap: 10px; align-items: center">
+      <a
+        href="{{ url_for('export_orders_csv', q=q, fecha=fecha, estado=estado) }}"
+        style="
+          padding: 8px 16px;
+          background: #2d2d2d;
+          color: #ff9800;
+          border: 1px solid #ff9800;
+          border-radius: 8px;
+          text-decoration: none;
+          font-size: 0.9rem;
+          font-weight: 600;
+        "
+      >
+        ⬇ Exportar CSV
+      </a>
+      <a href="{{ url_for('admin_dashboard') }}" class="back-link"
+        >← Volver al panel</a
+      >
+    </div>
+  </div>
+
+  <form
+    class="filtros-form"
+    method="GET"
+    action="{{ url_for('order_history') }}"
+  >
+    <input
+      type="text"
+      name="q"
+      class="filtro-input"
+      placeholder="Buscar por ID o cliente..."
+      value="{{ q }}"
+    />
+    <input
+      type="date"
+      name="fecha"
+      class="filtro-input"
+      value="{{ fecha }}"
+      style="max-width: 180px"
+    />
+    {% set sel_todas = not estado %} {% set sel_activas = estado == 'activas' %}
+    {% set sel_anuladas = estado == 'anuladas' %}
+    <select name="estado" class="filtro-select">
+      <option value="" {% if sel_todas %}selected{% endif %}>Todas</option>
+      <option value="activas" {% if sel_activas %}selected{% endif %}>
+        Activas
+      </option>
+      <option value="anuladas" {% if sel_anuladas %}selected{% endif %}>
+        Anuladas
+      </option>
+    </select>
+    <button type="submit" class="filtro-btn">🔍 Buscar</button>
+    {% if q or fecha or estado %}
+    <a href="{{ url_for('order_history') }}" class="filtro-limpiar"
+      >✕ Limpiar</a
+    >
+    {% endif %}
+  </form>
+
+  {% if q or fecha or estado %}
+  <div class="resultados-label">
+    {{ orders|length }} resultado{% if orders|length != 1 %}s{% endif %}
+    encontrado{% if orders|length != 1 %}s{% endif %}
+  </div>
+  {% endif %} {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %} {% for category, message in messages %}
+  <div class="alert alert-{{ category }}">
+    <div class="alert-content">{{ message }}</div>
+  </div>
+  {% endfor %} {% endif %} {% endwith %} {% if daily_totals %}
+  <div class="daily-summary">
+    <h2>Ventas por día</h2>
+    {% for day, total in daily_totals.items() %}
+    <div class="daily-row">
+      <span>{{ day }}</span>
+      <strong>${{ "%.2f"|format(total) }}</strong>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %} {% if orders %}
+
+  <!-- Bulk actions bar (standalone — no wrapping form to avoid nesting) -->
+  <div class="bulk-actions">
+    <label
+      style="
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #888;
+        font-size: 0.9rem;
+        cursor: pointer;
+      "
+    >
+      <input type="checkbox" id="select-all" class="order-checkbox" />
+      Seleccionar todo
+    </label>
+    <button type="button" class="btn-danger-outline" onclick="submitSelected()">
+      🗑 Eliminar seleccionadas
+    </button>
+    <form
+      method="POST"
+      action="{{ url_for('delete_orders_all') }}"
+      style="margin: 0"
+      data-confirm="¿Eliminar TODAS las órdenes visibles? Esta acción es permanente y no se puede deshacer."
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="q" value="{{ q }}" />
+      <input type="hidden" name="fecha" value="{{ fecha }}" />
+      <input type="hidden" name="estado" value="{{ estado }}" />
+      <button type="submit" class="btn-danger">
+        🗑 Eliminar todas ({{ orders|length }})
+      </button>
+    </form>
+  </div>
+
+  {% for entry in orders %} {% set o = entry.order %}
+  <div class="order-card {% if o.status == 'voided' %}voided{% endif %}">
+    <div class="order-header">
+      <div style="display: flex; align-items: center">
+        <input
+          type="checkbox"
+          data-order-id="{{ o.id }}"
+          class="order-checkbox order-checkbox-item"
+        />
+        <span class="order-id">#{{ o.id }}</span>
+        <span class="order-meta">
+          · {{ o.date }} · {{ o.customer_name or 'Cliente' }}</span
+        >
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        {% if o.status == 'voided' %}
+        <span class="badge badge-voided">Anulada</span>
+        {% elif o.payment_method == 'cash' %}
+        <span class="badge badge-cash">Efectivo</span>
+        {% else %}
+        <span class="badge badge-card">Tarjeta</span>
+        {% endif %}
+        <span class="order-total">${{ "%.2f"|format(o.total) }}</span>
+      </div>
+    </div>
+
+    <div class="order-items">
+      {% for item in entry['items'] %}
+      <div class="item-row">
+        <span class="item-name"
+          >{{ item.name }} x{{ item.get('quantity', 1) }}</span
+        >
+        <span class="item-price">${{ "%.2f"|format(item.price) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="order-footer" style="gap: 8px">
+      <form
+        method="POST"
+        action="{{ url_for('reprint_ticket', order_id=o.id) }}"
+        style="margin: 0"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button
+          type="submit"
+          class="void-btn"
+          style="border-color: #ff9800; color: #ff9800"
+          title="Reenviar ticket a la impresora"
+        >
+          🖨 Reimprimir
+        </button>
+      </form>
+      {% if o.status != 'voided' %}
+      <form
+        method="POST"
+        action="{{ url_for('void_order', order_id=o.id) }}"
+        data-confirm="¿Anular la orden #{{ o.id }}? Esta acción no se puede deshacer."
+        style="margin: 0"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="void-btn">Anular orden</button>
+      </form>
+      {% endif %}
+      <form
+        method="POST"
+        action="{{ url_for('delete_order', order_id=o.id) }}"
+        data-confirm="¿Eliminar permanentemente la orden #{{ o.id }}? Esta acción no se puede deshacer."
+        style="margin: 0"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="delete-btn">🗑 Eliminar</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+  <script>
+    document
+      .getElementById("select-all")
+      .addEventListener("change", function () {
+        document.querySelectorAll(".order-checkbox-item").forEach(function (
+          cb,
+        ) {
+          cb.checked = this.checked;
+        }, this);
+      });
+
+    function submitSelected() {
+      var checked = document.querySelectorAll(".order-checkbox-item:checked");
+      if (checked.length === 0) {
+        alert("Selecciona al menos una orden.");
+        return;
+      }
+      showConfirm(
+        "¿Eliminar las órdenes seleccionadas? Esta acción es permanente.",
+        function () {
+          _submitSelectedOrders(checked);
+        },
+      );
+      return;
+    }
+    function _submitSelectedOrders(checked) {
+      var form = document.createElement("form");
+      form.method = "POST";
+      form.action = "{{ url_for('delete_orders_selected') }}";
+      var csrf = document.createElement("input");
+      csrf.type = "hidden";
+      csrf.name = "csrf_token";
+      csrf.value = "{{ csrf_token() }}";
+      form.appendChild(csrf);
+      checked.forEach(function (cb) {
+        var inp = document.createElement("input");
+        inp.type = "hidden";
+        inp.name = "order_ids";
+        inp.value = cb.dataset.orderId;
+        form.appendChild(inp);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    }
+  </script>
+
+  {% else %}
+  <div class="empty-state">No hay órdenes registradas aún.</div>
+  {% endif %}
+</div>
+{% endblock %}

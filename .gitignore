@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Flask / app secrets
+.secret_key
+*.db
+*.sqlite
+*.sqlite3
+
+# Receipt files (generated at runtime)
+receipts/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Node / Electron
+node_modules/
+dist/
+out/
+
+# Java build output
+*.jar
+target/
+*.class
+
+# Environment variables
+.env
+.env.*
+bundled-packages/

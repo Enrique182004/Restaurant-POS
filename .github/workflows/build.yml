@@ -1,0 +1,73 @@
+name: Build y Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias Electron
+        run: npm install
+
+      - name: Instalar Python y dependencias
+        run: |
+          pip3 install -r python-backend/requirements.txt
+          pip3 install pyinstaller
+
+      - name: Construir servidor Flask (PyInstaller)
+        run: bash scripts/build-server.sh
+
+      - name: Construir app macOS
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build-mac
+
+      - name: Subir release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias Electron
+        run: npm install
+
+      - name: Instalar Python y dependencias
+        run: |
+          pip install -r python-backend/requirements.txt
+          pip install pyinstaller
+
+      - name: Construir servidor Flask (PyInstaller)
+        run: scripts\build-server.bat
+
+      - name: Construir app Windows
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build-win
+
+      - name: Subir release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

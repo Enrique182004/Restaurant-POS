@@ -1,0 +1,350 @@
+{% extends 'base.html' %} {% block title %}Gestión de Usuarios{% endblock %} {%
+block styles %}
+<style>
+  .users-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .page-title-txt {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .alert-success {
+    background: rgba(43, 138, 62, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(43, 138, 62, 0.35);
+  }
+  .alert-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
+  .section-heading {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff9800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .users-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    border: 2px solid #2a2a2a;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #2a2a2a;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .user-row:last-child {
+    border-bottom: none;
+  }
+  .user-info-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 140px;
+  }
+  .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    border: 2px solid #3d3d3d;
+  }
+  .user-avatar.admin {
+    border-color: #ff9800;
+  }
+  .user-name {
+    font-weight: 700;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+  }
+  .user-role {
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 2px;
+  }
+  .role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .role-badge.admin {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+  }
+  .role-badge.user {
+    background: rgba(129, 199, 132, 0.2);
+    color: #81c784;
+  }
+  .user-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .reset-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .reset-input {
+    padding: 6px 10px;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    color: #f5f5f5;
+    font-size: 0.85rem;
+    width: 130px;
+  }
+  .reset-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .reset-btn {
+    padding: 6px 12px;
+    background: #1b5e20;
+    color: #81c784;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .reset-btn:hover {
+    background: #2b6e30;
+  }
+  .delete-btn {
+    padding: 6px 12px;
+    background: #4a1f1f;
+    color: #ff6b6b;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .delete-btn:hover {
+    background: #5a2f2f;
+  }
+  .add-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    border: 2px solid #2a2a2a;
+    padding: 20px 24px;
+  }
+  .add-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .field-label {
+    display: block;
+    font-size: 0.78rem;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+  }
+  .field-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .field-select {
+    width: 100%;
+    padding: 10px 12px;
+    background: #2d2d2d;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    color: #f5f5f5;
+    font-size: 0.95rem;
+  }
+  .add-btn {
+    width: 100%;
+    padding: 12px;
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .add-btn:hover {
+    background: #e68900;
+  }
+  @media (max-width: 520px) {
+    .add-grid {
+      grid-template-columns: 1fr;
+    }
+    .reset-form {
+      flex-wrap: wrap;
+    }
+    .reset-input {
+      width: 100%;
+    }
+    .user-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="users-wrap">
+  <div class="page-header">
+    <h1 class="page-title-txt">👥 Usuarios</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}{% endif %} {% endwith %}
+
+  <div class="section-heading">Cuentas activas</div>
+  <div class="users-card" style="margin-bottom: 32px">
+    {% for u in users %}
+    <div class="user-row">
+      <div class="user-info-left">
+        <div class="user-avatar {% if u.role == 'admin' %}admin{% endif %}">
+          {{ '⚙️' if u.role == 'admin' else '👤' }}
+        </div>
+        <div>
+          <div class="user-name">{{ u.username }}</div>
+          <div class="user-role">
+            <span class="role-badge {{ u.role }}"
+              >{{ 'Admin' if u.role == 'admin' else 'Empleado' }}</span
+            >
+          </div>
+        </div>
+      </div>
+      <div class="user-actions">
+        <form
+          method="POST"
+          action="{{ url_for('reset_user_password', user_id=u.id) }}"
+          class="reset-form"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input
+            type="password"
+            name="new_password"
+            class="reset-input"
+            placeholder="Nueva contraseña"
+            minlength="6"
+            required
+          />
+          <button type="submit" class="reset-btn">Resetear</button>
+        </form>
+        {% if u.id != session.get('user_id') %}
+        <form
+          method="POST"
+          action="{{ url_for('delete_user', user_id=u.id) }}"
+          data-confirm="¿Eliminar al usuario {{ u.username }}?"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="delete-btn">Eliminar</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="section-heading">Agregar usuario</div>
+  <div class="add-card">
+    <form method="POST" action="{{ url_for('add_user') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="add-grid">
+        <div>
+          <label class="field-label">Usuario</label>
+          <input
+            type="text"
+            name="username"
+            class="field-input"
+            placeholder="Nombre de usuario"
+            required
+            maxlength="30"
+          />
+        </div>
+        <div>
+          <label class="field-label">Contraseña</label>
+          <input
+            type="password"
+            name="password"
+            class="field-input"
+            placeholder="Mínimo 6 caracteres"
+            required
+            minlength="6"
+          />
+        </div>
+        <div>
+          <label class="field-label">Rol</label>
+          <select name="role" class="field-select">
+            <option value="user">Empleado</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="add-btn">+ Crear Usuario</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

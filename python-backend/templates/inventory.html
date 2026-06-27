@@ -1,0 +1,807 @@
+{% extends 'base.html' %} {% block title %}Inventario{% endblock %} {% block
+styles %}
+<style>
+  /* ── Tarjeta rediseñada ──────────────────────────────────── */
+  .inv-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .inv-qty-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 4px 0 16px;
+  }
+
+  .inv-qty-num {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #2ecc71;
+  }
+  .inv-qty-num.qty-warn {
+    color: #f39c12;
+  }
+  .inv-qty-num.qty-low {
+    color: #e74c3c;
+  }
+
+  .inv-unit {
+    font-size: 0.82rem;
+    color: #666;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .inv-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .inv-bar-track {
+    flex: 1;
+    height: 6px;
+    background: #2a2a2a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .inv-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: #2ecc71;
+    transition: width 0.4s ease;
+  }
+  .inv-bar-fill.bar-warn {
+    background: #f39c12;
+  }
+  .inv-bar-fill.bar-low {
+    background: #e74c3c;
+  }
+
+  .inv-min-label {
+    font-size: 0.78rem;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  /* ── Fila de cantidad editable ───────────────────────────── */
+  .inv-qty-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 14px;
+  }
+  .inv-qty-input-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .inv-qty-input {
+    width: 100%;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ff9800;
+    background: #2a2a2a;
+    border: 2px solid #3d3d3d;
+    border-radius: 10px;
+    padding: 6px 4px;
+    -moz-appearance: textfield;
+  }
+  .inv-qty-input::-webkit-inner-spin-button,
+  .inv-qty-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+  .inv-qty-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .inv-unit-inline {
+    font-size: 0.75rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Fila de mínimo editable ─────────────────────────────── */
+  .inv-min-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: #1a1a1a;
+    border-radius: 8px;
+  }
+  .inv-min-label-txt {
+    font-size: 0.82rem;
+    color: #666;
+    white-space: nowrap;
+  }
+  .inv-min-input {
+    flex: 1;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ccc;
+    background: #2a2a2a;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    padding: 6px 4px;
+    -moz-appearance: textfield;
+  }
+  .inv-min-input::-webkit-inner-spin-button,
+  .inv-min-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+  .inv-min-input:focus {
+    outline: none;
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+
+  /* ── Botones ─────────────────────────────────────────────── */
+  .inventory-btn.delete {
+    background-color: #4a1f1f;
+    color: #ff6b6b;
+    flex: 0.5;
+  }
+
+  .inventory-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    gap: 15px;
+  }
+
+  .secondary-button {
+    background-color: #333;
+    color: #f5f5f5;
+  }
+
+  .inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .inventory-card {
+    background-color: #1e1e1e;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 2px solid #3d3d3d;
+    transition: transform 0.2s;
+  }
+
+  .inventory-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .inventory-card.low-stock {
+    border-color: #ff9800;
+    background-color: #2a1f00;
+  }
+
+  .item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #3d3d3d;
+  }
+
+  .item-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #f5f5f5;
+    margin: 0;
+  }
+
+  .low-stock-badge {
+    background-color: #ff9800;
+    color: #121212;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .item-details {
+    margin-bottom: 15px;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .detail-label {
+    color: #ccc;
+    font-weight: 600;
+  }
+
+  .detail-value {
+    color: #f5f5f5;
+    font-weight: 700;
+  }
+
+  .detail-value.quantity {
+    color: #ff9800;
+    font-size: 1.1rem;
+  }
+
+  .item-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .inventory-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .inventory-btn.decrease {
+    background-color: #3f1f1f;
+    color: #ff9090;
+  }
+
+  .inventory-btn.decrease:hover {
+    background-color: #4f2f2f;
+  }
+
+  .inventory-btn.increase {
+    background-color: #1b5e20;
+    color: #81c784;
+  }
+
+  .inventory-btn.increase:hover {
+    background-color: #2b6e30;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .empty-icon {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    opacity: 0.5;
+  }
+
+  .empty-message {
+    font-size: 1.2rem;
+    color: #ccc;
+  }
+
+  @media (max-width: 768px) {
+    .inventory-grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+
+    .inventory-header {
+      flex-direction: column;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="container">
+  <h1 class="page-title">Gestión de Inventario</h1>
+
+  <div class="inventory-header">
+    <a
+      href="{{ url_for('admin_dashboard') }}"
+      class="action-button cancel-button"
+    >
+      <span class="button-icon">←</span> Volver al Menú
+    </a>
+    <button onclick="abrirModal()" class="action-button submit-button">
+      <span class="button-icon">+</span> Agregar
+    </button>
+    <a
+      href="{{ url_for('low_stock') }}"
+      class="action-button {% if low_stock_only %}submit-button{% else %}secondary-button{% endif %}"
+    >
+      <span class="button-icon">⚠️</span> Stock Bajo
+    </a>
+  </div>
+
+  {% if items %}
+  <div class="inventory-grid">
+    {% for item in items %} {% set pct = [[(item.quantity / item.minThreshold *
+    100)|int if item.minThreshold > 0 else 100, 0]|max, 100]|min %}
+    <div
+      class="inventory-card {% if item.lowStock %}low-stock{% endif %}"
+      data-id="{{ item.id }}"
+    >
+      <!-- Nombre -->
+      <div class="inv-name-row">
+        <h3 class="item-name">{{ item.name }}</h3>
+        {% if item.lowStock %}<span class="low-stock-badge">⚠️ Bajo</span>{%
+        endif %}
+      </div>
+
+      <!-- Cantidad: editable con +/- o escribiendo directo -->
+      <div class="inv-qty-row">
+        <button
+          class="inventory-btn decrease"
+          onclick="actualizarInventario({{ item.id }}, -1, '{{ item.name }}', +this.closest('.inv-qty-row').querySelector('.inv-qty-input').value)"
+        >
+          −
+        </button>
+        <div class="inv-qty-input-wrap">
+          <input
+            type="number"
+            min="0"
+            class="inv-qty-input"
+            value="{{ item.quantity | num }}"
+            data-id="{{ item.id }}"
+            onchange="guardarCantidad(this)"
+            onkeydown="if (event.key === 'Enter') this.blur();"
+          />
+          <span class="inv-unit-inline">{{ item.unit }}</span>
+        </div>
+        <button
+          class="inventory-btn increase"
+          onclick="actualizarInventario({{ item.id }}, 1, '{{ item.name }}', +this.closest('.inv-qty-row').querySelector('.inv-qty-input').value)"
+        >
+          +
+        </button>
+      </div>
+
+      <!-- Barra de nivel -->
+      <div class="inv-bar-wrap">
+        <div class="inv-bar-track">
+          <div
+            class="inv-bar-fill {% if item.lowStock %}bar-low{% elif pct <= 150 %}bar-warn{% endif %}"
+            style="width: {{ [pct, 100]|min }}%;"
+            data-id="{{ item.id }}"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Mínimo: editable -->
+      <div class="inv-min-row">
+        <span class="inv-min-label-txt">Mínimo:</span>
+        <input
+          type="number"
+          min="0"
+          class="inv-min-input"
+          value="{{ item.minThreshold | num }}"
+          data-id="{{ item.id }}"
+          onchange="guardarMinimo(this)"
+          onkeydown="if (event.key === 'Enter') this.blur();"
+        />
+        <span class="inv-unit-inline">{{ item.unit }}</span>
+      </div>
+
+      <!-- Eliminar -->
+      <div style="text-align: right; margin-top: 10px">
+        <button
+          class="inventory-btn delete"
+          style="flex: none; width: 44px"
+          onclick="deleteItem({{ item.id }}, '{{ item.name }}')"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📦</div>
+    <p class="empty-message">
+      {% if low_stock_only %} No hay items con stock bajo {% else %} No se pudo
+      cargar el inventario {% endif %}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal para agregar item de inventario -->
+<div
+  id="modal-agregar"
+  style="
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  "
+>
+  <div
+    style="
+      background: #1e1e1e;
+      border-radius: 18px;
+      padding: 32px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid #3d3d3d;
+    "
+  >
+    <h2 style="color: #ff9800; margin: 0 0 24px; font-size: 1.4rem">
+      Agregar Ingrediente
+    </h2>
+    <form id="form-agregar">
+      <div style="margin-bottom: 16px">
+        <label
+          style="
+            display: block;
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+          "
+          >Nombre</label
+        >
+        <input
+          id="inp-nombre"
+          type="text"
+          placeholder="Ej: Camarón"
+          style="
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #3d3d3d;
+            background: #2d2d2d;
+            color: #f5f5f5;
+            font-size: 1rem;
+            box-sizing: border-box;
+          "
+          required
+        />
+      </div>
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin-bottom: 16px;
+        "
+      >
+        <div>
+          <label
+            style="
+              display: block;
+              color: #aaa;
+              font-size: 0.9rem;
+              margin-bottom: 6px;
+            "
+            >Cantidad inicial</label
+          >
+          <input
+            id="inp-cantidad"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="0"
+            style="
+              width: 100%;
+              padding: 12px;
+              border-radius: 10px;
+              border: 1px solid #3d3d3d;
+              background: #2d2d2d;
+              color: #f5f5f5;
+              font-size: 1rem;
+              box-sizing: border-box;
+            "
+            required
+          />
+        </div>
+        <div>
+          <label
+            style="
+              display: block;
+              color: #aaa;
+              font-size: 0.9rem;
+              margin-bottom: 6px;
+            "
+            >Mínimo (alerta)</label
+          >
+          <input
+            id="inp-minimo"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="0"
+            style="
+              width: 100%;
+              padding: 12px;
+              border-radius: 10px;
+              border: 1px solid #3d3d3d;
+              background: #2d2d2d;
+              color: #f5f5f5;
+              font-size: 1rem;
+              box-sizing: border-box;
+            "
+            required
+          />
+        </div>
+      </div>
+      <div style="margin-bottom: 24px">
+        <label
+          style="
+            display: block;
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+          "
+          >Unidad</label
+        >
+        <input
+          id="inp-unidad"
+          type="text"
+          placeholder="piezas, kg, litros..."
+          style="
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #3d3d3d;
+            background: #2d2d2d;
+            color: #f5f5f5;
+            font-size: 1rem;
+            box-sizing: border-box;
+          "
+        />
+      </div>
+      <div style="display: flex; gap: 12px">
+        <button
+          type="button"
+          onclick="cerrarModal()"
+          style="
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #3d3d3d;
+            background: none;
+            color: #aaa;
+            font-size: 1rem;
+            cursor: pointer;
+          "
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          style="
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
+            background: #ff9800;
+            color: #121212;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+          "
+        >
+          Agregar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function _csrfToken() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.content : "";
+  }
+
+  function _postInventario(itemId, payload, onSuccess) {
+    fetch(`/inventory/update/${itemId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": _csrfToken(),
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then((data) => {
+        if (data.success) {
+          onSuccess(data);
+        } else {
+          mostrarToast(data.error || "Error al actualizar.", "error");
+        }
+      })
+      .catch(() =>
+        mostrarToast("No se pudo conectar con el inventario.", "error"),
+      );
+  }
+
+  // +/- buttons: update input field then save
+  function actualizarInventario(itemId, change, itemName, currentQty) {
+    const newQty = Number(currentQty) + change;
+    if (newQty < 0) {
+      mostrarToast("La cantidad no puede ser negativa.", "error");
+      return;
+    }
+
+    // Find the input on this card and update its display value
+    const card = document.querySelector(`.inventory-card[data-id="${itemId}"]`);
+    const input = card ? card.querySelector(".inv-qty-input") : null;
+
+    _postInventario(itemId, { quantity: newQty }, (data) => {
+      if (input) input.value = data.quantity;
+      actualizarBarra(itemId, data.quantity, data.minThreshold);
+    });
+  }
+
+  // Typing directly in quantity field
+  function guardarCantidad(input) {
+    const itemId = input.dataset.id;
+    const qty = Math.max(0, parseFloat(input.value) || 0);
+    input.value = qty;
+    _postInventario(itemId, { quantity: qty }, (data) => {
+      input.value = data.quantity;
+      actualizarBarra(itemId, data.quantity, data.minThreshold);
+    });
+  }
+
+  // Typing directly in minimum field
+  function guardarMinimo(input) {
+    const itemId = input.dataset.id;
+    const min = Math.max(0, parseFloat(input.value) || 0);
+    input.value = min;
+    _postInventario(itemId, { minThreshold: min }, (data) => {
+      input.value = data.minThreshold;
+      actualizarBarra(itemId, data.quantity, data.minThreshold);
+    });
+  }
+
+  // Update progress bar color without reloading
+  function actualizarBarra(itemId, qty, minThresh) {
+    const card = document.querySelector(`.inventory-card[data-id="${itemId}"]`);
+    if (!card) return;
+    const bar = card.querySelector(".inv-bar-fill");
+    if (!bar) return;
+    const pct =
+      minThresh > 0 ? Math.min(100, Math.round((qty / minThresh) * 100)) : 100;
+    bar.style.width = pct + "%";
+    bar.className = "inv-bar-fill";
+    if (qty <= minThresh) bar.classList.add("bar-low");
+    else if (pct <= 150) bar.classList.add("bar-warn");
+    // Update low-stock badge and card border
+    const badge = card.querySelector(".low-stock-badge");
+    if (qty <= minThresh) {
+      card.classList.add("low-stock");
+      if (!badge) {
+        const b = document.createElement("span");
+        b.className = "low-stock-badge";
+        b.textContent = "⚠️ Bajo";
+        card.querySelector(".inv-name-row").appendChild(b);
+      }
+    } else {
+      card.classList.remove("low-stock");
+      if (badge) badge.remove();
+    }
+  }
+
+  function abrirModal() {
+    document.getElementById("modal-agregar").style.display = "flex";
+    document.getElementById("inp-nombre").focus();
+  }
+
+  function cerrarModal() {
+    document.getElementById("modal-agregar").style.display = "none";
+    document.getElementById("form-agregar").reset();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .getElementById("form-agregar")
+      .addEventListener("submit", function (e) {
+        e.preventDefault();
+        const name = document.getElementById("inp-nombre").value.trim();
+        const quantity =
+          parseFloat(document.getElementById("inp-cantidad").value) || 0;
+        const minThreshold =
+          parseFloat(document.getElementById("inp-minimo").value) || 0;
+        const unit =
+          document.getElementById("inp-unidad").value.trim() || "piezas";
+
+        if (!name) {
+          mostrarToast("El nombre es requerido.", "error");
+          return;
+        }
+        if (isNaN(quantity) || quantity < 0) {
+          mostrarToast("Cantidad inválida.", "error");
+          return;
+        }
+        if (isNaN(minThreshold) || minThreshold < 0) {
+          mostrarToast("Mínimo inválido.", "error");
+          return;
+        }
+
+        const btn = this.querySelector("button[type=submit]");
+        btn.disabled = true;
+        btn.textContent = "Guardando...";
+
+        fetch("/inventory/add", {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')
+              .content,
+          },
+          body: JSON.stringify({ name, quantity, minThreshold, unit }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              cerrarModal();
+              location.reload();
+            } else {
+              mostrarToast("Error al agregar item.", "error");
+              btn.disabled = false;
+              btn.textContent = "Agregar";
+            }
+          })
+          .catch(() => {
+            mostrarToast("Error de conexión.", "error");
+            btn.disabled = false;
+            btn.textContent = "Agregar";
+          });
+      });
+
+    // Cerrar modal al hacer clic fuera
+    document
+      .getElementById("modal-agregar")
+      .addEventListener("click", function (e) {
+        if (e.target === this) cerrarModal();
+      });
+  });
+
+  function deleteItem(itemId, itemName) {
+    showConfirm(`¿Eliminar ${itemName} del inventario?`, function () {
+      _doDeleteItem(itemId);
+    });
+    return;
+  }
+  function _doDeleteItem(itemId) {
+    fetch(`/inventory/delete/${itemId}`, {
+      method: "DELETE",
+      headers: {
+        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')
+          .content,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          location.reload();
+        } else {
+          mostrarToast("Error al eliminar item.", "error");
+        }
+      });
+  }
+</script>
+{% endblock %}
