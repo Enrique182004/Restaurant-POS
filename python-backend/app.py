@@ -2246,6 +2246,34 @@ def remove_employee(employee_id):
     return redirect('/admin/employees/manage')
 
 
+@app.route('/admin/employees/attendance/toggle', methods=['POST'])
+@login_required
+@admin_required
+def toggle_attendance():
+    employee_id = request.form.get('employee_id', '')
+    work_date = request.form.get('work_date', '')
+    week_param = request.form.get('week', '')
+
+    if not employee_id.isdigit() or not work_date:
+        flash('Solicitud inválida.', 'error')
+        return redirect('/admin/employees')
+
+    conn = get_db_connection()
+    existing = conn.execute(
+        'SELECT id FROM attendance WHERE employee_id = ? AND work_date = ?',
+        (employee_id, work_date)
+    ).fetchone()
+    if existing:
+        conn.execute('DELETE FROM attendance WHERE id = ?', (existing['id'],))
+    else:
+        conn.execute(
+            'INSERT INTO attendance (employee_id, work_date) VALUES (?, ?)',
+            (employee_id, work_date)
+        )
+    conn.commit()
+    return redirect('/admin/employees?week=' + (week_param or work_date))
+
+
 # ── Promotions toggle ─────────────────────────────────────────────────────────
 @app.route('/admin/promotions/add', methods=['POST'])
 @login_required
