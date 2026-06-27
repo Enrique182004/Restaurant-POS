@@ -368,6 +368,18 @@ def init_db():
     conn.commit()
     conn.close()
 
+
+# ── Empleados y asistencia: helpers ───────────────────────────────────────────
+
+def get_week_bounds(reference_date):
+    """reference_date: 'YYYY-MM-DD'. Returns (monday, sunday) as 'YYYY-MM-DD' strings
+    for the Mon-Sun week containing reference_date."""
+    d = datetime.strptime(reference_date, '%Y-%m-%d')
+    monday = d - timedelta(days=d.weekday())
+    sunday = monday + timedelta(days=6)
+    return monday.strftime('%Y-%m-%d'), sunday.strftime('%Y-%m-%d')
+
+
 # Login decorator
 def login_required(f):
     @wraps(f)
