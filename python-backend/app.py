@@ -333,7 +333,38 @@ def init_db():
                 'UPDATE users SET password = ? WHERE id = ?',
                 (generate_password_hash(u['password']), u['id'])
             )
-    
+
+    # Empleados — roster, versioned pay schedules, and attendance
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS employees (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        active INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS employee_schedules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL REFERENCES employees(id),
+        effective_from TEXT NOT NULL,
+        scheduled_days TEXT NOT NULL,
+        pay_amount REAL NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS attendance (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL REFERENCES employees(id),
+        work_date TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(employee_id, work_date)
+    )
+    ''')
+
     conn.commit()
     conn.close()
 
