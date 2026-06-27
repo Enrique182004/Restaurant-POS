@@ -2220,6 +2220,32 @@ def update_employee(employee_id):
     return redirect('/admin/employees/manage')
 
 
+@app.route('/admin/employees/remove/<int:employee_id>', methods=['POST'])
+@login_required
+@admin_required
+def remove_employee(employee_id):
+    conn = get_db_connection()
+    employee = conn.execute('SELECT * FROM employees WHERE id = ?', (employee_id,)).fetchone()
+    if not employee:
+        flash('Empleado no encontrado.', 'error')
+        return redirect('/admin/employees/manage')
+
+    has_attendance = conn.execute(
+        'SELECT COUNT(*) FROM attendance WHERE employee_id = ?', (employee_id,)
+    ).fetchone()[0] > 0
+
+    if has_attendance:
+        conn.execute('UPDATE employees SET active = 0 WHERE id = ?', (employee_id,))
+        conn.commit()
+        flash(f'Empleado "{employee["name"]}" desactivado.', 'success')
+    else:
+        conn.execute('DELETE FROM employee_schedules WHERE employee_id = ?', (employee_id,))
+        conn.execute('DELETE FROM employees WHERE id = ?', (employee_id,))
+        conn.commit()
+        flash(f'Empleado "{employee["name"]}" eliminado.', 'success')
+    return redirect('/admin/employees/manage')
+
+
 # ── Promotions toggle ─────────────────────────────────────────────────────────
 @app.route('/admin/promotions/add', methods=['POST'])
 @login_required
