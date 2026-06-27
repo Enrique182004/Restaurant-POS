@@ -2256,7 +2256,7 @@ def toggle_attendance():
 
     if not employee_id.isdigit() or not work_date:
         flash('Solicitud inválida.', 'error')
-        return redirect('/admin/employees')
+        return redirect(url_for('employees_attendance'))
 
     conn = get_db_connection()
     existing = conn.execute(
@@ -2271,7 +2271,72 @@ def toggle_attendance():
             (employee_id, work_date)
         )
     conn.commit()
-    return redirect('/admin/employees?week=' + (week_param or work_date))
+    return redirect(url_for('employees_attendance', week=week_param or work_date))
+
+
+@app.route('/admin/employees')
+@login_required
+@admin_required
+def employees_attendance():
+    week_param = request.args.get('week', '').strip()
+    reference_date = week_param or datetime.now().strftime('%Y-%m-%d')
+    try:
+        week_start, week_end = get_week_bounds(reference_date)
+    except ValueError:
+        week_start, week_end = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
+
+    conn = get_db_connection()
+    employees = conn.execute('SELECT * FROM employees WHERE active = 1 ORDER BY name').fetchall()
+
+    week_dates = [
+        (datetime.strptime(week_start, '%Y-%m-%d') + timedelta(days=i)).strftime('%Y-%m-%d')
+        for i in range(7)
+    ]
+    day_labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+    rows = []
+    week_total = 0.0
+    for emp in employees:
+        schedule = resolve_employee_schedule(conn, emp['id'], week_start)
+        scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',')] if schedule else []
+        total_pay, per_day_rate, days_worked, _ = compute_employee_pay(conn, emp['id'], week_start, week_end)
+        present_dates = {
+            r['work_date'] for r in conn.execute(
+                'SELECT work_date FROM attendance WHERE employee_id = ? AND work_date BETWEEN ? AND ?',
+                (emp['id'], week_start, week_end)
+            ).fetchall()
+        }
+        days = [
+            {
+                'date': d,
+                'label': day_labels[i],
+                'scheduled': i in scheduled_days,
+                'present': d in present_dates,
+            }
+            for i, d in enumerate(week_dates)
+        ]
+        rows.append({
+            'id': emp['id'],
+            'name': emp['name'],
+            'days': days,
+            'per_day_rate': per_day_rate,
+            'days_worked': days_worked,
+            'total_pay': total_pay,
+        })
+        week_total += total_pay
+
+    prev_week = (datetime.strptime(week_start, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')
+    next_week = (datetime.strptime(week_start, '%Y-%m-%d') + timedelta(days=7)).strftime('%Y-%m-%d')
+
+    return render_template(
+        'employees.html',
+        rows=rows,
+        week_start=week_start,
+        week_end=week_end,
+        prev_week=prev_week,
+        next_week=next_week,
+        week_total=round(week_total, 2),
+    )
 
 
 # ── Promotions toggle ─────────────────────────────────────────────────────────

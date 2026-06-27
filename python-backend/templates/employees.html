@@ -1,0 +1,266 @@
+{% extends 'base.html' %} {% block title %}Asistencia — Empleados{% endblock %}
+{% block styles %}
+<style>
+  .emp-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .page-title-txt {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .alert-success {
+    background: rgba(43, 138, 62, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(43, 138, 62, 0.35);
+  }
+  .alert-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
+  .period-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .period-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #333;
+    color: #aaa;
+    background: #1e1e1e;
+    transition: all 0.15s;
+  }
+  .period-tab:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .period-tab.active {
+    background: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
+  }
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .week-nav-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .week-nav-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .week-label {
+    font-weight: 700;
+    color: #f5f5f5;
+    font-size: 1rem;
+  }
+  .week-total-card {
+    background: #1e1e1e;
+    border: 2px solid #ff9800;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .week-total-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ff9800;
+  }
+  .week-total-label {
+    font-size: 0.8rem;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .emp-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    border: 2px solid #2a2a2a;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .emp-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .emp-name {
+    font-weight: 700;
+    color: #f5f5f5;
+    font-size: 1.05rem;
+  }
+  .emp-total {
+    font-weight: 800;
+    color: #ff9800;
+    font-size: 1.1rem;
+  }
+  .day-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+  }
+  .day-toggle-form {
+    margin: 0;
+  }
+  .day-toggle-btn {
+    width: 100%;
+    padding: 10px 4px;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    background: #2d2d2d;
+    color: #888;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-toggle-btn.scheduled {
+    border-color: #555;
+    color: #ccc;
+  }
+  .day-toggle-btn.present {
+    background: #1b5e20;
+    border-color: #2e7d32;
+    color: #81c784;
+  }
+  .day-toggle-btn.scheduled.present {
+    background: #ff9800;
+    border-color: #ff9800;
+    color: #121212;
+  }
+  .empty-state {
+    text-align: center;
+    color: #888;
+    padding: 40px 20px;
+  }
+  @media (max-width: 520px) {
+    .day-toggle-btn {
+      padding: 8px 2px;
+      font-size: 0.68rem;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="emp-wrap">
+  <div class="page-header">
+    <h1 class="page-title-txt">💰 Empleados</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}{% endif %} {% endwith %}
+
+  <div class="period-tabs">
+    <a href="{{ url_for('employees_attendance') }}" class="period-tab active"
+      >Asistencia</a
+    >
+    <a href="/admin/employees/manage" class="period-tab">Gestionar empleados</a>
+  </div>
+
+  <div class="week-nav">
+    <a
+      href="{{ url_for('employees_attendance', week=prev_week) }}"
+      class="week-nav-btn"
+      >← Semana anterior</a
+    >
+    <span class="week-label">{{ week_start }} – {{ week_end }}</span>
+    <a
+      href="{{ url_for('employees_attendance', week=next_week) }}"
+      class="week-nav-btn"
+      >Semana siguiente →</a
+    >
+  </div>
+
+  <div class="week-total-card">
+    <div class="week-total-value">${{ "%.2f"|format(week_total) }}</div>
+    <div class="week-total-label">Total a pagar esta semana</div>
+  </div>
+
+  {% if not rows %}
+  <div class="empty-state">
+    No hay empleados activos. Agrega uno en "Gestionar empleados".
+  </div>
+  {% endif %} {% for row in rows %}
+  <div class="emp-card">
+    <div class="emp-card-header">
+      <div class="emp-name">{{ row.name }}</div>
+      <div class="emp-total">
+        ${{ "%.2f"|format(row.total_pay) }} · {{ row.days_worked }} día(s)
+      </div>
+    </div>
+    <div class="day-row">
+      {% for day in row.days %}
+      <form
+        method="POST"
+        action="{{ url_for('toggle_attendance') }}"
+        class="day-toggle-form"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="employee_id" value="{{ row.id }}" />
+        <input type="hidden" name="work_date" value="{{ day.date }}" />
+        <input type="hidden" name="week" value="{{ week_start }}" />
+        <button
+          type="submit"
+          class="day-toggle-btn {% if day.scheduled %}scheduled{% endif %} {% if day.present %}present{% endif %}"
+        >
+          {{ day.label }}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
