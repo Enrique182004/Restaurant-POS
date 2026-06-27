@@ -25,3 +25,8 @@ def test_employees_attendance_shows_employee_total(admin_client, app_module):
     resp = admin_client.get("/admin/employees?week=2026-06-22")
     assert resp.status_code == 200
     assert "333.33".encode("utf-8") in resp.data
+
+
+def test_admin_dashboard_links_to_employees(admin_client):
+    resp = admin_client.get("/admin")
+    assert b"/admin/employees" in resp.data
