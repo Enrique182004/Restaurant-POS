@@ -1,0 +1,544 @@
+{% extends 'base.html' %} {% block title %}Promociones{% endblock %} {% block
+styles %}
+<style>
+  .page-wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .page-title-txt {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .alert {
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .alert-success {
+    background: rgba(43, 138, 62, 0.2);
+    color: #81c784;
+    border: 1px solid rgba(43, 138, 62, 0.35);
+  }
+  .alert-error {
+    background: rgba(231, 76, 60, 0.2);
+    color: #ff8a80;
+    border: 1px solid rgba(231, 76, 60, 0.35);
+  }
+  .prices-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    padding: 6px 0;
+    border: 2px solid #2a2a2a;
+    overflow: hidden;
+  }
+  .price-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid #2a2a2a;
+    gap: 12px;
+  }
+  .price-row:last-of-type {
+    border-bottom: none;
+  }
+  .add-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    padding: 20px 20px 22px;
+    border: 2px solid #2a2a2a;
+  }
+  .add-grid {
+    display: grid;
+    gap: 14px;
+  }
+  .section-heading {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff9800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 0 0 14px;
+    padding-left: 4px;
+  }
+  .field-label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .field-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    background: #2d2d2d;
+    color: #f5f5f5;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .field-input::placeholder {
+    color: #555;
+  }
+  .field-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #3d3d3d;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    background: #2d2d2d;
+    color: #f5f5f5;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .field-select:focus {
+    outline: none;
+    border-color: #ff9800;
+  }
+  .add-btn {
+    margin-top: 6px;
+    padding: 11px 24px;
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 11px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .add-btn:hover {
+    background: #e68900;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="page-wrap">
+  <div class="page-header">
+    <h1 class="page-title-txt">🏷️ Promociones</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">{{ msg }}</div>
+  {% endfor %}{% endif %} {% endwith %}
+
+  <div class="section-heading">Promociones activas</div>
+  <div class="prices-card" style="margin-bottom: 28px">
+    {% if promotions %} {% for promo in promotions %}
+    <div class="price-row" style="flex-wrap: wrap; gap: 10px">
+      <div style="flex: 1; min-width: 160px">
+        <div style="font-weight: 700; color: #f5f5f5; font-size: 0.95rem">
+          {{ promo.name }}
+        </div>
+        <div style="font-size: 0.8rem; color: #888; margin-top: 2px">
+          {{ promo.description or '' }}
+          <span style="color: #555; margin-left: 6px">
+            {% if promo.type == 'percentage' %}· {{ promo.value|int }}%
+            descuento {% elif promo.type == 'fixed' %}· ${{
+            "%.2f"|format(promo.value) }} descuento {% elif promo.type in
+            ('bxgy', 'special') %} {% set gf = (promo.get_free or 1)|int %} · {{
+            promo.value|int + gf }}x{{ promo.value|int }} — compra {{
+            promo.value|int }}, {{ gf }} gratis {% else %}· Especial{% endif %}
+            {% if promo.min_purchase and promo.min_purchase > 0 %}· mín ${{
+            promo.min_purchase|int }}{% endif %}
+          </span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0">
+        <span
+          style="font-size:0.8rem;color:{% if promo.active %}#81C784{% else %}#888{% endif %};"
+        >
+          {% if promo.active %}● Activa{% else %}○ Inactiva{% endif %}
+        </span>
+        <form
+          method="POST"
+          action="{{ url_for('toggle_promotion', promo_id=promo.id) }}"
+          style="margin: 0"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button
+            type="submit"
+            style="padding:5px 12px;border-radius:8px;border:none;cursor:pointer;font-size:0.82rem;font-weight:600;
+                        background:{% if promo.active %}#4A1F1F{% else %}#1B5E20{% endif %};
+                        color:{% if promo.active %}#FF6B6B{% else %}#81C784{% endif %};"
+          >
+            {% if promo.active %}Desactivar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form
+          method="POST"
+          action="{{ url_for('delete_promotion', promo_id=promo.id) }}"
+          style="margin: 0"
+          data-confirm="¿Eliminar la promoción {{ promo.name }}?"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button
+            type="submit"
+            style="
+              padding: 5px 10px;
+              border-radius: 8px;
+              border: none;
+              cursor: pointer;
+              font-size: 0.82rem;
+              font-weight: 600;
+              background: #2a2a2a;
+              color: #ff6b6b;
+            "
+          >
+            ✕
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %} {% else %}
+    <div
+      style="padding: 20px; color: #555; text-align: center; font-size: 0.9rem"
+    >
+      Sin promociones configuradas
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="add-card">
+    <div class="section-heading" style="margin-bottom: 16px">
+      Nueva Promoción
+    </div>
+    <form method="POST" action="{{ url_for('add_promotion') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div
+        class="add-grid"
+        style="grid-template-columns: 1fr 1fr; margin-bottom: 14px"
+      >
+        <div>
+          <label class="field-label">Código (cupón)</label>
+          <input
+            type="text"
+            name="name"
+            class="field-input"
+            placeholder="Ej: VERANO20"
+            required
+            maxlength="20"
+            style="text-transform: uppercase"
+          />
+        </div>
+        <div>
+          <label class="field-label">Descripción</label>
+          <input
+            type="text"
+            name="description"
+            class="field-input"
+            placeholder="Ej: 20% en toda la orden"
+            maxlength="60"
+          />
+        </div>
+      </div>
+      <div
+        class="add-grid"
+        style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 14px"
+      >
+        <div>
+          <label class="field-label">Tipo</label>
+          <select
+            name="type"
+            class="field-select"
+            id="promo-type-select"
+            onchange="updatePromoLabel()"
+          >
+            <option value="percentage">Porcentaje (%)</option>
+            <option value="fixed">Monto fijo ($)</option>
+            <option value="bxgy">NxM — lleva N, paga M</option>
+          </select>
+        </div>
+        <div id="promo-discount-field" style="transition: opacity 0.25s ease">
+          <label class="field-label" id="promo-value-label">Valor (%)</label>
+          <div
+            id="promo-value-wrapper"
+            style="position: relative; display: flex; align-items: center"
+          >
+            <input
+              type="number"
+              name="value"
+              id="promo-value-input"
+              class="field-input"
+              placeholder="Ej: 20"
+              min="0.01"
+              step="0.5"
+              style="padding-right: 2.4rem"
+              oninput="
+                syncPromoSlider();
+                updatePromoPreview();
+              "
+            />
+            <span
+              id="promo-value-suffix"
+              style="
+                position: absolute;
+                right: 10px;
+                font-size: 0.9rem;
+                color: #aaa;
+                pointer-events: none;
+                font-weight: 600;
+              "
+              >%</span
+            >
+          </div>
+          <div id="promo-slider-wrap" style="margin-top: 8px">
+            <input
+              type="range"
+              id="promo-pct-slider"
+              min="0"
+              max="100"
+              step="1"
+              value="0"
+              oninput="
+                syncPromoInput();
+                updatePromoPreview();
+              "
+              style="
+                width: 100%;
+                accent-color: #ff9800;
+                cursor: pointer;
+                height: 4px;
+              "
+            />
+          </div>
+          <div
+            id="promo-preview"
+            style="
+              margin-top: 6px;
+              font-size: 0.82rem;
+              color: #ff9800;
+              font-weight: 600;
+              min-height: 1.1em;
+              transition: opacity 0.2s ease;
+            "
+          ></div>
+        </div>
+        <div id="promo-bxgy-fields" style="display: none; grid-column: span 2">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
+            <div>
+              <label class="field-label">Lleva (N)</label>
+              <input
+                type="number"
+                name="buy_qty"
+                id="promo-buy-input"
+                class="field-input"
+                placeholder="Ej: 4"
+                min="1"
+                step="1"
+              />
+            </div>
+            <div>
+              <label class="field-label">Gratis (M)</label>
+              <input
+                type="number"
+                name="get_free"
+                id="promo-free-input"
+                class="field-input"
+                placeholder="Ej: 1"
+                min="1"
+                step="1"
+                value="1"
+              />
+            </div>
+          </div>
+        </div>
+        <div>
+          <label class="field-label"
+            >Mínimo de compra
+            <span style="color: #555; font-weight: 400; text-transform: none"
+              >opcional</span
+            ></label
+          >
+          <input
+            type="number"
+            name="min_purchase"
+            class="field-input"
+            placeholder="$0"
+            min="0"
+            step="1"
+            value="0"
+          />
+        </div>
+      </div>
+      <div style="margin-bottom: 18px">
+        <label class="field-label"
+          >Aplica a
+          <span style="color: #555; font-weight: 400; text-transform: none"
+            >dejar vacío = toda la orden</span
+          ></label
+        >
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px">
+          {% for item_type in ['Boneless','Bola de
+          Arroz','Sushi','Bebida','Complementos'] %}
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              font-size: 0.88rem;
+              color: #ccc;
+              cursor: pointer;
+              background: #2a2a2a;
+              border: 1px solid #3d3d3d;
+              border-radius: 20px;
+              padding: 5px 12px;
+            "
+          >
+            <input
+              type="checkbox"
+              name="applicable_items"
+              value="{{ item_type }}"
+              style="accent-color: #ff9800; width: 14px; height: 14px"
+            />
+            {{ item_type }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="add-btn">+ Crear Promoción</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function updatePromoLabel() {
+    const type = document.getElementById("promo-type-select").value;
+    const discountField = document.getElementById("promo-discount-field");
+    const bxgyFields = document.getElementById("promo-bxgy-fields");
+    const valueInput = document.getElementById("promo-value-input");
+    const buyInput = document.getElementById("promo-buy-input");
+    const sliderWrap = document.getElementById("promo-slider-wrap");
+    const suffix = document.getElementById("promo-value-suffix");
+    const preview = document.getElementById("promo-preview");
+
+    if (type === "bxgy") {
+      discountField.style.opacity = "0";
+      discountField.style.pointerEvents = "none";
+      setTimeout(() => {
+        discountField.style.display = "none";
+        discountField.style.opacity = "";
+        discountField.style.pointerEvents = "";
+      }, 220);
+
+      bxgyFields.style.display = "block";
+      bxgyFields.style.opacity = "0";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bxgyFields.style.transition = "opacity 0.25s ease";
+          bxgyFields.style.opacity = "1";
+        });
+      });
+
+      valueInput.removeAttribute("required");
+      buyInput.setAttribute("required", "");
+      preview.textContent = "";
+    } else {
+      bxgyFields.style.transition = "opacity 0.25s ease";
+      bxgyFields.style.opacity = "0";
+      setTimeout(() => {
+        bxgyFields.style.display = "none";
+        bxgyFields.style.opacity = "";
+      }, 220);
+
+      discountField.style.display = "";
+      discountField.style.opacity = "0";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          discountField.style.opacity = "1";
+        });
+      });
+
+      valueInput.setAttribute("required", "");
+      buyInput.removeAttribute("required");
+
+      if (type === "percentage") {
+        document.getElementById("promo-value-label").textContent = "Valor (%)";
+        valueInput.max = "100";
+        suffix.textContent = "%";
+        suffix.style.display = "";
+        sliderWrap.style.display = "";
+      } else {
+        document.getElementById("promo-value-label").textContent = "Valor ($)";
+        valueInput.removeAttribute("max");
+        suffix.textContent = "$";
+        suffix.style.display = "";
+        sliderWrap.style.display = "none";
+      }
+
+      updatePromoPreview();
+    }
+  }
+
+  function syncPromoSlider() {
+    const val =
+      parseFloat(document.getElementById("promo-value-input").value) || 0;
+    const slider = document.getElementById("promo-pct-slider");
+    slider.value = Math.min(100, Math.max(0, val));
+  }
+
+  function syncPromoInput() {
+    const slider = document.getElementById("promo-pct-slider");
+    document.getElementById("promo-value-input").value = slider.value;
+  }
+
+  function updatePromoPreview() {
+    const type = document.getElementById("promo-type-select").value;
+    const raw = document.getElementById("promo-value-input").value;
+    const preview = document.getElementById("promo-preview");
+    const val = parseFloat(raw);
+
+    if (!raw || isNaN(val) || val <= 0) {
+      preview.textContent = "";
+      return;
+    }
+
+    if (type === "percentage") {
+      preview.textContent = val + "% off";
+    } else if (type === "fixed") {
+      preview.textContent = "$" + val.toFixed(2) + " off";
+    } else {
+      preview.textContent = "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    updatePromoLabel();
+  });
+</script>
+{% endblock %}

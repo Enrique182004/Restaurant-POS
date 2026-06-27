@@ -2414,10 +2414,10 @@ def add_promotion():
 
     if not name:
         flash('El código de promoción no puede estar vacío.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
     if promo_type not in ('percentage', 'fixed', 'bxgy'):
         flash('Tipo de promoción inválido.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
 
     get_free = 1
     try:
@@ -2433,14 +2433,14 @@ def add_promotion():
             value = float(value) if value.strip() else 0.0
     except (ValueError, AttributeError):
         flash('Valor inválido.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
 
     if promo_type == 'percentage' and not (0 < value <= 100):
         flash('El porcentaje debe estar entre 1 y 100.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
     if promo_type != 'bxgy' and value <= 0:
         flash('El valor debe ser mayor a 0.', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
 
     applicable_json = json.dumps(applicable_items) if applicable_items else '[]'
 
@@ -2448,7 +2448,7 @@ def add_promotion():
     existing = conn.execute('SELECT id FROM promotions WHERE name = ?', (name,)).fetchone()
     if existing:
         flash(f'Ya existe una promoción con el código "{name}".', 'error')
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('manage_promotions'))
     conn.execute(
         'INSERT INTO promotions (name, description, type, value, get_free, min_purchase, applicable_items, active) '
         'VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
@@ -2456,7 +2456,7 @@ def add_promotion():
     )
     conn.commit()
     flash(f'Promoción "{name}" creada.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_promotions'))
 
 
 @app.route('/admin/promotions/delete/<int:promo_id>', methods=['POST'])
@@ -2469,7 +2469,7 @@ def delete_promotion(promo_id):
         conn.execute('DELETE FROM promotions WHERE id = ?', (promo_id,))
         conn.commit()
         flash(f'Promoción "{promo["name"]}" eliminada.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_promotions'))
 
 
 @app.route('/admin/promotions/toggle/<int:promo_id>', methods=['POST'])
@@ -2484,7 +2484,16 @@ def toggle_promotion(promo_id):
         conn.commit()
         state_label = 'activada' if new_state else 'desactivada'
         flash(f'Promoción "{promo["name"]}" {state_label}.', 'success')
-    return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('manage_promotions'))
+
+
+@app.route('/admin/promotions')
+@login_required
+@admin_required
+def manage_promotions():
+    conn = get_db_connection()
+    promotions = [dict(p) for p in conn.execute('SELECT * FROM promotions ORDER BY name').fetchall()]
+    return render_template('promotions.html', promotions=promotions)
 
 
 # ── Configuración general ─────────────────────────────────────────────────────
