@@ -45,7 +45,7 @@
     "win": {
       "target": [
         {
-          "target": "portable",
+          "target": "nsis",
           "arch": [
             "x64"
           ]
@@ -55,10 +55,11 @@
     },
     "nsis": {
       "oneClick": true,
-      "perMachine": false
-    },
-    "portable": {
-      "artifactName": "EbiBall-POS-Portable.exe"
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ebi Ball POS"
     },
     "extraResources": [
       {
@@ -87,12 +88,19 @@
           "**/*",
           "!.gitkeep"
         ]
+      },
+      {
+        "from": "java-services/inventory-service/target",
+        "to": "inventory-service",
+        "filter": [
+          "inventory-service-1.0.0.jar"
+        ]
       }
     ],
     "publish": {
       "provider": "github",
-      "owner": "GITHUB_USERNAME",
-      "repo": "ebi-ball-pos"
+      "owner": "Enrique182004",
+      "repo": "Restaurant-POS"
     },
     "files": [
       "main.js",

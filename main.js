@@ -49,11 +49,14 @@ let mainWindow = null;
 let tray = null;
 let flaskProcess = null;
 let printBridgeProcess = null;
+let inventoryServiceProcess = null;
 let isQuitting = false;
 let flaskRestarts = 0;
 const MAX_FLASK_RESTARTS = 3;
 let printBridgeRestarts = 0;
 const MAX_PRINT_BRIDGE_RESTARTS = 5;
+let inventoryServiceRestarts = 0;
+const MAX_INVENTORY_SERVICE_RESTARTS = 5;
 const FLASK_PORT = 5001;
 const FLASK_URL = `http://localhost:${FLASK_PORT}`;
 
@@ -485,6 +488,138 @@ function iniciarPrintBridge(backendDir) {
   });
 }
 
+// Mata cualquier proceso que esté ocupando el puerto para evitar que el
+// restart loop se dispare cuando queda un proceso huérfano de una sesión
+// anterior (antes de que el SIGTERM handler existiera).
+function liberarPuerto(port) {
+  const { spawnSync } = require("child_process");
+  const isWin = process.platform === "win32";
+  try {
+    if (isWin) {
+      const r = spawnSync("netstat", ["-ano"], {
+        encoding: "utf8",
+        timeout: 5000,
+      });
+      if (!r.stdout) return;
+      const pids = new Set();
+      for (const line of r.stdout.split("\n")) {
+        if (line.includes(`:${port}`) && line.includes("LISTENING")) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && /^\d+$/.test(pid) && pid !== "0") pids.add(pid);
+        }
+      }
+      for (const pid of pids) {
+        console.log(
+          `[InventoryService] Puerto ${port} ocupado — terminando PID ${pid}`,
+        );
+        spawnSync("taskkill", ["/F", "/PID", pid], { timeout: 5000 });
+      }
+    } else {
+      const r = spawnSync("lsof", ["-ti", `:${port}`], {
+        encoding: "utf8",
+        timeout: 5000,
+      });
+      if (!r.stdout) return;
+      for (const pid of r.stdout.trim().split("\n").filter(Boolean)) {
+        console.log(
+          `[InventoryService] Puerto ${port} ocupado — terminando PID ${pid}`,
+        );
+        spawnSync("kill", ["-9", pid], { timeout: 5000 });
+      }
+    }
+  } catch (e) {
+    console.warn(`[InventoryService] liberarPuerto(${port}) falló:`, e.message);
+  }
+}
+
+// ── Servicio de inventario (Java) ─────────────────────────────────────────────
+// Mismo patrón que iniciarPrintBridge: preferir un JRE bundleado (futuro paso
+// de build con jlink/jpackage), si no existe usar 'java' del sistema + el jar.
+// Si ninguno está disponible, omitir — Flask ya degrada con gracia (lista
+// vacía) cuando el servicio de inventario no responde.
+function iniciarInventoryService(dbPath) {
+  liberarPuerto(8081);
+  const resourcesPath = process.resourcesPath || __dirname;
+  const isWin = process.platform === "win32";
+
+  const jarName = "inventory-service-1.0.0.jar";
+  const bundledJar = path.join(resourcesPath, "inventory-service", jarName);
+  const devJar = path.join(
+    __dirname,
+    "java-services",
+    "inventory-service",
+    "target",
+    jarName,
+  );
+  const jarPath = fs.existsSync(bundledJar) ? bundledJar : devJar;
+
+  if (!fs.existsSync(jarPath)) {
+    console.warn(
+      "[InventoryService] jar no encontrado — omitiendo (la página de inventario mostrará una lista vacía).",
+    );
+    return;
+  }
+
+  // JRE bundleado (cuando exista): resourcesPath/inventory-service/jre/bin/java[.exe]
+  const bundledJre = path.join(
+    resourcesPath,
+    "inventory-service",
+    "jre",
+    "bin",
+    isWin ? "java.exe" : "java",
+  );
+  const javaBin = fs.existsSync(bundledJre) ? bundledJre : "java";
+
+  if (javaBin === "java") {
+    const { spawnSync } = require("child_process");
+    const javaCheck = spawnSync(javaBin, ["-version"], {
+      timeout: 5000,
+      stdio: "ignore",
+    });
+    if (javaCheck.error) {
+      console.warn(
+        "[InventoryService] No se encontró un Java instalado en el sistema — omitiendo (la página de inventario mostrará una lista vacía).",
+      );
+      return;
+    }
+  }
+
+  console.log(`[InventoryService] Iniciando con: ${javaBin} -jar ${jarPath}`);
+  inventoryServiceProcess = spawn(
+    javaBin,
+    [`-Dapp.db.path=${dbPath}`, "-jar", jarPath],
+    { env: process.env },
+  );
+
+  inventoryServiceProcess.stdout.on("data", (d) =>
+    console.log(`[InventoryService] ${d.toString().trim()}`),
+  );
+  inventoryServiceProcess.stderr.on("data", (d) =>
+    console.error(`[InventoryService] ${d.toString().trim()}`),
+  );
+
+  inventoryServiceProcess.on("close", (code) => {
+    console.log(`[InventoryService] Proceso terminó con código ${code}`);
+    inventoryServiceProcess = null;
+    if (
+      !isQuitting &&
+      code !== 0 &&
+      inventoryServiceRestarts < MAX_INVENTORY_SERVICE_RESTARTS
+    ) {
+      inventoryServiceRestarts++;
+      console.log(
+        `[InventoryService] Reiniciando en 5 segundos (intento ${inventoryServiceRestarts}/${MAX_INVENTORY_SERVICE_RESTARTS})...`,
+      );
+      setTimeout(() => iniciarInventoryService(dbPath), 5000);
+    } else if (!isQuitting && code !== 0) {
+      console.warn(
+        "[InventoryService] Se agotaron los reintentos. El inventario no estará disponible.",
+      );
+    }
+  });
+}
+
 // ── Cargar la app Flask con reintentos ────────────────────────────────────────
 function cargarAppConReintentos() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -608,6 +743,11 @@ app.on("ready", async () => {
   // ── Paso 2: Print bridge (no bloqueante) ─────────────────────────────────
   await setLoadingStatus("Iniciando bridge de impresión...");
   iniciarPrintBridge(backendDir); // fire and forget
+  await setLoadingProgress(80);
+
+  // ── Paso 2b: Servicio de inventario (no bloqueante) ──────────────────────
+  await setLoadingStatus("Iniciando servicio de inventario...");
+  iniciarInventoryService(dbPath); // fire and forget
   await setLoadingProgress(85);
 
   // ── Paso 3: Cargar la app ─────────────────────────────────────────────────
@@ -643,6 +783,17 @@ app.on("before-quit", () => {
   isQuitting = true;
 });
 
+// Asegurar limpieza si el proceso recibe SIGTERM/SIGINT (kill externo, gestor
+// de procesos, etc.) en vez de cerrarse desde la UI normal — sin esto, Flask,
+// el print bridge y el servicio de inventario quedan huérfanos corriendo en
+// segundo plano (incluyendo ocupando sus puertos en el siguiente arranque).
+function terminarPorSenal() {
+  isQuitting = true;
+  app.quit();
+}
+process.on("SIGTERM", terminarPorSenal);
+process.on("SIGINT", terminarPorSenal);
+
 // Terminar procesos hijos al salir
 app.on("quit", () => {
   console.log("[App] Cerrando procesos hijos...");
@@ -654,5 +805,9 @@ app.on("quit", () => {
   if (printBridgeProcess) {
     printBridgeProcess.kill("SIGKILL");
     console.log("[App] PrintBridge terminado.");
+  }
+  if (inventoryServiceProcess) {
+    inventoryServiceProcess.kill("SIGKILL");
+    console.log("[App] InventoryService terminado.");
   }
 });

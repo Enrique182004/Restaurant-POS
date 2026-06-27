@@ -6,39 +6,6 @@ on:
       - "v*"
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Instalar dependencias Electron
-        run: npm install
-
-      - name: Instalar Python y dependencias
-        run: |
-          pip3 install -r python-backend/requirements.txt
-          pip3 install pyinstaller
-
-      - name: Construir servidor Flask (PyInstaller)
-        run: bash scripts/build-server.sh
-
-      - name: Construir app macOS
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build-mac
-
-      - name: Subir release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: dist/*.dmg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build-win:
     runs-on: windows-latest
     steps:
@@ -48,6 +15,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
 
       - name: Instalar dependencias Electron
         run: npm install
@@ -60,14 +33,49 @@ jobs:
       - name: Construir servidor Flask (PyInstaller)
         run: scripts\build-server.bat
 
-      - name: Construir app Windows
+      - name: Construir jar de inventario (Maven)
+        run: |
+          cd java-services/inventory-service
+          mvn package -DskipTests -q
+
+      - name: Construir e instalar app Windows
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build-win
+        run: npm run build-win -- --publish always
 
-      - name: Subir release
-        uses: softprops/action-gh-release@v1
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
-          files: dist/*.exe
+          node-version: "20"
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Instalar dependencias Electron
+        run: npm install
+
+      - name: Instalar Python y dependencias
+        run: |
+          pip3 install -r python-backend/requirements.txt
+          pip3 install pyinstaller
+
+      - name: Construir servidor Flask (PyInstaller)
+        run: bash scripts/build-server.sh
+
+      - name: Construir jar de inventario (Maven)
+        run: |
+          cd java-services/inventory-service
+          mvn package -DskipTests -q
+
+      - name: Construir e instalar app macOS
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build-mac -- --publish always
