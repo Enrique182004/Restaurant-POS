@@ -18,6 +18,8 @@ function showConfirm(message, onConfirm, onCancel) {
   okBtn.parentNode.replaceChild(newOk, okBtn);
   cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
 
+  var handler;
+
   function closeModal() {
     modal.classList.remove("confirm-visible");
     modal.removeEventListener("click", handler);
@@ -35,12 +37,12 @@ function showConfirm(message, onConfirm, onCancel) {
     if (onCancel) onCancel();
   });
   // Cerrar al hacer clic en el fondo
-  modal.addEventListener("click", function handler(e) {
+  handler = function (e) {
     if (e.target === modal) {
       closeModal();
-      modal.removeEventListener("click", handler);
     }
-  });
+  };
+  modal.addEventListener("click", handler);
 }
 
 // Interceptar formularios con data-confirm automáticamente
