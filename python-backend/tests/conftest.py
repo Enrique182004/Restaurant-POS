@@ -9,11 +9,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 @pytest.fixture
-def app_module():
+def app_module(monkeypatch):
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     os.close(db_fd)
-    os.environ["RESTAURANT_DB_PATH"] = db_path
-    os.environ["SECRET_KEY"] = "test-secret-key-not-for-prod"
+    monkeypatch.setenv("RESTAURANT_DB_PATH", db_path)
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-not-for-prod")
 
     import app as _app_module
     importlib.reload(_app_module)
@@ -21,14 +21,19 @@ def app_module():
     _app_module.app.config["TESTING"] = True
     _app_module.init_db()
 
-    yield _app_module
-
-    os.remove(db_path)
+    try:
+        yield _app_module
+    finally:
+        os.remove(db_path)
 
 
 @pytest.fixture
 def conn(app_module):
-    return app_module.get_db_connection()
+    connection = app_module.get_db_connection()
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 @pytest.fixture
