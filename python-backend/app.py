@@ -1900,6 +1900,45 @@ def new_order():
     return redirect(url_for('home'))
 
 
+# ── Forgot Password ───────────────────────────────────────────────────────────
+# Sin verificación por correo: la app corre localmente y solo es accesible
+# desde la computadora donde está instalada, así que el acceso físico al
+# equipo es la autorización (ver subtítulo en forgot_password.html).
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        new_pw   = request.form.get('new_password', '')
+        confirm  = request.form.get('confirm_password', '')
+
+        if not username or not new_pw or not confirm:
+            flash('Todos los campos son requeridos.', 'error')
+            return render_template('forgot_password.html')
+
+        if new_pw != confirm:
+            flash('Las contraseñas no coinciden.', 'error')
+            return render_template('forgot_password.html')
+
+        if len(new_pw) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+            return render_template('forgot_password.html')
+
+        conn = get_db_connection()
+        user = conn.execute('SELECT id FROM users WHERE username = ?', (username,)).fetchone()
+        if not user:
+            flash('Usuario no encontrado.', 'error')
+            return render_template('forgot_password.html')
+
+        conn.execute('UPDATE users SET password = ? WHERE id = ?',
+                     (generate_password_hash(new_pw), user['id']))
+        conn.execute('UPDATE users SET password_changed = 1 WHERE id = ?', (user['id'],))
+        conn.commit()
+        flash('Contraseña actualizada. Ya puedes iniciar sesión.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+
 # ── Change Password ───────────────────────────────────────────────────────────
 @app.route('/change_password', methods=['GET', 'POST'])
 @login_required
