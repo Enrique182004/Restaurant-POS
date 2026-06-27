@@ -2176,6 +2176,50 @@ def add_employee():
     return redirect('/admin/employees/manage')
 
 
+@app.route('/admin/employees/update/<int:employee_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_employee(employee_id):
+    conn = get_db_connection()
+    employee = conn.execute('SELECT * FROM employees WHERE id = ?', (employee_id,)).fetchone()
+    if not employee:
+        flash('Empleado no encontrado.', 'error')
+        return redirect('/admin/employees/manage')
+
+    name = request.form.get('name', '').strip()
+    pay_amount_raw = request.form.get('pay_amount', '').strip()
+    days_csv = parse_scheduled_days(request.form)
+
+    if not name:
+        flash('El nombre es requerido.', 'error')
+        return redirect('/admin/employees/manage')
+    if not days_csv:
+        flash('Selecciona al menos un día de la semana.', 'error')
+        return redirect('/admin/employees/manage')
+    try:
+        pay_amount = float(pay_amount_raw)
+    except ValueError:
+        pay_amount = 0
+    if pay_amount <= 0:
+        flash('El pago semanal debe ser mayor a 0.', 'error')
+        return redirect('/admin/employees/manage')
+
+    conn.execute('UPDATE employees SET name = ? WHERE id = ?', (name, employee_id))
+
+    today_week_start, _ = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
+    next_week_start = (
+        datetime.strptime(today_week_start, '%Y-%m-%d') + timedelta(days=7)
+    ).strftime('%Y-%m-%d')
+    conn.execute(
+        'INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) '
+        'VALUES (?, ?, ?, ?)',
+        (employee_id, next_week_start, days_csv, pay_amount)
+    )
+    conn.commit()
+    flash(f'Empleado "{name}" actualizado. Los cambios de horario/pago aplican a partir de la próxima semana.', 'success')
+    return redirect('/admin/employees/manage')
+
+
 # ── Promotions toggle ─────────────────────────────────────────────────────────
 @app.route('/admin/promotions/add', methods=['POST'])
 @login_required
