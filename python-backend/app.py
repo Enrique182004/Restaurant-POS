@@ -46,6 +46,15 @@ csrf.init_app(app)
 # Set session lifetime
 app.permanent_session_lifetime = timedelta(hours=24)
 
+@app.template_filter('num')
+def format_num(value):
+    """Renders whole numbers without a trailing .0 (e.g. 5.0 -> 5) for editable qty inputs."""
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return value
+    return int(f) if f == int(f) else f
+
 # ── Base de datos ──────────────────────────────────────────────────────────────
 
 class _GConnection:
