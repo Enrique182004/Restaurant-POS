@@ -107,7 +107,8 @@
     "publish": {
       "provider": "github",
       "owner": "Enrique182004",
-      "repo": "Restaurant-POS"
+      "repo": "Restaurant-POS",
+      "draft": false
     },
     "files": [
       "main.js",
