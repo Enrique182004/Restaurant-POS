@@ -476,7 +476,7 @@ def login():
     return render_template('login.html')
 
 # Logout
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     flash('Sesión cerrada exitosamente', 'success')
