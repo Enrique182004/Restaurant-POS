@@ -1651,6 +1651,7 @@ def update_inventory_item(item_id):
 
         current_item = current_response.json()
         current_item['quantity'] = data.get('quantity', current_item['quantity'])
+        current_item['minThreshold'] = data.get('minThreshold', current_item['minThreshold'])
 
         response = requests.put(
             f'{JAVA_INVENTORY_SERVICE}/api/inventory/{item_id}',
@@ -1658,7 +1659,12 @@ def update_inventory_item(item_id):
             timeout=5
         )
         if response.status_code == 200:
-            return jsonify({'success': True})
+            updated = response.json()
+            return jsonify({
+                'success': True,
+                'quantity': updated.get('quantity'),
+                'minThreshold': updated.get('minThreshold'),
+            })
         return jsonify({'success': False, 'error': f'Error al guardar en Java (código {response.status_code})'})
     except requests.exceptions.RequestException as e:
         return jsonify({'success': False, 'error': f'Sin conexión al servicio de inventario: {e}'})
