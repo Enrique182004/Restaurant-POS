@@ -122,6 +122,15 @@ class ThermalPrintBridge:
         3. Guarda el nombre encontrado en la BD para la próxima vez.
         Devuelve el nombre de la impresora a usar.
         """
+        # Rutas UNC (\\host\share) son configuración manual explícita para que
+        # el comando `print` de Windows funcione — no aparecen en `wmic printer
+        # get name` (que solo lista nombres locales), así que no se pueden
+        # verificar contra esa lista. Sin este atajo, la auto-detección las
+        # confundía con "no encontrada" y las sobrescribía con el nombre local
+        # plano en cada reinicio, rompiendo la impresión de nuevo.
+        if nombre_deseado.startswith('\\\\'):
+            return nombre_deseado
+
         system = platform.system()
 
         if system in ('Darwin', 'Linux'):
