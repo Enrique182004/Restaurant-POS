@@ -215,7 +215,10 @@ class ThermalPrintBridge:
         cleaned = self.clean_text(receipt_content)
         result = bytearray(ESC_INIT)
 
-        for line in ('\n' + cleaned + '\n\n').split('\n'):
+        # Margen amplio de papel en blanco al final: el corte es manual (sin
+        # cuchilla automática), así que hace falta suficiente espacio para
+        # que el corte no se lleve contenido del ticket.
+        for line in ('\n' + cleaned + '\n' * 8).split('\n'):
             if line.startswith('\x02'):
                 # Línea de nombre de artículo — doble altura
                 contenido = line[1:]
