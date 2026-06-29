@@ -1,6 +1,6 @@
 {
   "name": "ebi-ball-pos",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Ebi Ball — Sistema de Punto de Venta",
   "main": "main.js",
   "scripts": {
@@ -108,7 +108,7 @@
       "provider": "github",
       "owner": "Enrique182004",
       "repo": "Restaurant-POS",
-      "draft": false
+      "releaseType": "release"
     },
     "files": [
       "main.js",
