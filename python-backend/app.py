@@ -1891,6 +1891,60 @@ def void_order(order_id):
     return redirect(url_for('order_history'))
 
 
+@app.route('/admin/orders/delete/<order_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_order(order_id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM orders WHERE id = ?', (order_id,))
+    conn.commit()
+    flash(f'Orden {order_id} eliminada.', 'success')
+    return redirect(url_for('order_history'))
+
+
+@app.route('/admin/orders/delete_selected', methods=['POST'])
+@login_required
+@admin_required
+def delete_orders_selected():
+    order_ids = request.form.getlist('order_ids')
+    if order_ids:
+        conn = get_db_connection()
+        conn.executemany('DELETE FROM orders WHERE id = ?', [(oid,) for oid in order_ids])
+        conn.commit()
+        flash(f'{len(order_ids)} orden(es) eliminada(s).', 'success')
+    return redirect(url_for('order_history'))
+
+
+@app.route('/admin/orders/delete_all', methods=['POST'])
+@login_required
+@admin_required
+def delete_orders_all():
+    q      = request.form.get('q', '').strip()
+    fecha  = request.form.get('fecha', '').strip()
+    estado = request.form.get('estado', '').strip()
+
+    conditions = []
+    params = []
+
+    if q:
+        conditions.append("(id LIKE ? OR customer_name LIKE ?)")
+        params += [f'%{q}%', f'%{q}%']
+    if fecha:
+        conditions.append("date LIKE ?")
+        params.append(f'{fecha}%')
+    if estado == 'anuladas':
+        conditions.append("status = 'voided'")
+    elif estado == 'activas':
+        conditions.append("status != 'voided'")
+
+    where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+    conn = get_db_connection()
+    cursor = conn.execute(f'DELETE FROM orders {where}', params)
+    conn.commit()
+    flash(f'{cursor.rowcount} orden(es) eliminada(s).', 'success')
+    return redirect(url_for('order_history', q=q, fecha=fecha, estado=estado))
+
+
 @app.route('/admin/reprint/<order_id>', methods=['POST'])
 @login_required
 @admin_required
