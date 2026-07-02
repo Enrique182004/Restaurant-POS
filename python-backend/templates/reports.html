@@ -186,7 +186,7 @@ styles %}
     display: flex;
     align-items: flex-end;
     gap: 3px;
-    height: 80px;
+    height: 140px;
   }
   .hour-col {
     display: flex;
@@ -201,20 +201,32 @@ styles %}
     background: #64b5f6;
     border-radius: 3px 3px 0 0;
     min-height: 2px;
+    transition: opacity 0.15s;
+    cursor: default;
+  }
+  .hour-fill:hover {
+    opacity: 0.75;
   }
   .hour-fill.zero {
     background: #2a2a2a;
+  }
+  .hour-fill.peak {
+    background: #ff9800;
   }
   .hour-lbl {
     font-size: 0.55rem;
     color: #555;
     margin-top: 3px;
   }
+  .hour-lbl.peak {
+    color: #ff9800;
+    font-weight: 700;
+  }
   .item-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #2a2a2a;
   }
   .item-row:last-child {
@@ -231,7 +243,7 @@ styles %}
     flex: 1;
     background: #2a2a2a;
     border-radius: 4px;
-    height: 8px;
+    height: 10px;
     overflow: hidden;
   }
   .item-bar-fill {
@@ -242,14 +254,24 @@ styles %}
   .item-name {
     font-size: 0.85rem;
     color: #e0e0e0;
-    font-weight: 500;
+    font-weight: 600;
     min-width: 110px;
+  }
+  .item-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
   }
   .item-qty {
     font-size: 0.85rem;
     color: #ff9800;
     font-weight: 700;
-    flex-shrink: 0;
+  }
+  .item-rev {
+    font-size: 0.72rem;
+    color: #666;
+    margin-top: 1px;
   }
   .pay-row {
     display: flex;
@@ -407,19 +429,30 @@ styles %}
 
     <div class="card">
       <div class="card-title">Órdenes por hora</div>
-      {% set max_hr = hourly.values() | max %} {% if max_hr > 0 %}
+      {% set max_hr_cnt = hourly.values() | map(attribute='cnt') | max %} {% if
+      max_hr_cnt > 0 %} {% set peak_hr = (hourly.items() |
+      sort(attribute='1.cnt') | last)[0] %}
       <div class="hour-chart">
-        {% for hr, cnt in hourly.items() %} {% set pct = (cnt / max_hr * 100) |
-        int %}
+        {% for hr, data in hourly.items() %} {% set pct = (data.cnt / max_hr_cnt
+        * 100) | int %} {% set is_peak = (hr == peak_hr and data.cnt > 0) %}
         <div class="hour-col">
           <div
-            class="hour-fill {% if pct == 0 %}zero{% endif %}"
+            class="hour-fill {% if pct == 0 %}zero{% elif is_peak %}peak{% endif %}"
             style="height:{{ pct if pct > 0 else 4 }}%;"
-            title="{{ '%02d:00'|format(hr) }}: {{ cnt }} órdenes"
+            title="{{ '%02d:00'|format(hr) }}: {{ data.cnt }} órdenes — ${{ '%.0f'|format(data.rev) }}"
           ></div>
-          <div class="hour-lbl">{{ '%02d'|format(hr) }}</div>
+          <div class="hour-lbl {% if is_peak %}peak{% endif %}">
+            {{ '%02d'|format(hr) }}
+          </div>
         </div>
         {% endfor %}
+      </div>
+      <div style="font-size: 0.75rem; color: #888; margin-top: 10px">
+        Hora pico:
+        <span style="color: #ff9800; font-weight: 700"
+          >{{ '%02d:00'|format(peak_hr) }}</span
+        >
+        — {{ hourly[peak_hr].cnt }} órdenes
       </div>
       {% else %}
       <div class="empty-rep">Sin datos en este período</div>
@@ -430,8 +463,8 @@ styles %}
   <div class="two-col">
     <div class="card">
       <div class="card-title">Productos más vendidos</div>
-      {% if top_items %} {% set max_qty = top_items[0][1] %} {% for name, qty in
-      top_items %}
+      {% if top_items_data %} {% set max_qty = top_items_data[0][1] %} {% for
+      name, qty, rev in top_items_data %}
       <div class="item-row">
         <span class="item-rank">{{ loop.index }}</span>
         <span class="item-name">{{ name }}</span>
@@ -441,7 +474,10 @@ styles %}
             style="width:{{ (qty / max_qty * 100) | int }}%;"
           ></div>
         </div>
-        <span class="item-qty">×{{ qty }}</span>
+        <div class="item-stats">
+          <span class="item-qty">×{{ qty }}</span>
+          <span class="item-rev">${{ "%.0f"|format(rev) }}</span>
+        </div>
       </div>
       {% endfor %} {% else %}
       <div class="empty-rep">Sin datos en este período</div>

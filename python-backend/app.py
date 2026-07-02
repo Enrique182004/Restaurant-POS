@@ -410,8 +410,38 @@ def init_db():
     )
     ''')
 
+    # Activity log for audit trail
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        description TEXT NOT NULL,
+        actor TEXT DEFAULT 'sistema',
+        timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+
     conn.commit()
     conn.close()
+
+
+def log_activity(action, description):
+    """Append a row to activity_log. actor comes from Flask session if available."""
+    try:
+        actor = 'sistema'
+        try:
+            from flask import session as _s
+            actor = _s.get('username', 'sistema')
+        except Exception:
+            pass
+        conn = get_db_connection()
+        conn.execute(
+            'INSERT INTO activity_log (action, description, actor, timestamp) VALUES (?, ?, ?, ?)',
+            (action, description, actor, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        conn.commit()
+    except Exception:
+        pass
 
 
 # ── Empleados y asistencia: helpers ───────────────────────────────────────────
@@ -1468,6 +1498,12 @@ def ticket():
     payment_method = request.form.get('payment_method', request.args.get('payment_method', 'card'))
     amount_paid = float(request.form.get('amount_paid', request.args.get('amount_paid', total_price)))
     change = amount_paid - total_price if payment_method == 'cash' else 0
+    # Split payment: store cash_portion and card_portion in amount_paid as a JSON string
+    if payment_method == 'split':
+        cash_portion = float(request.form.get('cash_portion', request.args.get('cash_portion', 0)))
+        card_portion = float(request.form.get('card_portion', request.args.get('card_portion', 0)))
+        amount_paid = cash_portion + card_portion
+        change = max(0, amount_paid - total_price)
     
     # Order ID for this transaction
     order_id = session.get('order_id')
@@ -1509,6 +1545,7 @@ def ticket():
         except Exception as e:
             print(f"Error saving receipt: {str(e)}")
         
+        log_activity('orden_completada', f'Orden #{order_id} — {customer_name} — ${total_price:.2f} ({payment_method})')
         # Clear cart, customer name, and generate new order ID for the next order
         session['cart'] = []
         session['order_id'] = str(uuid.uuid4())[:8]
@@ -1740,6 +1777,7 @@ def update_prices():
         except (ValueError, sqlite3.Error):
             pass
     conn.commit()
+    log_activity('precios_actualizados', 'Precios del menú actualizados')
     flash('Precios actualizados correctamente.', 'success')
     return redirect(url_for('manage_prices'))
 
@@ -1810,38 +1848,50 @@ def reports():
     for r in trend_rows:
         daily_trend[r['day']] = {'rev': r['rev'], 'cnt': r['cnt']}
 
-    # Hourly distribution within selected period
+    # Hourly distribution within selected period — orders + revenue
     hour_rows = conn.execute(
-        "SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt "
+        "SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
         "FROM orders WHERE date >= ? AND status != 'voided' "
         "GROUP BY hr ORDER BY hr", (start_str,)
     ).fetchall()
-    hourly = {h: 0 for h in range(8, 23)}
+    hourly = {h: {'cnt': 0, 'rev': 0.0} for h in range(8, 23)}
     for r in hour_rows:
         if 0 <= r['hr'] <= 23:
-            hourly[r['hr']] = r['cnt']
+            hourly[r['hr']] = {'cnt': r['cnt'], 'rev': r['rev']}
 
-    # Item popularity — parse JSON items
+    # Item popularity — parse JSON items, track qty + revenue
     all_orders = conn.execute(
-        "SELECT items FROM orders WHERE date >= ? AND status != 'voided'", (start_str,)
+        "SELECT items, total FROM orders WHERE date >= ? AND status != 'voided'", (start_str,)
     ).fetchall()
     item_counts = {}
+    item_revenue = {}
     for o in all_orders:
         try:
             items = json.loads(o['items']) if o['items'] else []
         except (json.JSONDecodeError, TypeError):
             items = []
+        n_items = len(items) or 1
+        per_item_rev = (o['total'] or 0) / n_items
         for it in items:
             name = it.get('name') or it.get('type', 'Desconocido')
             qty = it.get('quantity', 1)
             item_counts[name] = item_counts.get(name, 0) + qty
+            item_revenue[name] = item_revenue.get(name, 0.0) + it.get('price', per_item_rev)
     top_items = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    # Build enriched top_items list: (name, qty, revenue)
+    top_items_data = [(name, qty, item_revenue.get(name, 0.0)) for name, qty in top_items]
 
     # Voided orders count
     voided = conn.execute(
         "SELECT COUNT(*) FROM orders WHERE date >= ? AND status = 'voided'", (start_str,)
     ).fetchone()[0]
 
+    # Custom date support
+    selected_date = request.args.get('date', '')
+    if period == 'custom' and selected_date:
+        label = selected_date
+        start = datetime.strptime(selected_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
+        start_str = start.strftime('%Y-%m-%d %H:%M:%S')
 
     return render_template('reports.html',
         period=period, label=label,
@@ -1850,8 +1900,10 @@ def reports():
         daily_trend=daily_trend,
         hourly=hourly,
         top_items=top_items,
+        top_items_data=top_items_data,
         voided=voided,
         today_str=now.strftime('%Y-%m-%d'),
+        selected_date=selected_date,
     )
 
 
@@ -1908,6 +1960,7 @@ def void_order(order_id):
     conn = get_db_connection()
     conn.execute("UPDATE orders SET status = 'voided' WHERE id = ?", (order_id,))
     conn.commit()
+    log_activity('orden_anulada', f'Orden #{order_id} anulada')
     flash(f'Orden {order_id} anulada.', 'success')
     return redirect(url_for('order_history'))
 
@@ -2162,6 +2215,38 @@ def cancel_held_order(held_id):
     return redirect(url_for('home'))
 
 
+@app.route('/api/recent_customers')
+@login_required
+def recent_customers():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT DISTINCT customer_name FROM orders "
+        "WHERE customer_name IS NOT NULL AND customer_name != '' AND customer_name != 'Cliente' "
+        "ORDER BY date DESC LIMIT 30"
+    ).fetchall()
+    names = list(dict.fromkeys(r['customer_name'] for r in rows))[:20]
+    return jsonify(names)
+
+
+@app.route('/split_payment')
+@login_required
+def split_payment():
+    cart = session.get('cart', [])
+    total_price = sum(item['price'] for item in cart)
+    return render_template('split_payment.html', total_price=total_price)
+
+
+@app.route('/admin/activity')
+@login_required
+@admin_required
+def activity_log_view():
+    conn = get_db_connection()
+    logs = conn.execute(
+        'SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 200'
+    ).fetchall()
+    return render_template('activity_log.html', logs=[dict(l) for l in logs])
+
+
 # ── Forgot Password ───────────────────────────────────────────────────────────
 # Sin verificación por correo: la app corre localmente y solo es accesible
 # desde la computadora donde está instalada, así que el acceso físico al
@@ -2274,6 +2359,7 @@ def add_user():
     conn.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
                  (username, generate_password_hash(password), role))
     conn.commit()
+    log_activity('usuario_creado', f'Usuario "{username}" ({role}) creado')
     flash(f'Usuario "{username}" creado exitosamente.', 'success')
     return redirect(url_for('manage_users'))
 
@@ -2297,6 +2383,7 @@ def reset_user_password(user_id):
                  (generate_password_hash(new_pw), user_id))
     conn.execute('UPDATE users SET password_changed = 1 WHERE id = ?', (user_id,))
     conn.commit()
+    log_activity('contraseña_restablecida', f'Contraseña de "{user["username"]}" restablecida')
     flash(f'Contraseña de "{user["username"]}" restablecida.', 'success')
     return redirect(url_for('manage_users'))
 
@@ -2314,6 +2401,7 @@ def delete_user(user_id):
     if user:
         conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
         conn.commit()
+        log_activity('usuario_eliminado', f'Usuario "{user["username"]}" eliminado')
         flash(f'Usuario "{user["username"]}" eliminado.', 'success')
     return redirect(url_for('manage_users'))
 

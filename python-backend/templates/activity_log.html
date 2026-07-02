@@ -1,0 +1,152 @@
+{% extends 'base.html' %} {% block title %}Bitácora de Actividad{% endblock %}
+{% block styles %}
+<style>
+  .log-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .log-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .back-btn {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .back-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .log-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .log-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ff9800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0 14px 12px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .log-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 0.88rem;
+    color: #e0e0e0;
+    vertical-align: top;
+  }
+  .log-table tr:hover td {
+    background: #1e1e1e;
+  }
+  .log-table tr:last-child td {
+    border-bottom: none;
+  }
+  .log-action {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .log-action.orden_completada {
+    background: rgba(78, 203, 113, 0.15);
+    color: #4ecb71;
+  }
+  .log-action.orden_anulada {
+    background: rgba(248, 113, 113, 0.15);
+    color: #f87171;
+  }
+  .log-action.usuario_creado,
+  .log-action.usuario_eliminado {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+  }
+  .log-action.contraseña_restablecida {
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+  }
+  .log-action.precios_actualizados {
+    background: rgba(251, 146, 60, 0.15);
+    color: #fb923c;
+  }
+  .log-action.other {
+    background: rgba(255, 255, 255, 0.06);
+    color: #aaa;
+  }
+  .log-ts {
+    color: #555;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .log-actor {
+    color: #888;
+    font-size: 0.82rem;
+  }
+  .empty-log {
+    text-align: center;
+    padding: 60px 20px;
+    color: #555;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="log-wrap">
+  <div class="log-header">
+    <h1 class="log-title">📋 Bitácora de Actividad</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% if logs %}
+  <table class="log-table">
+    <thead>
+      <tr>
+        <th>Acción</th>
+        <th>Descripción</th>
+        <th>Usuario</th>
+        <th>Fecha y hora</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %} {% set action_class = log.action if log.action in
+      ['orden_completada','orden_anulada','usuario_creado','usuario_eliminado','contraseña_restablecida','precios_actualizados']
+      else 'other' %}
+      <tr>
+        <td>
+          <span class="log-action {{ action_class }}"
+            >{{ log.action | replace('_', ' ') }}</span
+          >
+        </td>
+        <td>{{ log.description }}</td>
+        <td class="log-actor">{{ log.actor }}</td>
+        <td class="log-ts">{{ log.timestamp }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-log">
+    <div style="font-size: 3rem; margin-bottom: 12px">📋</div>
+    <div>Sin actividad registrada todavía.</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

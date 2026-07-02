@@ -351,7 +351,10 @@ styles %}
         placeholder="Ingresa el nombre del cliente..."
         value="{{ session.get('customer_name', '') }}"
         maxlength="50"
+        list="recent-customers-list"
+        autocomplete="off"
       />
+      <datalist id="recent-customers-list"></datalist>
     </div>
     <div class="customer-status" id="customer-status">
       {% if session.get('customer_name') %}
@@ -602,6 +605,19 @@ styles %}
 
     loadQueue();
     setInterval(loadQueue, 30000);
+
+    // ── Customer name autocomplete ─────────────────────────────────────────
+    fetch("/api/recent_customers")
+      .then((r) => r.json())
+      .then((names) => {
+        const dl = document.getElementById("recent-customers-list");
+        names.forEach((n) => {
+          const opt = document.createElement("option");
+          opt.value = n;
+          dl.appendChild(opt);
+        });
+      })
+      .catch(() => {});
   });
 </script>
 {% endblock %}

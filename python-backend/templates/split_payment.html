@@ -1,0 +1,302 @@
+{% extends 'base.html' %} {% block title %}Pago Mixto{% endblock %} {% block
+styles %}
+<style>
+  .split-container {
+    max-width: 650px;
+    margin: 0 auto;
+  }
+  .split-summary {
+    background: #1e1e1e;
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border: 2px solid #2a2a2a;
+  }
+  .split-total-label {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .split-total-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ff9800;
+  }
+  .split-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .split-card {
+    background: #1e1e1e;
+    border-radius: 16px;
+    padding: 20px;
+    border: 2px solid #2a2a2a;
+  }
+  .split-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .split-input-wrap {
+    display: flex;
+    align-items: center;
+    background: #2d2d2d;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    overflow: hidden;
+  }
+  .split-prefix {
+    padding: 0 12px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #666;
+  }
+  .split-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 14px 4px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #f5f5f5;
+    width: 100%;
+  }
+  .split-input:focus {
+    outline: none;
+  }
+  .split-remaining {
+    background: #1e1e1e;
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin: 0 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 2px dashed #2a2a2a;
+    transition: border-color 0.2s;
+  }
+  .split-remaining.balanced {
+    border-color: #4ecb71;
+  }
+  .split-remaining.over {
+    border-color: #f87171;
+  }
+  .split-remaining-label {
+    font-size: 0.9rem;
+    color: #888;
+    font-weight: 600;
+  }
+  .split-remaining-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #aaa;
+    transition: color 0.2s;
+  }
+  .split-remaining-value.balanced {
+    color: #4ecb71;
+  }
+  .split-remaining-value.over {
+    color: #f87171;
+  }
+  .split-confirm-btn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    background: #ff9800;
+    color: #121212;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-bottom: 12px;
+  }
+  .split-confirm-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .split-confirm-btn:not(:disabled):hover {
+    opacity: 0.9;
+  }
+  .quick-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .quick-btn {
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    color: #ccc;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-btn:hover {
+    background: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
+  }
+  @media (max-width: 480px) {
+    .split-sections {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="container split-container">
+  <h1 class="page-title">Pago Mixto</h1>
+
+  <div class="split-summary">
+    <div style="font-size: 2.5rem">💵💳</div>
+    <div>
+      <div class="split-total-label">Total a pagar</div>
+      <div class="split-total-amount" id="total-display">
+        ${{ "%.2f"|format(total_price) }}
+      </div>
+    </div>
+  </div>
+
+  <div class="split-sections">
+    <div class="split-card">
+      <div class="split-card-title">💵 Efectivo</div>
+      <div class="split-input-wrap">
+        <div class="split-prefix">$</div>
+        <input
+          type="number"
+          id="cash-input"
+          class="split-input"
+          min="0"
+          step="1"
+          placeholder="0"
+          autofocus
+        />
+      </div>
+      <div class="quick-row" id="cash-quick"></div>
+    </div>
+    <div class="split-card">
+      <div class="split-card-title">💳 Tarjeta</div>
+      <div class="split-input-wrap">
+        <div class="split-prefix">$</div>
+        <input
+          type="number"
+          id="card-input"
+          class="split-input"
+          min="0"
+          step="1"
+          placeholder="0"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="split-remaining" id="remaining-box">
+    <span class="split-remaining-label" id="remaining-label"
+      >Falta por asignar</span
+    >
+    <span class="split-remaining-value" id="remaining-value">
+      ${{ "%.2f"|format(total_price) }}
+    </span>
+  </div>
+
+  <form method="GET" action="{{ url_for('ticket') }}" id="split-form">
+    <input type="hidden" name="payment_method" value="split" />
+    <input type="hidden" name="cash_portion" id="cash-hidden" value="0" />
+    <input type="hidden" name="card_portion" id="card-hidden" value="0" />
+    <button type="submit" class="split-confirm-btn" id="confirm-btn" disabled>
+      ✓ Confirmar Pago Mixto
+    </button>
+  </form>
+
+  <div class="action-buttons">
+    <a href="{{ url_for('payment') }}" class="action-button cancel-button">
+      ← Regresar
+    </a>
+  </div>
+</div>
+<script>
+  (function () {
+    var total = {{ total_price }};
+    var cashInput = document.getElementById('cash-input');
+    var cardInput = document.getElementById('card-input');
+    var remainBox = document.getElementById('remaining-box');
+    var remainVal = document.getElementById('remaining-value');
+    var remainLbl = document.getElementById('remaining-label');
+    var confirmBtn = document.getElementById('confirm-btn');
+    var cashHidden = document.getElementById('cash-hidden');
+    var cardHidden = document.getElementById('card-hidden');
+
+    // Quick-amount buttons for cash
+    var quickRow = document.getElementById('cash-quick');
+    [50, 100, 200].forEach(function (v) {
+      if (v < total) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'quick-btn';
+        b.textContent = '$' + v;
+        b.addEventListener('click', function () {
+          cashInput.value = v;
+          recalc();
+        });
+        quickRow.appendChild(b);
+      }
+    });
+
+    function recalc() {
+      var cash = parseFloat(cashInput.value) || 0;
+      var card = parseFloat(cardInput.value) || 0;
+      var assigned = cash + card;
+      var diff = total - assigned;
+
+      cashHidden.value = cash.toFixed(2);
+      cardHidden.value = card.toFixed(2);
+
+      remainVal.textContent = '$' + Math.abs(diff).toFixed(2);
+
+      if (Math.abs(diff) < 0.01) {
+        remainLbl.textContent = 'Listo ✓';
+        remainVal.className = 'split-remaining-value balanced';
+        remainBox.className = 'split-remaining balanced';
+        confirmBtn.disabled = false;
+      } else if (assigned > total) {
+        remainLbl.textContent = 'Excede en';
+        remainVal.className = 'split-remaining-value over';
+        remainBox.className = 'split-remaining over';
+        confirmBtn.disabled = true;
+      } else {
+        remainLbl.textContent = 'Falta por asignar';
+        remainVal.className = 'split-remaining-value';
+        remainBox.className = 'split-remaining';
+        confirmBtn.disabled = true;
+      }
+    }
+
+    // Auto-fill card with remainder when cash changes
+    cashInput.addEventListener('input', function () {
+      var cash = parseFloat(cashInput.value) || 0;
+      var remainder = total - cash;
+      if (remainder >= 0) {
+        cardInput.value = remainder.toFixed(2);
+      }
+      recalc();
+    });
+    cardInput.addEventListener('input', recalc);
+
+    recalc();
+  })();
+</script>
+{% endblock %}
