@@ -1604,16 +1604,6 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
     # Total
     receipt_content.append(f"TOTAL: ${total:.2f}")
     receipt_content.append("")
-    
-    # Payment details
-    receipt_content.append(f"Método de pago: {payment_method.upper()}")
-    
-    if payment_method == 'cash':
-        receipt_content.append(f"Monto recibido: ${amount_paid:.2f}")
-        receipt_content.append(f"Cambio: ${change:.2f}")
-    
-    # Footer
-    receipt_content.append("")
     receipt_content.append("¡Gracias por su compra!")
     receipt_content.append("Vuelva pronto")
     
