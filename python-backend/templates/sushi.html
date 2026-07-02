@@ -8,7 +8,9 @@
         .premium-grid .option-card { position: relative; border: 2px solid #3D3D3D; background-color: #2D2D2D; }
         .premium-grid .option-card.selected { border-color: #FF9800; background-color: #3D3D3D; }
         .base-options { grid-template-columns: repeat(3, 1fr); }
-        @media (max-width: 768px) { .premium-grid { max-width: 250px; } }
+        .sauce-options { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 768px) { .premium-grid { max-width: 250px; } .sauce-options { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 480px) { .sauce-options { grid-template-columns: repeat(2, 1fr); } }
     </style>
 {% endblock %}
 {% block body %}
@@ -121,11 +123,27 @@
                     </div>
                     {% endfor %}
                 </div>
-                <input type="hidden" id="sauce_field" name="sauce" value="{{ item.sauce if item and item.sauce else (item.prepared if item and item.prepared else '') }}">
             </div>
 
             <div class="customization-step">
-                <h2 class="step-title">5. ¿Toppings? (Opcional)</h2>
+                <h2 class="step-title">5. ¿En qué salsa? (Opcional)</h2>
+                <div class="option-grid sauce-options">
+                    {% for sauce in sushi_sauces %}
+                    {% set sauce_id = 'sushi_sauce_' ~ (sauce.name | lower | replace(' ', '_')) %}
+                    <div class="option-card radio-card {% if item and item.sauce == sauce.name %}selected{% endif %}">
+                        <input type="radio" id="{{ sauce_id }}" name="sauce" value="{{ sauce.name }}"
+                            {% if item and item.sauce == sauce.name %} checked {% endif %} class="hidden-input">
+                        <label for="{{ sauce_id }}" class="card-content">
+                            <div class="option-icon">{{ sauce.icon }}</div>
+                            <div class="option-name">{{ sauce.name }}</div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="customization-step">
+                <h2 class="step-title">6. ¿Toppings? (Opcional)</h2>
                 <div class="option-grid topping-options">
                     <div class="option-card {% if item and 'Mango' in item.toppings %}selected{% endif %}">
                         <input type="checkbox" id="mango" name="toppings" value="Mango"
@@ -223,19 +241,6 @@
             }
 
             const form = document.getElementById('customizationForm');
-            const sauceField = document.getElementById('sauce_field');
-
-            document.querySelectorAll('input[name="prepared"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.checked && sauceField) { sauceField.value = this.value; }
-                });
-                if (radio.checked && sauceField) { sauceField.value = radio.value; }
-            });
-
-            const selectedPrepared = document.querySelector('input[name="prepared"]:checked');
-            if (selectedPrepared && sauceField && (!sauceField.value || sauceField.value.trim() === '')) {
-                sauceField.value = selectedPrepared.value;
-            }
 
             if (form) {
                 form.addEventListener('submit', function(event) {
@@ -257,7 +262,6 @@
                         mostrarErrorEnSeccion('input[name="prepared"]', 'Por favor selecciona una opción de preparado.');
                         return;
                     }
-                    if (sauceField) { sauceField.value = preparedSelected.value; }
                     const regularIngredients = Array.from(selectedIngredients).filter(input => input.value !== 'Ostión');
                     if (regularIngredients.length > MAX_INGREDIENTS) {
                         event.preventDefault();
@@ -308,10 +312,6 @@
                                 if (c) { c.classList.remove('selected'); }
                             });
                             this.classList.add('selected');
-                            if (name === 'prepared') {
-                                const sf = document.getElementById('sauce_field');
-                                if (sf) { sf.value = radio.value; }
-                            }
                             const changeEvent = new Event('change', { bubbles: true });
                             radio.dispatchEvent(changeEvent);
                         });

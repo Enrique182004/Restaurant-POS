@@ -285,6 +285,16 @@ def init_db():
             ('sushi_ingredient', 'Tocino',   '🥓', 0, 6),
             ('sushi_ingredient', 'Jalapeño', '🌶️', 0, 7),
             ('sushi_ingredient', 'Pepino',   '🥒', 0, 8),
+            # Sushi sauces
+            ('sushi_sauce', 'Tradicional', '🔴', 0, 1),
+            ('sushi_sauce', 'Flamin Hot',  '🔥', 0, 2),
+            ('sushi_sauce', 'Puff',        '💨', 0, 3),
+            ('sushi_sauce', 'Nacha',       '🌮', 0, 4),
+            ('sushi_sauce', 'Búfalo',      '🦬', 0, 5),
+            ('sushi_sauce', 'Barbecue',    '🍖', 0, 6),
+            ('sushi_sauce', 'Agridulce',   '🍯', 0, 7),
+            ('sushi_sauce', 'Frutal',      '🍎', 0, 8),
+            ('sushi_sauce', 'Seca',        '🌾', 0, 9),
         ]
         for cat, name, icon, price, sort in options_seed:
             conn.execute(
@@ -650,7 +660,7 @@ def toggle_menu_option(option_id):
 @admin_required
 def manage_menu_options():
     conn = get_db_connection()
-    categories = ['beverage', 'boneless_sauce', 'extra_sauce', 'rice_ingredient', 'rice_sauce', 'sushi_ingredient']
+    categories = ['beverage', 'boneless_sauce', 'extra_sauce', 'rice_ingredient', 'rice_sauce', 'sushi_ingredient', 'sushi_sauce']
     menu_opts = {}
     for cat in categories:
         rows = conn.execute(
@@ -922,30 +932,30 @@ def customize_sushi():
         # Validate required fields
         if not style:
             flash('Por favor selecciona si deseas tu sushi Frío o Empanizado.', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         if not prepared:
             flash('Por favor selecciona una opción de preparado.', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         regular_ingredients = [ing for ing in ingredients if ing != 'Ostión']
         ostion_ingredients = [ing for ing in ingredients if ing == 'Ostión']
 
         if len(regular_ingredients) > 3:
             flash('Máximo 3 ingredientes regulares permitidos', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         if len(regular_ingredients) < 1:
             flash('Selecciona al menos 1 ingrediente', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         if len(ostion_ingredients) > 0 and len(regular_ingredients) < 3:
             flash('Ostión solo puede agregarse cuando tienes 3 ingredientes regulares', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         if len(ostion_ingredients) > 1:
             flash('Solo puedes agregar un Ostión', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         base_price = get_item_price('Sushi', prepared)
         ostion_count = len(ostion_ingredients)
@@ -973,7 +983,7 @@ def customize_sushi():
         flash('¡Sushi agregado a la orden!', 'success')
         return redirect(url_for('home'))
 
-    return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+    return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
 # View Cart - UNCHANGED (still goes to cart when explicitly requested)
 @app.route('/cart')
@@ -1143,22 +1153,22 @@ def update_item(item_index):
             if len(regular_ingredients) > 3:
                 flash('Máximo 3 ingredientes regulares permitidos', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
             if len(regular_ingredients) < 1:
                 flash('Selecciona al menos 1 ingrediente', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
             if len(ostion_ingredients) > 0 and len(regular_ingredients) < 3:
                 flash('Ostión solo puede agregarse cuando tienes 3 ingredientes regulares', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
             if len(ostion_ingredients) > 1:
                 flash('Solo puedes agregar un Ostión', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
             
             item['base'] = request.form.getlist('base')
             item['ingredients'] = ingredients
@@ -1206,7 +1216,7 @@ def update_item(item_index):
                                rice_sauces=get_menu_options('rice_sauce'))
     elif item['type'] == 'Sushi':
         return render_template('sushi.html', item=item, item_index=item_index,
-                               sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_prep_prices=get_sushi_prep_prices())
+                               sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
 # Remove Item
 @app.route('/remove_item/<int:item_index>', methods=['POST'])

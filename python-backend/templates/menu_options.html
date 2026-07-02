@@ -252,10 +252,11 @@ block styles %}
   {% endfor %}{% endif %} {% endwith %} {% set cat_labels = { 'beverage':
   'Bebidas', 'boneless_sauce': 'Salsas Boneless', 'extra_sauce': 'Salsas Extra
   (Complementos)', 'rice_ingredient': 'Ingredientes Bola de Arroz',
-  'rice_sauce': 'Salsas Bola de Arroz', 'sushi_ingredient': 'Ingredientes Sushi'
-  } %} {% set cat_icons = { 'beverage': '🥤', 'boneless_sauce': '🍗',
-  'extra_sauce': '🌶️', 'rice_ingredient': '🍙', 'rice_sauce': '🔴',
-  'sushi_ingredient': '🍣' } %} {% for cat, opts in menu_opts.items() %}
+  'rice_sauce': 'Salsas Bola de Arroz', 'sushi_ingredient': 'Ingredientes
+  Sushi', 'sushi_sauce': 'Salsas Sushi' } %} {% set cat_icons = { 'beverage':
+  '🥤', 'boneless_sauce': '🍗', 'extra_sauce': '🌶️', 'rice_ingredient': '🍙',
+  'rice_sauce': '🔴', 'sushi_ingredient': '🍣', 'sushi_sauce': '🔴' } %} {% for
+  cat, opts in menu_opts.items() %}
   <details class="menu-section">
     <summary class="menu-section-title">
       <span
