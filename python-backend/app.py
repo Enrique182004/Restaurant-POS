@@ -644,6 +644,35 @@ def admin_dashboard():
                            printer_name=printer_name,
                            users_with_default=users_with_default)
 
+@app.route('/admin/api/dashboard-summary')
+@login_required
+@admin_required
+def dashboard_summary_api():
+    conn = get_db_connection()
+    today = datetime.now().strftime('%Y-%m-%d')
+    today_total = conn.execute(
+        "SELECT COALESCE(SUM(total), 0) FROM orders WHERE date LIKE ? AND status != 'voided'",
+        (today + '%',)
+    ).fetchone()[0]
+    today_orders = conn.execute(
+        "SELECT COUNT(*) FROM orders WHERE date LIKE ? AND status != 'voided'",
+        (today + '%',)
+    ).fetchone()[0]
+    return jsonify({'today_total': float(today_total), 'today_orders': int(today_orders)})
+
+@app.route('/admin/api/low-stock-check')
+@login_required
+@admin_required
+def low_stock_check_api():
+    try:
+        resp = requests.get(f'{JAVA_INVENTORY_SERVICE}/api/inventory/low-stock', timeout=2)
+        if resp.status_code == 200:
+            items = resp.json()
+            return jsonify({'count': len(items), 'items': [i.get('name', '') for i in items[:5]]})
+    except Exception:
+        pass
+    return jsonify({'count': 0, 'items': []})
+
 @app.route('/admin/menu-options/add', methods=['POST'])
 @login_required
 @admin_required
@@ -2793,7 +2822,7 @@ def _kuike_local_response(text):
 
     # Greeting
     if any(w in text for w in ['hola', 'hello', 'hi ', 'hey', 'buenas', 'qué tal', 'que tal']):
-        return ('¡Hola! Soy Kuike 🤖. Puedo consultarte ventas, inventario, empleados, '
+        return ('¡Hola! Soy Kuike 🦐. Puedo consultarte ventas, inventario, empleados, '
                 'clientes frecuentes, promociones y más. ¿Qué quieres saber?')
 
     # Help
@@ -2814,7 +2843,39 @@ def _kuike_local_response(text):
             'Puedes agregar: hoy, ayer, esta semana o este mes.'
         )
 
-    # Top items (check before generic sales to avoid false positive on "más vendido")
+    # Inventory (check before sales — "inventario" contains "venta" as substring)
+    if any(w in text for w in ['inventario', 'inventory', 'stock', 'existencia',
+                                 'material', 'ingrediente', 'agotad',
+                                 'mínimo', 'minimo', 'alerta', 'debajo']):
+        data = _run_kuike_tool('get_inventory', {})
+        if isinstance(data, list):
+            low = [i for i in data if i.get('low')]
+            if any(w in text for w in ['bajo', 'low', 'agota', 'mínimo', 'minimo', 'alerta']):
+                if not low:
+                    return 'Todo el inventario está por encima del mínimo. ✅'
+                lines = [f'Inventario bajo ({len(low)} ítems):']
+                for i in low:
+                    lines.append(f'⚠️ {i["name"]}: {i["qty"]} {i["unit"]} (mín. {i["min"]})')
+                return '\n'.join(lines)
+            lines = [f'Inventario ({len(data)} ítems):']
+            for i in data:
+                flag = ' ⚠️' if i.get('low') else ''
+                lines.append(f'• {i["name"]}: {i["qty"]} {i["unit"]}{flag}')
+            return '\n'.join(lines)
+
+    # Employees (before sales — "cuantos" contains "cuanto" as substring)
+    if any(w in text for w in ['empleado', 'employee', 'trabajador', 'personal', 'staff',
+                                 'nómina', 'nomina', 'salario', 'sueldo']):
+        data = _run_kuike_tool('get_employee_data', {})
+        if isinstance(data, dict) and 'employees' in data:
+            emps = data['employees']
+            lines = [f'Empleados — semana {data.get("week", "")}:']
+            for e in emps:
+                lines.append(f'• {e["name"]}: {e["days_worked"]}/{e["scheduled_days"]} días — ${e["pay_this_week"]:.2f}')
+            return '\n'.join(lines)
+        return 'No hay datos de empleados.'
+
+    # Top items (before generic sales)
     if any(w in text for w in ['producto', 'item', 'artículo', 'articulo', 'más vendido',
                                  'mas vendido', 'popular', 'top ', 'best', 'mayor venta', 'más pedido']):
         limit = 5
@@ -2825,26 +2886,14 @@ def _kuike_local_response(text):
         if isinstance(data, list) and data:
             lines = [f'Productos más vendidos ({plabel}):']
             for i, item in enumerate(data, 1):
-                lines.append(f'{i}. {item["name"]} — {item["qty"]} uds. (${item.get("revenue", 0):.2f})')
+                lines.append(f'{i}. {item["item"]} — {item["qty"]} uds. (${item.get("revenue", 0):.2f})')
             return '\n'.join(lines)
         return f'No hay datos de productos para {plabel}.'
 
-    # Sales summary
-    if any(w in text for w in ['vend', 'venta', 'ventas', 'ingreso', 'total', 'recaud',
-                                 'ganancia', 'cuánto', 'cuanto', 'revenue', 'sales', 'sold', 'factur']):
-        data = _run_kuike_tool('get_sales_summary', {'period': period})
-        if isinstance(data, dict) and 'orders' in data:
-            avg = data['revenue'] / data['orders'] if data['orders'] > 0 else 0
-            return (
-                f'Resumen de ventas ({plabel}):\n'
-                f'• Órdenes completadas: {data["orders"]}\n'
-                f'• Ingresos totales: ${data["revenue"]:.2f}\n'
-                f'• Ticket promedio: ${avg:.2f}'
-            )
-
-    # Peak hours
+    # Peak hours (before recent orders — "pedidos" in "a qué hora hay más pedidos" would false-match)
     if any(w in text for w in ['hora', 'pico', 'peak', 'concurrido', 'ocupado', 'busy',
-                                 'rush', 'cuándo más', 'cuando más', 'cuándo hay']):
+                                 'rush', 'cuándo más', 'cuando más', 'cuándo hay', 'cuando hay',
+                                 'gente', 'movimiento', 'momento']):
         data = _run_kuike_tool('get_peak_hours', {'period': period})
         if isinstance(data, list) and data:
             lines = [f'Horas con más pedidos ({plabel}):']
@@ -2853,8 +2902,9 @@ def _kuike_local_response(text):
             return '\n'.join(lines)
         return f'No hay datos de horarios para {plabel}.'
 
-    # Payment breakdown
-    if any(w in text for w in ['pago', 'payment', 'efectivo', 'tarjeta', 'cash', 'card',
+    # Payment breakdown (before recent orders)
+    if any(w in text for w in ['pago', 'pagaron', 'pagar', 'pagó', 'payment',
+                                 'efectivo', 'tarjeta', 'cash', 'card',
                                  'mixto', 'split', 'método de pago']):
         data = _run_kuike_tool('get_payment_breakdown', {'period': period})
         if isinstance(data, list) and data:
@@ -2865,6 +2915,17 @@ def _kuike_local_response(text):
                 lines.append(f'• {n}: {row["orders"]} órdenes — ${row["revenue"]:.2f}')
             return '\n'.join(lines)
         return f'No hay datos de pagos para {plabel}.'
+
+    # Held orders (before recent orders — "ordenes retenidas" would match "ordenes" first)
+    if any(w in text for w in ['retenid', 'en espera', 'hold', 'guardad', 'retenidas']):
+        data = _run_kuike_tool('get_held_orders', {})
+        if isinstance(data, list):
+            if not data:
+                return 'No hay órdenes retenidas en este momento.'
+            lines = [f'Órdenes retenidas ({len(data)}):']
+            for o in data:
+                lines.append(f'• {o["ref"]} — {o.get("customer") or "Sin nombre"} — ${o.get("total", 0):.2f}')
+            return '\n'.join(lines)
 
     # Recent orders
     if any(w in text for w in ['orden', 'ordenes', 'órdenes', 'pedido', 'pedidos',
@@ -2882,47 +2943,18 @@ def _kuike_local_response(text):
             return '\n'.join(lines)
         return 'No hay órdenes recientes.'
 
-    # Employees
-    if any(w in text for w in ['empleado', 'employee', 'trabajador', 'personal', 'staff',
-                                 'nómina', 'nomina', 'salario', 'sueldo']):
-        data = _run_kuike_tool('get_employee_data', {})
-        if isinstance(data, dict) and 'employees' in data:
-            emps = data['employees']
-            lines = [f'Empleados — semana {data.get("week", "")}:']
-            for e in emps:
-                lines.append(f'• {e["name"]}: {e["days_worked"]}/{e["scheduled_days"]} días — ${e["pay_this_week"]:.2f}')
-            return '\n'.join(lines)
-        return 'No hay datos de empleados.'
-
-    # Inventory
-    if any(w in text for w in ['inventario', 'inventory', 'stock', 'existencia',
-                                 'material', 'ingrediente', 'agotad']):
-        data = _run_kuike_tool('get_inventory', {})
-        if isinstance(data, list):
-            low = [i for i in data if i.get('low')]
-            if any(w in text for w in ['bajo', 'low', 'agota', 'mínimo', 'minimo', 'alerta']):
-                if not low:
-                    return 'Todo el inventario está por encima del mínimo. ✅'
-                lines = [f'Inventario bajo ({len(low)} ítems):']
-                for i in low:
-                    lines.append(f'⚠️ {i["name"]}: {i["qty"]} {i["unit"]} (mín. {i["min"]})')
-                return '\n'.join(lines)
-            lines = [f'Inventario ({len(data)} ítems):']
-            for i in data:
-                flag = ' ⚠️' if i.get('low') else ''
-                lines.append(f'• {i["name"]}: {i["qty"]} {i["unit"]}{flag}')
-            return '\n'.join(lines)
-
-    # Held orders
-    if any(w in text for w in ['retenid', 'en espera', 'hold', 'guardad', 'retenidas']):
-        data = _run_kuike_tool('get_held_orders', {})
-        if isinstance(data, list):
-            if not data:
-                return 'No hay órdenes retenidas en este momento.'
-            lines = [f'Órdenes retenidas ({len(data)}):']
-            for o in data:
-                lines.append(f'• {o["ref"]} — {o.get("customer") or "Sin nombre"} — ${o.get("total", 0):.2f}')
-            return '\n'.join(lines)
+    # Sales summary
+    if any(w in text for w in ['vend', 'venta', 'ventas', 'ingreso', 'ganancia', 'ganancias',
+                                 'recaud', 'factur', 'revenue', 'sales', 'sold']):
+        data = _run_kuike_tool('get_sales_summary', {'period': period})
+        if isinstance(data, dict) and 'orders' in data:
+            avg = data['revenue'] / data['orders'] if data['orders'] > 0 else 0
+            return (
+                f'Resumen de ventas ({plabel}):\n'
+                f'• Órdenes completadas: {data["orders"]}\n'
+                f'• Ingresos totales: ${data["revenue"]:.2f}\n'
+                f'• Ticket promedio: ${avg:.2f}'
+            )
 
     # Promotions
     if any(w in text for w in ['promoci', 'descuento', 'cupón', 'cupon', 'promo',

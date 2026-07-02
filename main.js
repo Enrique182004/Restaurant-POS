@@ -7,6 +7,7 @@ const {
   Menu,
   nativeImage,
   dialog,
+  ipcMain,
 } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
@@ -22,22 +23,15 @@ autoUpdater.on("update-available", () => {
 });
 
 autoUpdater.on("update-downloaded", () => {
-  const { dialog } = require("electron");
-  dialog
-    .showMessageBox({
-      type: "info",
-      title: "Actualización lista",
-      message: "¡Hay una nueva versión de Ebi Ball POS lista para instalar!",
-      detail: "La actualización se instalará cuando cierres la aplicación.",
-      buttons: ["Instalar ahora", "Más tarde"],
-      defaultId: 0,
-    })
-    .then(({ response }) => {
-      if (response === 0) {
-        isQuitting = true;
-        autoUpdater.quitAndInstall();
-      }
-    });
+  // Notify the renderer — it shows a non-blocking banner instead of a dialog
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("update-ready");
+  }
+});
+
+ipcMain.on("install-update", () => {
+  isQuitting = true;
+  autoUpdater.quitAndInstall(false, true);
 });
 
 autoUpdater.on("error", (err) => {
@@ -227,6 +221,7 @@ function crearVentana() {
       nodeIntegration: false,
       contextIsolation: true,
       devTools: !app.isPackaged,
+      preload: path.join(__dirname, "preload.js"),
     },
     title: "Ebi Ball POS",
   });

@@ -15,7 +15,365 @@
     {% block head_scripts %}{% endblock %}
   </head>
   <body>
-    {% block body %}{% endblock %}
+    {% block body %}{% endblock %} {% block kuike_bubble %} {% if
+    session.get('role') == 'admin' %}
+    <style>
+      #kuike-fab {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff9800, #e65c00);
+        border: none;
+        cursor: pointer;
+        font-size: 1.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(255, 152, 0, 0.4);
+        z-index: 9990;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      #kuike-fab:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 28px rgba(255, 152, 0, 0.55);
+      }
+      #kuike-panel {
+        position: fixed;
+        bottom: 92px;
+        right: 24px;
+        width: 340px;
+        height: 460px;
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        z-index: 9989;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+        transform-origin: bottom right;
+        transform: scale(0.8);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.15s;
+      }
+      #kuike-panel.kopen {
+        transform: scale(1);
+        opacity: 1;
+        pointer-events: all;
+      }
+      #kuike-ph {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #2a2a2a;
+        flex-shrink: 0;
+      }
+      #kuike-ph-av {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff9800, #e65c00);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+      }
+      #kuike-ph-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #ff9800;
+        flex: 1;
+      }
+      #kuike-x {
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 1rem;
+        cursor: pointer;
+        padding: 4px;
+        line-height: 1;
+      }
+      #kuike-x:hover {
+        color: #ccc;
+      }
+      #kuike-msgs {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        scroll-behavior: smooth;
+      }
+      #kuike-msgs::-webkit-scrollbar {
+        width: 3px;
+      }
+      #kuike-msgs::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 2px;
+      }
+      .kb {
+        display: flex;
+        gap: 8px;
+        max-width: 94%;
+      }
+      .kb.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+      .kb-av {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        margin-top: 2px;
+      }
+      .kb.assistant .kb-av {
+        background: linear-gradient(135deg, #ff9800, #e65c00);
+      }
+      .kb.user .kb-av {
+        background: #2a2a2a;
+      }
+      .kb-t {
+        padding: 8px 12px;
+        border-radius: 14px;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .kb.assistant .kb-t {
+        background: #222;
+        color: #ddd;
+        border: 1px solid #2a2a2a;
+        border-radius: 4px 14px 14px 14px;
+      }
+      .kb.user .kb-t {
+        background: #ff9800;
+        color: #121212;
+        font-weight: 600;
+        border-radius: 14px 4px 14px 14px;
+      }
+      .kb-typing .kb-t {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding: 11px 13px;
+      }
+      .kb-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #555;
+        animation: kb-b 1.2s infinite;
+      }
+      .kb-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .kb-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      @keyframes kb-b {
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-4px);
+        }
+      }
+      #kuike-ir {
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px 14px;
+        border-top: 1px solid #2a2a2a;
+        flex-shrink: 0;
+      }
+      #kuike-inp {
+        flex: 1;
+        background: #222;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        color: #f5f5f5;
+        font-size: 0.82rem;
+        padding: 8px 11px;
+        resize: none;
+        outline: none;
+        min-height: 34px;
+        max-height: 80px;
+        line-height: 1.4;
+        font-family: inherit;
+        transition: border-color 0.2s;
+      }
+      #kuike-inp:focus {
+        border-color: #ff9800;
+      }
+      #kuike-inp::placeholder {
+        color: #555;
+      }
+      #kuike-snd {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        border: none;
+        background: #ff9800;
+        color: #121212;
+        font-size: 0.9rem;
+        cursor: pointer;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: flex-end;
+        transition: opacity 0.2s;
+      }
+      #kuike-snd:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      #kuike-snd:not(:disabled):hover {
+        opacity: 0.85;
+      }
+    </style>
+
+    <button id="kuike-fab" title="Asistente Kuike">🦐</button>
+    <div id="kuike-panel">
+      <div id="kuike-ph">
+        <div id="kuike-ph-av">🦐</div>
+        <div id="kuike-ph-title">Asistente Kuike</div>
+        <button id="kuike-x">✕</button>
+      </div>
+      <div id="kuike-msgs">
+        <div class="kb assistant">
+          <div class="kb-av">🦐</div>
+          <div class="kb-t">
+            ¡Hola! Pregunta sobre ventas, inventario, empleados y más.
+          </div>
+        </div>
+      </div>
+      <div id="kuike-ir">
+        <textarea
+          id="kuike-inp"
+          placeholder="Pregunta sobre el sistema..."
+          rows="1"
+        ></textarea>
+        <button id="kuike-snd" disabled>➤</button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var fab = document.getElementById("kuike-fab"),
+          panel = document.getElementById("kuike-panel"),
+          x = document.getElementById("kuike-x"),
+          msgs = document.getElementById("kuike-msgs"),
+          inp = document.getElementById("kuike-inp"),
+          snd = document.getElementById("kuike-snd"),
+          csrf = document.querySelector('meta[name="csrf-token"]').content,
+          history = [];
+        fab.addEventListener("click", function () {
+          panel.classList.toggle("kopen");
+          if (panel.classList.contains("kopen")) inp.focus();
+        });
+        x.addEventListener("click", function () {
+          panel.classList.remove("kopen");
+        });
+        inp.addEventListener("input", function () {
+          this.style.height = "auto";
+          this.style.height = Math.min(this.scrollHeight, 80) + "px";
+          snd.disabled = !this.value.trim();
+        });
+        inp.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (!snd.disabled) send();
+          }
+        });
+        snd.addEventListener("click", send);
+        function addMsg(role, text) {
+          var d = document.createElement("div");
+          d.className = "kb " + role;
+          var av = document.createElement("div");
+          av.className = "kb-av";
+          av.textContent = role === "assistant" ? "🦐" : "👤";
+          var t = document.createElement("div");
+          t.className = "kb-t";
+          t.textContent = text;
+          d.appendChild(av);
+          d.appendChild(t);
+          msgs.appendChild(d);
+          msgs.scrollTop = msgs.scrollHeight;
+        }
+        function addTyping() {
+          var d = document.createElement("div");
+          d.className = "kb assistant kb-typing";
+          d.id = "kb-typ";
+          var av = document.createElement("div");
+          av.className = "kb-av";
+          av.textContent = "🦐";
+          var t = document.createElement("div");
+          t.className = "kb-t";
+          for (var i = 0; i < 3; i++) {
+            var dot = document.createElement("div");
+            dot.className = "kb-dot";
+            t.appendChild(dot);
+          }
+          d.appendChild(av);
+          d.appendChild(t);
+          msgs.appendChild(d);
+          msgs.scrollTop = msgs.scrollHeight;
+        }
+        function send() {
+          var text = inp.value.trim();
+          if (!text) return;
+          addMsg("user", text);
+          history.push({ role: "user", content: text });
+          inp.value = "";
+          inp.style.height = "auto";
+          snd.disabled = true;
+          addTyping();
+          fetch("/admin/kuike/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrf,
+            },
+            body: JSON.stringify({ messages: history }),
+          })
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (data) {
+              var el = document.getElementById("kb-typ");
+              if (el) el.remove();
+              var reply = data.reply || data.error || "Error inesperado.";
+              addMsg("assistant", reply);
+              history.push({ role: "assistant", content: reply });
+            })
+            .catch(function () {
+              var el = document.getElementById("kb-typ");
+              if (el) el.remove();
+              addMsg("assistant", "Error de conexión.");
+            })
+            .finally(function () {
+              snd.disabled = !inp.value.trim();
+            });
+        }
+      })();
+    </script>
+    {% endif %} {% endblock %}
 
     <!-- Modal de confirmación personalizado -->
     <div
@@ -118,5 +476,217 @@
         background: #c62828;
       }
     </style>
+
+    {% if session.get('role') == 'admin' %}
+    <!-- Low-stock toast + update banner -->
+    <style>
+      #ls-toast {
+        position: fixed;
+        bottom: 90px;
+        left: 20px;
+        background: #1e1e2e;
+        border: 1px solid #ff9800;
+        border-radius: 14px;
+        padding: 14px 16px;
+        max-width: 300px;
+        z-index: 9980;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        display: none;
+        animation: slide-in-left 0.25s ease;
+      }
+      #ls-toast.visible {
+        display: block;
+      }
+      #ls-toast-title {
+        color: #ff9800;
+        font-weight: 700;
+        font-size: 0.88rem;
+        margin-bottom: 4px;
+      }
+      #ls-toast-body {
+        color: #ccc;
+        font-size: 0.8rem;
+        line-height: 1.5;
+      }
+      #ls-toast-close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        font-size: 0.9rem;
+        line-height: 1;
+      }
+      #ls-toast-close:hover {
+        color: #ccc;
+      }
+      #ls-toast-link {
+        color: #ff9800;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.78rem;
+      }
+      #update-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(90deg, #1a2a1a, #1e2e1e);
+        border-bottom: 1px solid #4caf50;
+        padding: 10px 20px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        z-index: 10000;
+        animation: slide-down 0.3s ease;
+      }
+      #update-banner.visible {
+        display: flex;
+      }
+      #update-banner-text {
+        color: #81c784;
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+      #update-install-btn {
+        background: #4caf50;
+        color: #fff;
+        border: none;
+        padding: 6px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.8rem;
+      }
+      #update-install-btn:hover {
+        background: #388e3c;
+      }
+      #update-later-btn {
+        background: none;
+        border: 1px solid #4caf50;
+        color: #81c784;
+        padding: 6px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      #update-later-btn:hover {
+        background: rgba(76, 175, 80, 0.1);
+      }
+      @keyframes slide-in-left {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+
+    <div id="ls-toast">
+      <button
+        id="ls-toast-close"
+        onclick="
+          document.getElementById('ls-toast').classList.remove('visible')
+        "
+      >
+        ✕
+      </button>
+      <div id="ls-toast-title">⚠️ Inventario bajo</div>
+      <div id="ls-toast-body">Cargando...</div>
+      <a
+        href="/inventory/low-stock"
+        id="ls-toast-link"
+        style="display: block; margin-top: 8px"
+        >Ver inventario →</a
+      >
+    </div>
+
+    <div id="update-banner">
+      <span id="update-banner-text">✨ Nueva versión lista para instalar</span>
+      <button id="update-install-btn">Reiniciar ahora</button>
+      <button
+        id="update-later-btn"
+        onclick="
+          document.getElementById('update-banner').classList.remove('visible')
+        "
+      >
+        Más tarde
+      </button>
+    </div>
+
+    <script>
+      (function () {
+        // ── Low-stock polling ────────────────────────────────────────
+        var DISMISSED_KEY = "ls-dismissed-until";
+
+        function checkLowStock() {
+          var dismissedUntil = parseInt(
+            localStorage.getItem(DISMISSED_KEY) || "0",
+          );
+          if (Date.now() < dismissedUntil) return;
+
+          fetch("/admin/api/low-stock-check")
+            .then(function (r) {
+              return r.json();
+            })
+            .then(function (d) {
+              if (d.count > 0) {
+                var toast = document.getElementById("ls-toast");
+                var body = document.getElementById("ls-toast-body");
+                body.textContent =
+                  d.count +
+                  " producto(s) bajo mínimo: " +
+                  d.items.join(", ") +
+                  (d.count > 5 ? "…" : ".");
+                toast.classList.add("visible");
+              }
+            })
+            .catch(function () {});
+        }
+
+        document
+          .getElementById("ls-toast-close")
+          .addEventListener("click", function () {
+            // Suppress for 2 hours after dismissal
+            localStorage.setItem(
+              DISMISSED_KEY,
+              Date.now() + 2 * 60 * 60 * 1000,
+            );
+          });
+
+        checkLowStock();
+        setInterval(checkLowStock, 5 * 60 * 1000);
+
+        // ── Smooth update banner (Electron IPC) ──────────────────────
+        if (window.electronAPI && window.electronAPI.onUpdateReady) {
+          window.electronAPI.onUpdateReady(function () {
+            document.getElementById("update-banner").classList.add("visible");
+          });
+          document
+            .getElementById("update-install-btn")
+            .addEventListener("click", function () {
+              if (window.electronAPI.installUpdate)
+                window.electronAPI.installUpdate();
+            });
+        }
+      })();
+    </script>
+    {% endif %}
   </body>
 </html>

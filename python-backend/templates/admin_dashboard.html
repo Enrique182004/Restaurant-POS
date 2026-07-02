@@ -153,6 +153,14 @@ endblock %} {% block styles %}
       <span class="admin-title-icon">⚙️</span> Panel de Admin
     </h1>
     <div style="display: flex; gap: 10px; align-items: center">
+      <button
+        onclick="startTour()"
+        class="logout-btn"
+        style="cursor: pointer"
+        title="Recorrido guiado del panel"
+      >
+        🗺️ Tour
+      </button>
       <a href="{{ url_for('change_password') }}" class="logout-btn"
         >🔑 Contraseña</a
       >
@@ -206,14 +214,44 @@ endblock %} {% block styles %}
   {% endif %}
 
   <!-- Today's summary -->
-  <div class="section-heading">Resumen de hoy</div>
+  <div
+    class="section-heading"
+    style="display: flex; align-items: center; gap: 8px"
+  >
+    Resumen de hoy
+    <span
+      id="refresh-dot"
+      title="Actualizando..."
+      style="
+        display: none;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #ff9800;
+        animation: pulse-dot 1s infinite;
+      "
+    ></span>
+  </div>
+  <style>
+    @keyframes pulse-dot {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+  </style>
   <div class="summary-row">
     <div class="summary-card">
-      <div class="summary-value">{{ today_orders }}</div>
+      <div class="summary-value" id="live-orders">{{ today_orders }}</div>
       <div class="summary-label">Órdenes</div>
     </div>
     <div class="summary-card">
-      <div class="summary-value">${{ "%.2f"|format(today_total) }}</div>
+      <div class="summary-value" id="live-total">
+        ${{ "%.2f"|format(today_total) }}
+      </div>
       <div class="summary-label">Ventas totales</div>
     </div>
     {% if pending_prints > 0 %}
@@ -283,15 +321,6 @@ endblock %} {% block styles %}
       <div class="nav-card-icon">📋</div>
       <div class="nav-card-name">Bitácora</div>
       <div class="nav-card-desc">Actividad del sistema</div>
-    </a>
-    <a
-      href="{{ url_for('kuike_chat') }}"
-      class="nav-card"
-      style="border-color: #3a2800"
-    >
-      <div class="nav-card-icon">🤖</div>
-      <div class="nav-card-name" style="color: #ff9800">Kuike IA</div>
-      <div class="nav-card-desc">Pregunta sobre el sistema</div>
     </a>
   </div>
   <!-- Configuración de impresora -->
@@ -363,4 +392,32 @@ endblock %} {% block styles %}
     }
   </style>
 </div>
+<script>
+  (function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    var ordersEl = document.getElementById("live-orders");
+    var totalEl = document.getElementById("live-total");
+    var dot = document.getElementById("refresh-dot");
+
+    function refresh() {
+      if (dot) dot.style.display = "inline-block";
+      fetch("/admin/api/dashboard-summary", {
+        headers: { "X-CSRFToken": csrf },
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (d) {
+          if (ordersEl) ordersEl.textContent = d.today_orders;
+          if (totalEl) totalEl.textContent = "$" + d.today_total.toFixed(2);
+        })
+        .catch(function () {})
+        .finally(function () {
+          if (dot) dot.style.display = "none";
+        });
+    }
+
+    setInterval(refresh, 30000);
+  })();
+</script>
 {% endblock %}
