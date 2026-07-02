@@ -321,6 +321,19 @@ def init_db():
     except Exception:
         pass
 
+    # Migrate: seed sushi_sauce category for existing installations
+    if conn.execute("SELECT COUNT(*) FROM menu_options WHERE category='sushi_sauce'").fetchone()[0] == 0:
+        for name, icon, sort in [
+            ('Tradicional', '🔴', 1), ('Flamin Hot', '🔥', 2), ('Puff', '💨', 3),
+            ('Nacha', '🌮', 4), ('Búfalo', '🦬', 5), ('Barbecue', '🍖', 6),
+            ('Agridulce', '🍯', 7), ('Frutal', '🍎', 8), ('Seca', '🌾', 9),
+        ]:
+            conn.execute(
+                'INSERT INTO menu_options (category, name, icon, price, sort_order) VALUES (?, ?, ?, 0, ?)',
+                ('sushi_sauce', name, icon, sort)
+            )
+        conn.commit()
+
     # Add demo promotions if they don't exist
     existing_promos = conn.execute('SELECT COUNT(*) FROM promotions').fetchone()[0]
     if existing_promos == 0:
