@@ -193,6 +193,122 @@ styles %}
   .new-order-index-btn:hover {
     background: rgba(255, 107, 107, 0.1);
   }
+  .queue-section {
+    background: #1a2535;
+    border: 2px solid #1e3a5f;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .queue-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #64b5f6;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .queue-badge {
+    background: #1e3a5f;
+    color: #64b5f6;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+  .queue-empty {
+    color: #4a6080;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 10px 0;
+  }
+  .queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .queue-card {
+    background: #1e2d42;
+    border: 1px solid #2a4a6a;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .queue-ref {
+    background: #0d47a1;
+    color: #90caf9;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+  .queue-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .queue-customer {
+    font-weight: 700;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .queue-meta {
+    font-size: 0.78rem;
+    color: #607d8b;
+    margin-top: 2px;
+  }
+  .queue-total {
+    font-weight: 700;
+    color: #64b5f6;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+  .queue-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .queue-btn-resume {
+    padding: 7px 14px;
+    background: #1565c0;
+    color: #e3f2fd;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .queue-btn-resume:hover {
+    background: #1976d2;
+  }
+  .queue-btn-cancel {
+    padding: 7px 10px;
+    background: none;
+    color: #546e7a;
+    border: 1px solid #2a4a6a;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+  .queue-btn-cancel:hover {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+  }
   @media (max-width: 768px) {
     .customer-input-container {
       flex-direction: column;
@@ -351,6 +467,16 @@ styles %}
   </form>
   {% endif %}
 
+  <div class="queue-section" id="queue-section" style="display: none">
+    <div class="queue-title">
+      📋 Cola de Pedidos en Espera
+      <span class="queue-badge" id="queue-count">0</span>
+    </div>
+    <div class="queue-list" id="queue-list">
+      <div class="queue-empty">Sin pedidos en espera</div>
+    </div>
+  </div>
+
   <div class="cart-container">
     <div class="cart-indicator">
       {% if session.get('cart')|length > 0 %}
@@ -469,6 +595,65 @@ styles %}
           console.error("Error saving customer name:", error);
         });
     }
+
+    // ── Held Orders Queue ──────────────────────────────────────────────────
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    function timeSince(dateStr) {
+      const diff = Math.floor(
+        (Date.now() - new Date(dateStr).getTime()) / 60000,
+      );
+      if (diff < 1) return "ahora mismo";
+      if (diff === 1) return "hace 1 min";
+      return `hace ${diff} min`;
+    }
+
+    function renderQueue(orders) {
+      const section = document.getElementById("queue-section");
+      const list = document.getElementById("queue-list");
+      const badge = document.getElementById("queue-count");
+      badge.textContent = orders.length;
+      section.style.display = orders.length > 0 ? "block" : "none";
+      if (orders.length === 0) {
+        list.innerHTML = '<div class="queue-empty">Sin pedidos en espera</div>';
+        return;
+      }
+      list.innerHTML = orders
+        .map(
+          (o) => `
+        <div class="queue-card">
+          <span class="queue-ref">${o.order_ref}</span>
+          <div class="queue-info">
+            <div class="queue-customer">${o.customer_name}</div>
+            <div class="queue-meta">${timeSince(o.created_at)}</div>
+          </div>
+          <span class="queue-total">$${parseFloat(o.total).toFixed(2)}</span>
+          <div class="queue-actions">
+            <form method="POST" action="/resume_order/${o.id}" style="margin:0">
+              <input type="hidden" name="csrf_token" value="${csrfToken}">
+              <button type="submit" class="queue-btn-resume">Retomar</button>
+            </form>
+            <form method="POST" action="/cancel_held_order/${o.id}" style="margin:0"
+              onsubmit="return confirm('¿Cancelar orden ${o.order_ref}?')">
+              <input type="hidden" name="csrf_token" value="${csrfToken}">
+              <button type="submit" class="queue-btn-cancel">✕</button>
+            </form>
+          </div>
+        </div>
+      `,
+        )
+        .join("");
+    }
+
+    function loadQueue() {
+      fetch("/api/held_orders")
+        .then((r) => r.json())
+        .then((data) => renderQueue(data.held_orders || []))
+        .catch(() => {});
+    }
+
+    loadQueue();
+    setInterval(loadQueue, 30000);
   });
 </script>
 {% endblock %}

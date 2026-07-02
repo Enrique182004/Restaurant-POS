@@ -173,6 +173,18 @@ def init_db():
             (key, label, price)
         )
 
+    # Held orders queue (phone orders waiting for client to arrive)
+    conn.execute('''
+    CREATE TABLE IF NOT EXISTS held_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_ref TEXT NOT NULL,
+        customer_name TEXT DEFAULT 'Cliente',
+        cart_json TEXT NOT NULL,
+        total REAL NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    ''')
+
     # Persistent print job queue (survives server restarts)
     conn.execute('''
     CREATE TABLE IF NOT EXISTS print_jobs (
@@ -2086,6 +2098,93 @@ def new_order():
     session['order_id'] = str(uuid.uuid4())[:8]
     session['cart'] = []
     session.modified = True
+    return redirect(url_for('home'))
+
+
+# ── Held Orders (Cola de Pedidos) ─────────────────────────────────────────────
+
+@app.route('/hold_order', methods=['POST'])
+@login_required
+def hold_order():
+    cart = session.get('cart', [])
+    if not cart:
+        flash('No hay items en la orden para retener.', 'error')
+        return redirect(url_for('view_cart'))
+
+    customer_name = session.get('customer_name', '') or 'Cliente'
+    total = sum(item.get('price', 0) for item in cart)
+    created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db_connection()
+    cursor = conn.execute(
+        'INSERT INTO held_orders (order_ref, customer_name, cart_json, total, created_at) VALUES (?, ?, ?, ?, ?)',
+        ('', customer_name, json.dumps(cart), total, created_at)
+    )
+    held_id = cursor.lastrowid
+    order_ref = f'HOLD-{held_id:03d}'
+    conn.execute('UPDATE held_orders SET order_ref = ? WHERE id = ?', (order_ref, held_id))
+    conn.commit()
+
+    # Print kitchen ticket so kitchen can start preparing
+    try:
+        print_receipt_physical(
+            cart=cart,
+            total=total,
+            payment_method='PEDIDO EN ESPERA',
+            order_id=order_ref,
+            customer_name=customer_name
+        )
+    except Exception as e:
+        print(f"Error imprimiendo ticket retenido: {e}")
+
+    session['cart'] = []
+    session['customer_name'] = ''
+    session['order_id'] = str(uuid.uuid4())[:8]
+    session.modified = True
+
+    flash(f'Orden retenida como {order_ref}. Ticket enviado a imprimir.', 'success')
+    return redirect(url_for('home'))
+
+
+@app.route('/api/held_orders')
+@login_required
+def api_held_orders():
+    conn = get_db_connection()
+    rows = conn.execute('SELECT * FROM held_orders ORDER BY created_at DESC').fetchall()
+    return jsonify({'held_orders': [dict(r) for r in rows]})
+
+
+@app.route('/resume_order/<int:held_id>', methods=['POST'])
+@login_required
+def resume_order(held_id):
+    conn = get_db_connection()
+    order = conn.execute('SELECT * FROM held_orders WHERE id = ?', (held_id,)).fetchone()
+    if not order:
+        flash('Orden no encontrada.', 'error')
+        return redirect(url_for('home'))
+
+    cart = json.loads(order['cart_json'])
+    conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
+    conn.commit()
+
+    session['cart'] = cart
+    session['customer_name'] = order['customer_name']
+    session['order_id'] = str(uuid.uuid4())[:8]
+    session.modified = True
+
+    flash(f'Orden {order["order_ref"]} cargada. Modifica si es necesario y procede al pago.', 'success')
+    return redirect(url_for('view_cart'))
+
+
+@app.route('/cancel_held_order/<int:held_id>', methods=['POST'])
+@login_required
+def cancel_held_order(held_id):
+    conn = get_db_connection()
+    order = conn.execute('SELECT order_ref FROM held_orders WHERE id = ?', (held_id,)).fetchone()
+    if order:
+        conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
+        conn.commit()
+        flash(f'Orden {order["order_ref"]} cancelada.', 'success')
     return redirect(url_for('home'))
 
 
