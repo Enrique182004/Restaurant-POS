@@ -697,7 +697,7 @@ def get_sushi_prep_prices():
         return int(row['price']) if row else 0
     prices = {
         'Sushi Preparado':      p('Sushi Preparado'),
-        'Seco / Salsas Aparte': p('Sushi Seco'),
+        'Seco':                 p('Sushi Seco'),
         'Sushi Flamin':         p('Sushi Flamin'),
     }
     return prices
