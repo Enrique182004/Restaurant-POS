@@ -1562,54 +1562,42 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
         # Add item details based on type
         if item['type'] == 'Bebida':
             if 'beverage_type' in item and item['beverage_type']:
-                receipt_content.append(f"  Bebida: {item['beverage_type']}")
-        
+                receipt_content.append(f"  {item['beverage_type']}")
+
         elif item['type'] == 'Boneless':
             if 'sauces' in item and item['sauces']:
-                sauces_text = ', '.join(item['sauces'])
-                receipt_content.append(f"  Salsas: {sauces_text}")
-                # REMOVED: Extra sauce cost display
+                receipt_content.append(f"  {', '.join(item['sauces'])}")
             elif 'sauce' in item and item['sauce']:
-                receipt_content.append(f"  Salsa: {item['sauce']}")
+                receipt_content.append(f"  {item['sauce']}")
             if 'accompaniment' in item and item['accompaniment']:
-                receipt_content.append(f"  Acompañante: {item['accompaniment']}")
-        
+                receipt_content.append(f"  {item['accompaniment']}")
+
         elif item['type'] == 'Complementos':
             if 'sauces' in item and item['sauces']:
-                sauces_text = ', '.join(item['sauces'])
-                receipt_content.append(f"  Salsas: {sauces_text}")
+                receipt_content.append(f"  {', '.join(item['sauces'])}")
                 sauce_count = len(item['sauces'])
-                receipt_content.append(f"  Cantidad: {sauce_count} x $10 = ${sauce_count * 10:.2f}")
-        
+                receipt_content.append(f"  {sauce_count} x $10 = ${sauce_count * 10:.2f}")
+
         elif item['type'] in ['Bola de Arroz', 'Sushi']:
-            # Base
-            if 'base' in item:
-                base_text = ', '.join(item['base']) if item['base'] else "Ninguna"
-                receipt_content.append(f"  Base: {base_text}")
-            
-            # Ingredients
+            # Ingredients (abbreviated to 3 chars each, no Base)
             if 'ingredients' in item:
-                ing_text = ', '.join(item['ingredients']) if item['ingredients'] else "Ninguno" 
-                receipt_content.append(f"  Ing: {ing_text}")
+                abbr = [i[:3] for i in item['ingredients']] if item['ingredients'] else ['Ninguno']
+                receipt_content.append(f"  {', '.join(abbr)}")
                 if item.get('ostion_cost', 0) > 0:
                     receipt_content.append(f"  Ostión: +${item['ostion_cost']:.2f}")
-            
-            # Style
+
             if 'style' in item and item['style']:
-                receipt_content.append(f"  Estilo: {item['style']}")
-            
-            # Sauce
+                receipt_content.append(f"  {item['style']}")
+
             if 'sauce' in item and item['sauce']:
-                receipt_content.append(f"  Salsa: {item['sauce']}")
-            
-            # Prepared (sushi only)
+                receipt_content.append(f"  {item['sauce']}")
+
             if 'prepared' in item and item['prepared']:
-                receipt_content.append(f"  Prep: {item['prepared']}")
-            
-            # Toppings
+                receipt_content.append(f"  {item['prepared']}")
+
             if 'toppings' in item:
                 topping_text = ', '.join(item['toppings']) if item['toppings'] else "Ninguno"
-                receipt_content.append(f"  Toppings: {topping_text}")
+                receipt_content.append(f"  {topping_text}")
         
         # Notes for any item type
         if 'notes' in item and item['notes']:
