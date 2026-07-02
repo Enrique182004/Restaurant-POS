@@ -1575,10 +1575,13 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
                 receipt_content.append(f"  {sauce_count} x $10 = ${sauce_count * 10:.2f}")
 
         elif item['type'] in ['Bola de Arroz', 'Sushi']:
-            # Ingredients (abbreviated to 3 chars each, no Base)
+            # Ingredients (abbreviated to 3 chars, Queso/Aguacate omitted)
+            _skip = {'queso', 'aguacate'}
             if 'ingredients' in item:
-                abbr = [i[:3] for i in item['ingredients']] if item['ingredients'] else ['Ninguno']
-                receipt_content.append(f"  {', '.join(abbr)}")
+                filtered = [i for i in item['ingredients'] if i.lower() not in _skip]
+                abbr = [i[:3] for i in filtered] if filtered else []
+                if abbr:
+                    receipt_content.append(f"  {', '.join(abbr)}")
                 if item.get('ostion_cost', 0) > 0:
                     receipt_content.append(f"  Ostión: +${item['ostion_cost']:.2f}")
 
@@ -1603,9 +1606,6 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
     
     # Total
     receipt_content.append(f"TOTAL: ${total:.2f}")
-    receipt_content.append("")
-    receipt_content.append("¡Gracias por su compra!")
-    receipt_content.append("Vuelva pronto")
     
     # Save receipt to file
     receipt_id = order_id or session.get('order_id')
