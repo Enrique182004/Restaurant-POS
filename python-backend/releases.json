@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.22",
+    "date": "2026-07-02",
+    "changes": [
+      "GitHub Actions CI: tests run automatically on every push to main",
+      "In-app changelog page at /admin/changelog with full release history",
+      "Version badge in admin dashboard header links to changelog",
+      "Kuike logic extracted into its own module with table-driven intent routing",
+      "43 automated tests for all Kuike intents — all passing"
+    ]
+  },
+  {
     "version": "1.0.21",
     "date": "2026-07-02",
     "changes": [
