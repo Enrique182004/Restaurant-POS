@@ -153,6 +153,22 @@ endblock %} {% block styles %}
       <span class="admin-title-icon">⚙️</span> Panel de Admin
     </h1>
     <div style="display: flex; gap: 10px; align-items: center">
+      <a
+        href="{{ url_for('changelog') }}"
+        style="
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #ff9800;
+          background: rgba(255, 152, 0, 0.1);
+          border: 1px solid rgba(255, 152, 0, 0.25);
+          padding: 4px 10px;
+          border-radius: 20px;
+          text-decoration: none;
+          letter-spacing: 0.02em;
+        "
+        title="Ver changelog"
+        >v1.0.21</a
+      >
       <button
         onclick="startTour()"
         class="logout-btn"

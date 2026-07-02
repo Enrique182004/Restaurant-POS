@@ -2265,6 +2265,20 @@ def split_payment():
     return render_template('split_payment.html', total_price=total_price)
 
 
+@app.route('/admin/changelog')
+@login_required
+@admin_required
+def changelog():
+    releases_path = os.path.join(_APP_DIR, 'releases.json')
+    try:
+        with open(releases_path, 'r', encoding='utf-8') as f:
+            releases = json.load(f)
+    except Exception:
+        releases = []
+    current = releases[0]['version'] if releases else '—'
+    return render_template('changelog.html', releases=releases, current=current)
+
+
 @app.route('/admin/activity')
 @login_required
 @admin_required

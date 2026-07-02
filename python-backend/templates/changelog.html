@@ -1,0 +1,153 @@
+{% extends 'base.html' %} {% block title %}Changelog — Ebi Ball{% endblock %} {%
+block styles %}
+<style>
+  .cl-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .cl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .cl-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cl-back {
+    color: #aaa;
+    text-decoration: none;
+    font-size: 0.88rem;
+    border: 1px solid #333;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: #1e1e1e;
+  }
+  .cl-back:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+
+  .release {
+    margin-bottom: 32px;
+    position: relative;
+    padding-left: 24px;
+  }
+  .release::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: -32px;
+    width: 2px;
+    background: #2a2a2a;
+  }
+  .release:last-child::before {
+    display: none;
+  }
+
+  .release-dot {
+    position: absolute;
+    left: -5px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #2a2a2a;
+    border: 2px solid #444;
+  }
+  .release:first-child .release-dot {
+    background: #ff9800;
+    border-color: #ff9800;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.4);
+  }
+
+  .release-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .release-version {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #f5f5f5;
+  }
+  .release:first-child .release-version {
+    color: #ff9800;
+  }
+  .current-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+  .release-date {
+    font-size: 0.8rem;
+    color: #555;
+    margin-left: auto;
+  }
+
+  .release-changes {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .release-changes li {
+    font-size: 0.88rem;
+    color: #ccc;
+    line-height: 1.5;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 1px solid #242424;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .release-changes li::before {
+    content: "•";
+    color: #ff9800;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="cl-wrap">
+  <div class="cl-header">
+    <h1 class="cl-title">📋 Changelog</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="cl-back">← Panel</a>
+  </div>
+
+  {% for release in releases %}
+  <div class="release">
+    <div class="release-dot"></div>
+    <div class="release-header">
+      <span class="release-version">v{{ release.version }}</span>
+      {% if loop.first %}
+      <span class="current-badge">versión actual</span>
+      {% endif %}
+      <span class="release-date">{{ release.date }}</span>
+    </div>
+    <ul class="release-changes">
+      {% for change in release.changes %}
+      <li>{{ change }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

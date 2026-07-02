@@ -1,0 +1,35 @@
+[
+  {
+    "version": "1.0.21",
+    "date": "2026-07-02",
+    "changes": [
+      "Dashboard summary cards auto-refresh every 30 seconds — no page reload needed",
+      "Low-stock toast alert when any inventory item drops below its minimum threshold",
+      "Smooth update banner replaces the blocking dialog — restart whenever you're ready",
+      "CI workflow: tests run automatically on every push to main",
+      "Kuike logic extracted into its own module with table-driven intent routing",
+      "Fixed 2 Kuike routing bugs found by automated tests (43 tests, all passing)"
+    ]
+  },
+  {
+    "version": "1.0.20",
+    "date": "2026-06-27",
+    "changes": [
+      "Kuike rewritten as fully local assistant — no API key required",
+      "Kuike icon changed to 🦐",
+      "Kuike moved to a floating bubble widget visible on all admin pages",
+      "Kuike now supports 13 intents: ventas, inventario, empleados, horarios pico, pagos, órdenes, productos, promociones, precios, bitácora, clientes frecuentes y más"
+    ]
+  },
+  {
+    "version": "1.0.19",
+    "date": "2026-06-24",
+    "changes": [
+      "Split payment support (efectivo + tarjeta en la misma orden)",
+      "Customer name autocomplete at checkout",
+      "Larger touch targets across POS screens",
+      "Enhanced charts on the reports page",
+      "Activity log for all admin actions"
+    ]
+  }
+]
