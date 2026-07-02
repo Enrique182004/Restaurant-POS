@@ -1543,12 +1543,8 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
     
     # Generate receipt content
     receipt_content = []
-    receipt_content.append("=" * 38)
-    receipt_content.append(f"  {RESTAURANT_NAME.center(34)}")
-    receipt_content.append("=" * 38)
     receipt_content.append(f"Orden #: {order_id or session.get('order_id')}")
     receipt_content.append(f"Cliente: {customer_name or 'Cliente'}")
-    receipt_content.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     receipt_content.append("-" * 38)
     
     # Items
