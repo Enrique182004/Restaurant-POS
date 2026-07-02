@@ -1,6 +1,6 @@
 {
   "name": "ebi-ball-pos",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Ebi Ball — Sistema de Punto de Venta",
   "main": "main.js",
   "scripts": {

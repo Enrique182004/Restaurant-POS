@@ -222,22 +222,6 @@ block styles %}
   .send-btn:not(:disabled):hover {
     opacity: 0.85;
   }
-  .no-key-banner {
-    background: rgba(248, 113, 113, 0.1);
-    border: 1px solid rgba(248, 113, 113, 0.3);
-    border-radius: 12px;
-    padding: 16px 20px;
-    color: #f87171;
-    font-size: 0.88rem;
-    line-height: 1.6;
-    margin: 20px 0;
-  }
-  .no-key-banner code {
-    background: rgba(248, 113, 113, 0.15);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-  }
 </style>
 {% endblock %} {% block body %}
 <div class="kuike-wrap">
@@ -249,15 +233,6 @@ block styles %}
     </div>
     <a href="{{ url_for('admin_dashboard') }}" class="kuike-back">← Panel</a>
   </div>
-
-  {% if not api_configured %}
-  <div class="no-key-banner">
-    <strong>API key no configurada.</strong><br />
-    Para activar a Kuike, agrega la variable de entorno
-    <code>ANTHROPIC_API_KEY=sk-ant-...</code> antes de iniciar el servidor.
-    Puedes obtener tu clave en <strong>console.anthropic.com</strong>.
-  </div>
-  {% else %}
 
   <div class="chat-messages" id="chat-messages">
     <div class="msg assistant">
@@ -290,11 +265,8 @@ block styles %}
     ></textarea>
     <button class="send-btn" id="send-btn" disabled>➤</button>
   </div>
-
-  {% endif %}
 </div>
 
-{% if api_configured %}
 <script>
   (function () {
     var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -415,4 +387,4 @@ block styles %}
     }
   })();
 </script>
-{% endif %} {% endblock %}
+{% endblock %}

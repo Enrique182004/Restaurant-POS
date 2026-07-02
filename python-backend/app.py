@@ -10,11 +10,6 @@ import json
 import csv
 import io
 from functools import wraps
-try:
-    import anthropic as _anthropic
-    _anthropic_available = True
-except ImportError:
-    _anthropic_available = False
 
 # Soporte para modo PyInstaller (bundled) y desarrollo normal.
 # FLASK_APP_DIR indica dónde están templates/ y static/ en producción.
@@ -2778,124 +2773,211 @@ def get_config_api():
 
 # ── Kuike — AI Admin Assistant ────────────────────────────────────────────────
 
-_KUIKE_SYSTEM = """Eres Kuike, el asistente de IA del sistema POS de Ebi Ball. \
-Solo puedes responder preguntas sobre los datos del restaurante: ventas, órdenes, \
-inventario, empleados, promociones, precios del menú y actividad del sistema. \
-Usa las herramientas disponibles para consultar la base de datos y dar respuestas \
-concretas y útiles. Responde en el idioma del usuario (español o inglés). \
-Sé conciso, amable y orientado a datos. Si te preguntan algo fuera de los datos \
-del restaurante, redirige amablemente hacia lo que sí puedes ayudar."""
+def _kuike_detect_period(text):
+    if any(w in text for w in ['ayer', 'yesterday']):
+        return 'yesterday'
+    if any(w in text for w in ['semana', 'week', 'semanal', 'esta semana', 'this week']):
+        return 'week'
+    if any(w in text for w in ['mes', 'month', 'mensual', 'este mes', 'this month']):
+        return 'month'
+    if any(w in text for w in ['año', 'year', 'anual', 'este año', 'this year']):
+        return 'alltime'
+    return 'today'
 
-_KUIKE_TOOLS = [
-    {
-        "name": "get_sales_summary",
-        "description": "Resumen de ventas: total de órdenes, ingresos, ticket promedio y órdenes anuladas.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"],
-                           "description": "Período de tiempo"}
-            },
-            "required": ["period"]
-        }
-    },
-    {
-        "name": "get_top_items",
-        "description": "Productos más vendidos con cantidad e ingresos generados.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]},
-                "limit": {"type": "integer", "description": "Número de productos a retornar", "default": 10}
-            },
-            "required": ["period"]
-        }
-    },
-    {
-        "name": "get_recent_orders",
-        "description": "Lista de órdenes recientes con cliente, total, método de pago y estado.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "default": 20},
-                "customer_name": {"type": "string", "description": "Filtrar por nombre de cliente (opcional)"},
-                "status": {"type": "string", "enum": ["completed", "voided", "all"], "default": "all"}
-            }
-        }
-    },
-    {
-        "name": "get_payment_breakdown",
-        "description": "Desglose de ingresos por método de pago (efectivo, tarjeta, mixto).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]}
-            },
-            "required": ["period"]
-        }
-    },
-    {
-        "name": "get_peak_hours",
-        "description": "Distribución de órdenes e ingresos por hora del día.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]}
-            },
-            "required": ["period"]
-        }
-    },
-    {
-        "name": "get_employee_data",
-        "description": "Empleados activos, días trabajados esta semana y pago estimado.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "week": {"type": "string", "description": "Fecha dentro de la semana deseada en formato YYYY-MM-DD. Usa la fecha de hoy si no se especifica."}
-            }
-        }
-    },
-    {
-        "name": "get_inventory",
-        "description": "Estado del inventario: nombre, cantidad actual, mínimo y unidad.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_held_orders",
-        "description": "Órdenes retenidas actualmente en la cola de espera.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_promotions",
-        "description": "Todas las promociones configuradas y su estado (activa/inactiva).",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_menu_prices",
-        "description": "Precios actuales del menú.",
-        "input_schema": {"type": "object", "properties": {}}
-    },
-    {
-        "name": "get_activity_log",
-        "description": "Registro reciente de actividad administrativa (quién hizo qué y cuándo).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "default": 20}
-            }
-        }
-    },
-    {
-        "name": "get_frequent_customers",
-        "description": "Clientes que han ordenado más de una vez, ordenados por número de visitas.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "default": 15}
-            }
-        }
-    },
-]
+
+def _kuike_local_response(text):
+    import re
+    period = _kuike_detect_period(text)
+    plabel = {'today': 'hoy', 'yesterday': 'ayer', 'week': 'esta semana',
+              'month': 'este mes', 'alltime': 'histórico'}.get(period, 'hoy')
+
+    # Greeting
+    if any(w in text for w in ['hola', 'hello', 'hi ', 'hey', 'buenas', 'qué tal', 'que tal']):
+        return ('¡Hola! Soy Kuike 🤖. Puedo consultarte ventas, inventario, empleados, '
+                'clientes frecuentes, promociones y más. ¿Qué quieres saber?')
+
+    # Help
+    if any(w in text for w in ['ayuda', 'help', 'qué puedes', 'que puedes', 'qué sabes',
+                                 'que sabes', 'puedes hacer', 'cómo funciona', 'como funciona']):
+        return (
+            'Puedo ayudarte con:\n'
+            '• Ventas: totales y tendencias por período\n'
+            '• Productos más vendidos\n'
+            '• Horarios pico\n'
+            '• Métodos de pago: efectivo, tarjeta, mixto\n'
+            '• Empleados: asistencia y nómina\n'
+            '• Inventario y alertas de bajo stock\n'
+            '• Clientes frecuentes\n'
+            '• Promociones activas\n'
+            '• Precios del menú\n'
+            '• Bitácora de actividad\n\n'
+            'Puedes agregar: hoy, ayer, esta semana o este mes.'
+        )
+
+    # Top items (check before generic sales to avoid false positive on "más vendido")
+    if any(w in text for w in ['producto', 'item', 'artículo', 'articulo', 'más vendido',
+                                 'mas vendido', 'popular', 'top ', 'best', 'mayor venta', 'más pedido']):
+        limit = 5
+        m = re.search(r'\b(\d+)\b', text)
+        if m:
+            limit = min(int(m.group(1)), 20)
+        data = _run_kuike_tool('get_top_items', {'period': period, 'limit': limit})
+        if isinstance(data, list) and data:
+            lines = [f'Productos más vendidos ({plabel}):']
+            for i, item in enumerate(data, 1):
+                lines.append(f'{i}. {item["name"]} — {item["qty"]} uds. (${item.get("revenue", 0):.2f})')
+            return '\n'.join(lines)
+        return f'No hay datos de productos para {plabel}.'
+
+    # Sales summary
+    if any(w in text for w in ['vend', 'venta', 'ventas', 'ingreso', 'total', 'recaud',
+                                 'ganancia', 'cuánto', 'cuanto', 'revenue', 'sales', 'sold', 'factur']):
+        data = _run_kuike_tool('get_sales_summary', {'period': period})
+        if isinstance(data, dict) and 'orders' in data:
+            avg = data['revenue'] / data['orders'] if data['orders'] > 0 else 0
+            return (
+                f'Resumen de ventas ({plabel}):\n'
+                f'• Órdenes completadas: {data["orders"]}\n'
+                f'• Ingresos totales: ${data["revenue"]:.2f}\n'
+                f'• Ticket promedio: ${avg:.2f}'
+            )
+
+    # Peak hours
+    if any(w in text for w in ['hora', 'pico', 'peak', 'concurrido', 'ocupado', 'busy',
+                                 'rush', 'cuándo más', 'cuando más', 'cuándo hay']):
+        data = _run_kuike_tool('get_peak_hours', {'period': period})
+        if isinstance(data, list) and data:
+            lines = [f'Horas con más pedidos ({plabel}):']
+            for row in data[:6]:
+                lines.append(f'• {row["hour"]} — {row["orders"]} órdenes (${row["revenue"]:.2f})')
+            return '\n'.join(lines)
+        return f'No hay datos de horarios para {plabel}.'
+
+    # Payment breakdown
+    if any(w in text for w in ['pago', 'payment', 'efectivo', 'tarjeta', 'cash', 'card',
+                                 'mixto', 'split', 'método de pago']):
+        data = _run_kuike_tool('get_payment_breakdown', {'period': period})
+        if isinstance(data, list) and data:
+            names = {'cash': 'Efectivo', 'card': 'Tarjeta', 'split': 'Mixto'}
+            lines = [f'Métodos de pago ({plabel}):']
+            for row in data:
+                n = names.get(row['method'], row['method'])
+                lines.append(f'• {n}: {row["orders"]} órdenes — ${row["revenue"]:.2f}')
+            return '\n'.join(lines)
+        return f'No hay datos de pagos para {plabel}.'
+
+    # Recent orders
+    if any(w in text for w in ['orden', 'ordenes', 'órdenes', 'pedido', 'pedidos',
+                                 'reciente', 'últim', 'order', 'recent']):
+        limit = 10
+        m = re.search(r'\b(\d+)\b', text)
+        if m:
+            limit = min(int(m.group(1)), 50)
+        data = _run_kuike_tool('get_recent_orders', {'limit': limit})
+        if isinstance(data, list) and data:
+            lines = [f'Últimas {len(data)} órdenes:']
+            for o in data[:10]:
+                flag = '✓' if o.get('status') == 'completed' else '✗'
+                lines.append(f'{flag} #{o["id"]} — {o.get("customer_name") or "Sin nombre"} — ${o.get("total", 0):.2f}')
+            return '\n'.join(lines)
+        return 'No hay órdenes recientes.'
+
+    # Employees
+    if any(w in text for w in ['empleado', 'employee', 'trabajador', 'personal', 'staff',
+                                 'nómina', 'nomina', 'salario', 'sueldo']):
+        data = _run_kuike_tool('get_employee_data', {})
+        if isinstance(data, dict) and 'employees' in data:
+            emps = data['employees']
+            lines = [f'Empleados — semana {data.get("week", "")}:']
+            for e in emps:
+                lines.append(f'• {e["name"]}: {e["days_worked"]}/{e["scheduled_days"]} días — ${e["pay_this_week"]:.2f}')
+            return '\n'.join(lines)
+        return 'No hay datos de empleados.'
+
+    # Inventory
+    if any(w in text for w in ['inventario', 'inventory', 'stock', 'existencia',
+                                 'material', 'ingrediente', 'agotad']):
+        data = _run_kuike_tool('get_inventory', {})
+        if isinstance(data, list):
+            low = [i for i in data if i.get('low')]
+            if any(w in text for w in ['bajo', 'low', 'agota', 'mínimo', 'minimo', 'alerta']):
+                if not low:
+                    return 'Todo el inventario está por encima del mínimo. ✅'
+                lines = [f'Inventario bajo ({len(low)} ítems):']
+                for i in low:
+                    lines.append(f'⚠️ {i["name"]}: {i["qty"]} {i["unit"]} (mín. {i["min"]})')
+                return '\n'.join(lines)
+            lines = [f'Inventario ({len(data)} ítems):']
+            for i in data:
+                flag = ' ⚠️' if i.get('low') else ''
+                lines.append(f'• {i["name"]}: {i["qty"]} {i["unit"]}{flag}')
+            return '\n'.join(lines)
+
+    # Held orders
+    if any(w in text for w in ['retenid', 'en espera', 'hold', 'guardad', 'retenidas']):
+        data = _run_kuike_tool('get_held_orders', {})
+        if isinstance(data, list):
+            if not data:
+                return 'No hay órdenes retenidas en este momento.'
+            lines = [f'Órdenes retenidas ({len(data)}):']
+            for o in data:
+                lines.append(f'• {o["ref"]} — {o.get("customer") or "Sin nombre"} — ${o.get("total", 0):.2f}')
+            return '\n'.join(lines)
+
+    # Promotions
+    if any(w in text for w in ['promoci', 'descuento', 'cupón', 'cupon', 'promo',
+                                 'oferta', 'discount', 'promotion']):
+        data = _run_kuike_tool('get_promotions', {})
+        if isinstance(data, list):
+            active = [p for p in data if p.get('active')]
+            if not active:
+                return 'No hay promociones activas en este momento.'
+            lines = [f'Promociones activas ({len(active)} de {len(data)}):']
+            for p in active:
+                desc = p.get('description') or p.get('type', '')
+                lines.append(f'• {p["name"]}: {desc}')
+            return '\n'.join(lines)
+
+    # Menu prices
+    if any(w in text for w in ['precio', 'menú', 'menu', 'price', 'costo',
+                                 'cuánto cuesta', 'cuanto cuesta']):
+        data = _run_kuike_tool('get_menu_prices', {})
+        if isinstance(data, list) and data:
+            lines = ['Precios del menú:']
+            for item in data:
+                lines.append(f'• {item["item"]}: ${item["price"]:.2f}')
+            return '\n'.join(lines)
+        return 'No hay precios configurados.'
+
+    # Activity log
+    if any(w in text for w in ['actividad', 'bitácora', 'bitacora', 'log', 'activity',
+                                 'registro', 'acción', 'accion', 'audit']):
+        data = _run_kuike_tool('get_activity_log', {'limit': 15})
+        if isinstance(data, list) and data:
+            lines = ['Actividad reciente:']
+            for entry in data[:10]:
+                lines.append(f'• {entry.get("timestamp", "")} — {entry.get("action", "")} — {entry.get("description", "")}')
+            return '\n'.join(lines)
+        return 'No hay actividad registrada.'
+
+    # Frequent customers
+    if any(w in text for w in ['cliente', 'customer', 'frecuente', 'frequent',
+                                 'fiel', 'loyal', 'visita', 'regular']):
+        data = _run_kuike_tool('get_frequent_customers', {'limit': 10})
+        if isinstance(data, list):
+            if not data:
+                return 'Aún no hay clientes frecuentes registrados.'
+            lines = ['Clientes más frecuentes:']
+            for c in data:
+                lines.append(f'• {c["customer"]}: {c["visits"]} visitas — ${c["total_spent"]:.2f}')
+            return '\n'.join(lines)
+
+    # Fallback
+    return (
+        'No encontré información específica para esa consulta. Prueba preguntar sobre:\n'
+        'ventas, productos más vendidos, horarios pico, métodos de pago, empleados, '
+        'inventario, clientes frecuentes, promociones o precios.'
+    )
 
 
 def _period_start(period):
@@ -3036,63 +3118,33 @@ def _run_kuike_tool(name, inputs):
 @login_required
 @admin_required
 def kuike_chat():
-    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
-    return render_template('kuike.html', api_configured=bool(api_key) and _anthropic_available)
+    return render_template('kuike.html')
 
 
 @app.route('/admin/kuike/chat', methods=['POST'])
 @login_required
 @admin_required
 def kuike_chat_api():
-    if not _anthropic_available:
-        return jsonify({'error': 'Anthropic SDK no instalado.'}), 500
-
-    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
-    if not api_key:
-        return jsonify({'error': 'ANTHROPIC_API_KEY no configurada. Agrega la variable de entorno y reinicia el servidor.'}), 503
-
     data = request.get_json(silent=True) or {}
     messages = data.get('messages', [])
     if not messages:
         return jsonify({'error': 'Sin mensajes.'}), 400
 
-    client = _anthropic.Anthropic(api_key=api_key)
+    user_msg = ''
+    for m in reversed(messages):
+        if m.get('role') == 'user':
+            user_msg = m.get('content', '')
+            break
 
-    # Agentic loop: call API, handle tool_use, call again
-    for _ in range(8):  # max 8 rounds to avoid runaway loops
-        response = client.messages.create(
-            model='claude-haiku-4-5-20251001',
-            max_tokens=1024,
-            system=_KUIKE_SYSTEM,
-            tools=_KUIKE_TOOLS,
-            messages=messages
-        )
+    if not user_msg:
+        return jsonify({'reply': '¿En qué te puedo ayudar?'})
 
-        if response.stop_reason == 'tool_use':
-            # Append assistant message with all content blocks
-            messages.append({'role': 'assistant', 'content': [
-                b.model_dump() for b in response.content
-            ]})
-            # Process each tool call and collect results
-            tool_results = []
-            for block in response.content:
-                if block.type == 'tool_use':
-                    try:
-                        result = _run_kuike_tool(block.name, block.input)
-                    except Exception as e:
-                        result = {'error': str(e)}
-                    tool_results.append({
-                        'type': 'tool_result',
-                        'tool_use_id': block.id,
-                        'content': json.dumps(result, ensure_ascii=False)
-                    })
-            messages.append({'role': 'user', 'content': tool_results})
-        else:
-            # Final text response
-            text = next((b.text for b in response.content if hasattr(b, 'text')), '')
-            return jsonify({'reply': text})
+    try:
+        reply = _kuike_local_response(user_msg.lower())
+    except Exception as e:
+        reply = f'Error consultando datos: {e}'
 
-    return jsonify({'reply': 'Lo siento, no pude completar la consulta. Intenta de nuevo.'})
+    return jsonify({'reply': reply})
 
 
 # ── Manejo de errores ─────────────────────────────────────────────────────────
