@@ -1,5 +1,5 @@
-{% extends 'base.html' %} {% block title %}Kuike — Asistente IA{% endblock %} {%
-block styles %}
+{% extends 'base.html' %} {% block title %}Asistente Kuike — Ebi Ball{% endblock
+%} {% block kuike_bubble %}{% endblock %} {% block styles %}
 <style>
   .kuike-wrap {
     max-width: 820px;
@@ -226,17 +226,17 @@ block styles %}
 {% endblock %} {% block body %}
 <div class="kuike-wrap">
   <div class="kuike-header">
-    <div class="kuike-avatar">🤖</div>
+    <div class="kuike-avatar">🦐</div>
     <div>
-      <div class="kuike-name">Kuike</div>
-      <div class="kuike-desc">Asistente IA — datos del sistema Ebi Ball</div>
+      <div class="kuike-name">Asistente Kuike</div>
+      <div class="kuike-desc">Datos del sistema Ebi Ball</div>
     </div>
     <a href="{{ url_for('admin_dashboard') }}" class="kuike-back">← Panel</a>
   </div>
 
   <div class="chat-messages" id="chat-messages">
     <div class="msg assistant">
-      <div class="msg-avatar">🤖</div>
+      <div class="msg-avatar">🦐</div>
       <div class="msg-bubble">
         ¡Hola! Soy Kuike, tu asistente para el sistema Ebi Ball. Puedo
         consultarte información sobre ventas, órdenes, inventario, empleados,
@@ -310,7 +310,7 @@ block styles %}
       div.className = "msg " + role;
       var avatar = document.createElement("div");
       avatar.className = "msg-avatar";
-      avatar.textContent = role === "assistant" ? "🤖" : "👤";
+      avatar.textContent = role === "assistant" ? "🦐" : "👤";
       var bubble = document.createElement("div");
       bubble.className = "msg-bubble";
       bubble.textContent = text;
@@ -327,7 +327,7 @@ block styles %}
       div.id = "typing-indicator";
       var avatar = document.createElement("div");
       avatar.className = "msg-avatar";
-      avatar.textContent = "🤖";
+      avatar.textContent = "🦐";
       var bubble = document.createElement("div");
       bubble.className = "msg-bubble";
       for (var i = 0; i < 3; i++) {

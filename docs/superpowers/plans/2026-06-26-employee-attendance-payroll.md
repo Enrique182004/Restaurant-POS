@@ -182,7 +182,7 @@ In `python-backend/app.py`, find this exact block (the end of `init_db()`):
                 'UPDATE users SET password = ? WHERE id = ?',
                 (generate_password_hash(u['password']), u['id'])
             )
-    
+
     conn.commit()
     conn.close()
 ```
@@ -804,7 +804,7 @@ def add_employee():
 Run: `cd python-backend && python3 -m pytest tests/test_route_add_employee.py -v`
 Expected: 4 passed
 
-Note: this redirects to `employees_manage`, which doesn't exist as a route yet — that's fine, `url_for('employees_manage')` will raise a `BuildError` until Task 12 adds it. If Step 4 fails with `werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'employees_manage'`, that's expected at this point in the plan; re-run this same test after Task 12 is done to confirm it passes for real. To unblock Step 4 *right now*, temporarily change both `redirect(url_for('employees_manage'))` calls in `add_employee` to `redirect('/admin/employees/manage')`, run the test, then revert to `url_for('employees_manage')` once Task 12 adds that endpoint (Task 12, Step 3 will leave it as `url_for`).
+Note: this redirects to `employees_manage`, which doesn't exist as a route yet — that's fine, `url_for('employees_manage')` will raise a `BuildError` until Task 12 adds it. If Step 4 fails with `werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'employees_manage'`, that's expected at this point in the plan; re-run this same test after Task 12 is done to confirm it passes for real. To unblock Step 4 _right now_, temporarily change both `redirect(url_for('employees_manage'))` calls in `add_employee` to `redirect('/admin/employees/manage')`, run the test, then revert to `url_for('employees_manage')` once Task 12 adds that endpoint (Task 12, Step 3 will leave it as `url_for`).
 
 - [ ] **Step 5: Commit**
 
@@ -1328,7 +1328,8 @@ def employees_attendance():
 Create `python-backend/templates/employees.html`:
 
 ```html
-{% extends 'base.html' %} {% block title %}Asistencia — Empleados{% endblock %} {% block styles %}
+{% extends 'base.html' %} {% block title %}Asistencia — Empleados{% endblock %}
+{% block styles %}
 <style>
   .emp-wrap {
     max-width: 900px;
@@ -1526,19 +1527,32 @@ Create `python-backend/templates/employees.html`:
     <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
   </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}{% for cat, msg in messages %}
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
   <div class="alert alert-{{ cat }}">{{ msg }}</div>
   {% endfor %}{% endif %} {% endwith %}
 
   <div class="period-tabs">
-    <a href="{{ url_for('employees_attendance') }}" class="period-tab active">Asistencia</a>
-    <a href="{{ url_for('employees_manage') }}" class="period-tab">Gestionar empleados</a>
+    <a href="{{ url_for('employees_attendance') }}" class="period-tab active"
+      >Asistencia</a
+    >
+    <a href="{{ url_for('employees_manage') }}" class="period-tab"
+      >Gestionar empleados</a
+    >
   </div>
 
   <div class="week-nav">
-    <a href="{{ url_for('employees_attendance', week=prev_week) }}" class="week-nav-btn">← Semana anterior</a>
+    <a
+      href="{{ url_for('employees_attendance', week=prev_week) }}"
+      class="week-nav-btn"
+      >← Semana anterior</a
+    >
     <span class="week-label">{{ week_start }} – {{ week_end }}</span>
-    <a href="{{ url_for('employees_attendance', week=next_week) }}" class="week-nav-btn">Semana siguiente →</a>
+    <a
+      href="{{ url_for('employees_attendance', week=next_week) }}"
+      class="week-nav-btn"
+      >Semana siguiente →</a
+    >
   </div>
 
   <div class="week-total-card">
@@ -1547,18 +1561,24 @@ Create `python-backend/templates/employees.html`:
   </div>
 
   {% if not rows %}
-  <div class="empty-state">No hay empleados activos. Agrega uno en "Gestionar empleados".</div>
-  {% endif %}
-
-  {% for row in rows %}
+  <div class="empty-state">
+    No hay empleados activos. Agrega uno en "Gestionar empleados".
+  </div>
+  {% endif %} {% for row in rows %}
   <div class="emp-card">
     <div class="emp-card-header">
       <div class="emp-name">{{ row.name }}</div>
-      <div class="emp-total">${{ "%.2f"|format(row.total_pay) }} · {{ row.days_worked }} día(s)</div>
+      <div class="emp-total">
+        ${{ "%.2f"|format(row.total_pay) }} · {{ row.days_worked }} día(s)
+      </div>
     </div>
     <div class="day-row">
       {% for day in row.days %}
-      <form method="POST" action="{{ url_for('toggle_attendance') }}" class="day-toggle-form">
+      <form
+        method="POST"
+        action="{{ url_for('toggle_attendance') }}"
+        class="day-toggle-form"
+      >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="employee_id" value="{{ row.id }}" />
         <input type="hidden" name="work_date" value="{{ day.date }}" />
@@ -1708,7 +1728,8 @@ def employees_manage():
 Create `python-backend/templates/employees_manage.html`:
 
 ```html
-{% extends 'base.html' %} {% block title %}Gestionar empleados{% endblock %} {% block styles %}
+{% extends 'base.html' %} {% block title %}Gestionar empleados{% endblock %} {%
+block styles %}
 <style>
   .emp-wrap {
     max-width: 900px;
@@ -1945,44 +1966,71 @@ Create `python-backend/templates/employees_manage.html`:
     <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
   </div>
 
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}{% for cat, msg in messages %}
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
   <div class="alert alert-{{ cat }}">{{ msg }}</div>
   {% endfor %}{% endif %} {% endwith %}
 
   <div class="period-tabs">
-    <a href="{{ url_for('employees_attendance') }}" class="period-tab">Asistencia</a>
-    <a href="{{ url_for('employees_manage') }}" class="period-tab active">Gestionar empleados</a>
+    <a href="{{ url_for('employees_attendance') }}" class="period-tab"
+      >Asistencia</a
+    >
+    <a href="{{ url_for('employees_manage') }}" class="period-tab active"
+      >Gestionar empleados</a
+    >
   </div>
 
   <div class="section-heading">Empleados</div>
 
   {% if not rows %}
   <div class="empty-state">Todavía no hay empleados. Agrega uno abajo.</div>
-  {% endif %}
-
-  {% for row in rows %}
+  {% endif %} {% for row in rows %}
   <details class="emp-roster-card {% if not row.active %}inactive{% endif %}">
     <summary class="emp-roster-summary">
       <span>
         <span class="emp-roster-name">{{ row.name }}</span>
-        {% if not row.active %}<span class="inactive-badge">Desactivado</span>{% endif %}
+        {% if not row.active %}<span class="inactive-badge">Desactivado</span>{%
+        endif %}
       </span>
       <span class="emp-roster-meta">
-        {% for d in row.scheduled_days %}{{ day_labels[d] }}{% if not loop.last %}/{% endif %}{% endfor %}
-        · ${{ "%.2f"|format(row.pay_amount) }}/sem · ${{ "%.2f"|format(row.per_day_rate) }}/día
+        {% for d in row.scheduled_days %}{{ day_labels[d] }}{% if not loop.last
+        %}/{% endif %}{% endfor %} · ${{ "%.2f"|format(row.pay_amount) }}/sem ·
+        ${{ "%.2f"|format(row.per_day_rate) }}/día
       </span>
     </summary>
     <div class="emp-roster-body">
-      <form method="POST" action="{{ url_for('update_employee', employee_id=row.id) }}">
+      <form
+        method="POST"
+        action="{{ url_for('update_employee', employee_id=row.id) }}"
+      >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <label class="field-label">Nombre</label>
-        <input type="text" name="name" class="field-input" value="{{ row.name }}" required maxlength="60" />
+        <input
+          type="text"
+          name="name"
+          class="field-input"
+          value="{{ row.name }}"
+          required
+          maxlength="60"
+        />
 
         <label class="field-label">Días programados</label>
         <div class="day-checks">
           {% for d in range(7) %}
           <label class="day-check-label">
-            <input type="checkbox" name="days" value="{{ d }}" {% if d in row.scheduled_days %}checked{% endif %} />
+            <input
+              type="checkbox"
+              name="days"
+              value="{{ d }}"
+              {%
+              if
+              d
+              in
+              row.scheduled_days
+              %}checked{%
+              endif
+              %}
+            />
             {{ day_labels[d] }}
           </label>
           {% endfor %}
@@ -1999,7 +2047,9 @@ Create `python-backend/templates/employees_manage.html`:
           required
         />
 
-        <div class="save-hint">Los cambios de horario y pago aplican a partir de la próxima semana.</div>
+        <div class="save-hint">
+          Los cambios de horario y pago aplican a partir de la próxima semana.
+        </div>
         <div class="form-actions">
           <button type="submit" class="save-btn">Guardar cambios</button>
         </div>
@@ -2012,7 +2062,9 @@ Create `python-backend/templates/employees_manage.html`:
         data-confirm="{% if row.has_attendance %}¿Desactivar a {{ row.name }}?{% else %}¿Eliminar a {{ row.name }}?{% endif %}"
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="danger-btn">{% if row.has_attendance %}Desactivar{% else %}Eliminar{% endif %}</button>
+        <button type="submit" class="danger-btn">
+          {% if row.has_attendance %}Desactivar{% else %}Eliminar{% endif %}
+        </button>
       </form>
     </div>
   </details>
@@ -2023,7 +2075,14 @@ Create `python-backend/templates/employees_manage.html`:
     <form method="POST" action="{{ url_for('add_employee') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <label class="field-label">Nombre</label>
-      <input type="text" name="name" class="field-input" placeholder="Nombre del empleado" required maxlength="60" />
+      <input
+        type="text"
+        name="name"
+        class="field-input"
+        placeholder="Nombre del empleado"
+        required
+        maxlength="60"
+      />
 
       <label class="field-label">Días programados</label>
       <div class="day-checks">
@@ -2036,7 +2095,15 @@ Create `python-backend/templates/employees_manage.html`:
       </div>
 
       <label class="field-label">Pago semanal ($)</label>
-      <input type="number" name="pay_amount" class="field-input" placeholder="1000" min="1" step="0.01" required />
+      <input
+        type="number"
+        name="pay_amount"
+        class="field-input"
+        placeholder="1000"
+        min="1"
+        step="0.01"
+        required
+      />
 
       <button type="submit" class="add-btn">+ Agregar empleado</button>
     </form>
