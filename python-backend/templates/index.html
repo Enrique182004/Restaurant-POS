@@ -220,6 +220,9 @@ styles %}
     min-width: 110px;
     max-width: 180px;
     transition: opacity 0.15s;
+    background-color: var(--qc-bg) !important;
+    color: var(--qc-text) !important;
+    border: none !important;
   }
   .queue-card:hover {
     opacity: 0.85;
@@ -551,48 +554,12 @@ styles %}
     }
 
     const STICKY_COLORS = [
-      {
-        bg: "#3a2a00",
-        border: "#7a5500",
-        ref: "#f5a623",
-        name: "#ffd580",
-        meta: "#a07030",
-      },
-      {
-        bg: "#002a1a",
-        border: "#006640",
-        ref: "#34d399",
-        name: "#6ee7b7",
-        meta: "#0f7a47",
-      },
-      {
-        bg: "#2a0030",
-        border: "#660080",
-        ref: "#c084fc",
-        name: "#e9d5ff",
-        meta: "#7c3aed",
-      },
-      {
-        bg: "#002030",
-        border: "#005080",
-        ref: "#38bdf8",
-        name: "#bae6fd",
-        meta: "#0369a1",
-      },
-      {
-        bg: "#300010",
-        border: "#800030",
-        ref: "#fb7185",
-        name: "#fecdd3",
-        meta: "#9f1239",
-      },
-      {
-        bg: "#1a2500",
-        border: "#3a5500",
-        ref: "#a3e635",
-        name: "#d9f99d",
-        meta: "#4d7c0f",
-      },
+      { bg: "#f5c842", text: "#3a2a00", meta: "#7a5500" },
+      { bg: "#4ecb71", text: "#003a15", meta: "#1a5c2a" },
+      { bg: "#f87171", text: "#3a0000", meta: "#7a1a1a" },
+      { bg: "#60a5fa", text: "#00204a", meta: "#1a4a7a" },
+      { bg: "#c084fc", text: "#2a0050", meta: "#5a1a8a" },
+      { bg: "#fb923c", text: "#3a1a00", meta: "#7a3a00" },
     ];
 
     function renderQueue(orders) {
@@ -609,16 +576,16 @@ styles %}
           return `
         <form method="POST" action="/resume_order/${o.id}" style="margin:0">
           <input type="hidden" name="csrf_token" value="${csrfToken}">
-          <button type="submit" class="queue-card" style="background:${c.bg};border:1px solid ${c.border};text-align:left;width:auto">
+          <button type="submit" class="queue-card" style="--qc-bg:${c.bg};--qc-text:${c.text};text-align:left;width:auto">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
-              <span class="queue-ref" style="color:${c.ref}">${o.order_ref}</span>
-              <span class="queue-btn-cancel" style="color:${c.ref}"
+              <span class="queue-ref" style="color:${c.meta}">${o.order_ref}</span>
+              <span class="queue-btn-cancel" style="color:${c.text}"
                 onclick="event.stopPropagation();event.preventDefault();
                   if(confirm('¿Cancelar ${o.order_ref}?')){
                     fetch('/cancel_held_order/${o.id}',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'csrf_token=${csrfToken}'}).then(()=>loadQueue());
                   }">✕</span>
             </div>
-            <div class="queue-customer" style="color:${c.name}">${o.customer_name}</div>
+            <div class="queue-customer" style="color:${c.text}">${o.customer_name}</div>
             <div class="queue-meta" style="color:${c.meta}">$${parseFloat(o.total).toFixed(0)} · ${timeSince(o.created_at)}</div>
           </button>
         </form>`;
