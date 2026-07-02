@@ -163,6 +163,7 @@ def init_db():
         ('Bola de Arroz',   'Bola de Arroz',        115.0),
         ('Sushi Preparado', 'Sushi (Preparado)',    115.0),
         ('Sushi Seco',      'Sushi (Seco / Aparte)',110.0),
+        ('Sushi Flamin',    'Sushi (Flamin)',       125.0),
         ('Complementos',    'Complementos (x salsa)',10.0),
         ('Ostión',          'Ostión (extra)',        10.0),
     ]
@@ -668,7 +669,12 @@ def manage_menu_options():
 def get_item_price(item_type, style=None):
     """Get item price from the database (editable by admin)."""
     if item_type == 'Sushi' and style:
-        key = 'Sushi Seco' if ('Seco' in style or 'Salsas Aparte' in style) else 'Sushi Preparado'
+        if 'Seco' in style or 'Salsas Aparte' in style:
+            key = 'Sushi Seco'
+        elif 'Flamin' in style:
+            key = 'Sushi Flamin'
+        else:
+            key = 'Sushi Preparado'
     else:
         key = item_type
 
@@ -690,9 +696,9 @@ def get_sushi_prep_prices():
         row = conn.execute('SELECT price FROM menu_prices WHERE key=?', (key,)).fetchone()
         return int(row['price']) if row else 0
     prices = {
-        'Sushi Preparado':     p('Sushi Preparado'),
-        'Sushi Seco':          p('Sushi Seco'),
-        'Sushi Salsas Aparte': p('Sushi Seco'),   # same tier as Seco
+        'Sushi Preparado':      p('Sushi Preparado'),
+        'Seco / Salsas Aparte': p('Sushi Seco'),
+        'Sushi Flamin':         p('Sushi Flamin'),
     }
     return prices
 
