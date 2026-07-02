@@ -10,6 +10,11 @@ import json
 import csv
 import io
 from functools import wraps
+try:
+    import anthropic as _anthropic
+    _anthropic_available = True
+except ImportError:
+    _anthropic_available = False
 
 # Soporte para modo PyInstaller (bundled) y desarrollo normal.
 # FLASK_APP_DIR indica dónde están templates/ y static/ en producción.
@@ -2769,6 +2774,325 @@ def get_config_api():
     conn = get_db_connection()
     rows = conn.execute('SELECT key, value FROM config').fetchall()
     return jsonify({r['key']: r['value'] for r in rows})
+
+
+# ── Kuike — AI Admin Assistant ────────────────────────────────────────────────
+
+_KUIKE_SYSTEM = """Eres Kuike, el asistente de IA del sistema POS de Ebi Ball. \
+Solo puedes responder preguntas sobre los datos del restaurante: ventas, órdenes, \
+inventario, empleados, promociones, precios del menú y actividad del sistema. \
+Usa las herramientas disponibles para consultar la base de datos y dar respuestas \
+concretas y útiles. Responde en el idioma del usuario (español o inglés). \
+Sé conciso, amable y orientado a datos. Si te preguntan algo fuera de los datos \
+del restaurante, redirige amablemente hacia lo que sí puedes ayudar."""
+
+_KUIKE_TOOLS = [
+    {
+        "name": "get_sales_summary",
+        "description": "Resumen de ventas: total de órdenes, ingresos, ticket promedio y órdenes anuladas.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"],
+                           "description": "Período de tiempo"}
+            },
+            "required": ["period"]
+        }
+    },
+    {
+        "name": "get_top_items",
+        "description": "Productos más vendidos con cantidad e ingresos generados.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]},
+                "limit": {"type": "integer", "description": "Número de productos a retornar", "default": 10}
+            },
+            "required": ["period"]
+        }
+    },
+    {
+        "name": "get_recent_orders",
+        "description": "Lista de órdenes recientes con cliente, total, método de pago y estado.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "default": 20},
+                "customer_name": {"type": "string", "description": "Filtrar por nombre de cliente (opcional)"},
+                "status": {"type": "string", "enum": ["completed", "voided", "all"], "default": "all"}
+            }
+        }
+    },
+    {
+        "name": "get_payment_breakdown",
+        "description": "Desglose de ingresos por método de pago (efectivo, tarjeta, mixto).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]}
+            },
+            "required": ["period"]
+        }
+    },
+    {
+        "name": "get_peak_hours",
+        "description": "Distribución de órdenes e ingresos por hora del día.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "period": {"type": "string", "enum": ["today", "week", "month", "alltime"]}
+            },
+            "required": ["period"]
+        }
+    },
+    {
+        "name": "get_employee_data",
+        "description": "Empleados activos, días trabajados esta semana y pago estimado.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "week": {"type": "string", "description": "Fecha dentro de la semana deseada en formato YYYY-MM-DD. Usa la fecha de hoy si no se especifica."}
+            }
+        }
+    },
+    {
+        "name": "get_inventory",
+        "description": "Estado del inventario: nombre, cantidad actual, mínimo y unidad.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_held_orders",
+        "description": "Órdenes retenidas actualmente en la cola de espera.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_promotions",
+        "description": "Todas las promociones configuradas y su estado (activa/inactiva).",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_menu_prices",
+        "description": "Precios actuales del menú.",
+        "input_schema": {"type": "object", "properties": {}}
+    },
+    {
+        "name": "get_activity_log",
+        "description": "Registro reciente de actividad administrativa (quién hizo qué y cuándo).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "default": 20}
+            }
+        }
+    },
+    {
+        "name": "get_frequent_customers",
+        "description": "Clientes que han ordenado más de una vez, ordenados por número de visitas.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "default": 15}
+            }
+        }
+    },
+]
+
+
+def _period_start(period):
+    now = datetime.now()
+    if period == 'week':
+        d = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'month':
+        d = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'alltime':
+        d = datetime(2000, 1, 1)
+    else:
+        d = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return d.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _run_kuike_tool(name, inputs):
+    conn = get_db_connection()
+    if name == 'get_sales_summary':
+        start = _period_start(inputs.get('period', 'today'))
+        row = conn.execute(
+            "SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as rev FROM orders "
+            "WHERE date >= ? AND status != 'voided'", (start,)
+        ).fetchone()
+        voided = conn.execute(
+            "SELECT COUNT(*) FROM orders WHERE date >= ? AND status = 'voided'", (start,)
+        ).fetchone()[0]
+        avg = (row['rev'] / row['cnt']) if row['cnt'] else 0
+        return {"period": inputs.get('period'), "orders": row['cnt'],
+                "revenue": round(row['rev'], 2), "avg_ticket": round(avg, 2), "voided": voided}
+
+    elif name == 'get_top_items':
+        start = _period_start(inputs.get('period', 'today'))
+        limit = inputs.get('limit', 10)
+        rows = conn.execute(
+            "SELECT items, total FROM orders WHERE date >= ? AND status != 'voided'", (start,)
+        ).fetchall()
+        counts, revenues = {}, {}
+        for r in rows:
+            try:
+                items = json.loads(r['items']) if r['items'] else []
+            except Exception:
+                items = []
+            n = len(items) or 1
+            for it in items:
+                nm = it.get('name') or it.get('type', '?')
+                counts[nm] = counts.get(nm, 0) + it.get('quantity', 1)
+                revenues[nm] = revenues.get(nm, 0.0) + it.get('price', r['total'] / n)
+        top = sorted(counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+        return [{"item": nm, "qty": qty, "revenue": round(revenues.get(nm, 0), 2)} for nm, qty in top]
+
+    elif name == 'get_recent_orders':
+        limit = inputs.get('limit', 20)
+        customer = inputs.get('customer_name', '')
+        status = inputs.get('status', 'all')
+        conds, params = [], []
+        if customer:
+            conds.append("customer_name LIKE ?"); params.append(f'%{customer}%')
+        if status != 'all':
+            conds.append("status = ?"); params.append(status)
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
+        rows = conn.execute(
+            f"SELECT id, customer_name, total, payment_method, date, status "
+            f"FROM orders {where} ORDER BY date DESC LIMIT ?",
+            params + [limit]
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    elif name == 'get_payment_breakdown':
+        start = _period_start(inputs.get('period', 'today'))
+        rows = conn.execute(
+            "SELECT payment_method, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
+            "FROM orders WHERE date >= ? AND status != 'voided' GROUP BY payment_method", (start,)
+        ).fetchall()
+        return [{"method": r['payment_method'], "orders": r['cnt'], "revenue": round(r['rev'], 2)} for r in rows]
+
+    elif name == 'get_peak_hours':
+        start = _period_start(inputs.get('period', 'today'))
+        rows = conn.execute(
+            "SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt, "
+            "COALESCE(SUM(total),0) as rev FROM orders "
+            "WHERE date >= ? AND status != 'voided' GROUP BY hr ORDER BY cnt DESC", (start,)
+        ).fetchall()
+        return [{"hour": f"{r['hr']:02d}:00", "orders": r['cnt'], "revenue": round(r['rev'], 2)} for r in rows]
+
+    elif name == 'get_employee_data':
+        week_date = inputs.get('week', datetime.now().strftime('%Y-%m-%d'))
+        monday, sunday = get_week_bounds(week_date)
+        employees = conn.execute("SELECT * FROM employees WHERE active = 1").fetchall()
+        result = []
+        for emp in employees:
+            total_pay, rate, days_worked, sched = compute_employee_pay(conn, emp['id'], monday, sunday)
+            result.append({
+                "name": emp['name'], "days_worked": days_worked,
+                "daily_rate": round(rate, 2), "pay_this_week": round(total_pay, 2),
+                "scheduled_days": len(sched)
+            })
+        return {"week": f"{monday} to {sunday}", "employees": result}
+
+    elif name == 'get_inventory':
+        rows = conn.execute("SELECT name, quantity, min_threshold, unit FROM inventory ORDER BY name").fetchall()
+        return [{"name": r['name'], "qty": r['quantity'], "min": r['min_threshold'],
+                 "unit": r['unit'], "low": r['quantity'] <= r['min_threshold']} for r in rows]
+
+    elif name == 'get_held_orders':
+        rows = conn.execute("SELECT * FROM held_orders ORDER BY created_at DESC").fetchall()
+        return [{"ref": r['order_ref'], "customer": r['customer_name'],
+                 "total": r['total'], "since": r['created_at']} for r in rows]
+
+    elif name == 'get_promotions':
+        rows = conn.execute("SELECT name, type, value, min_purchase, active, description FROM promotions").fetchall()
+        return [dict(r) for r in rows]
+
+    elif name == 'get_menu_prices':
+        rows = conn.execute("SELECT label, price FROM menu_prices ORDER BY label").fetchall()
+        return [{"item": r['label'], "price": r['price']} for r in rows]
+
+    elif name == 'get_activity_log':
+        limit = inputs.get('limit', 20)
+        rows = conn.execute(
+            "SELECT action, description, actor, timestamp FROM activity_log ORDER BY timestamp DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    elif name == 'get_frequent_customers':
+        limit = inputs.get('limit', 15)
+        rows = conn.execute(
+            "SELECT customer_name, COUNT(*) as visits, COALESCE(SUM(total),0) as spent "
+            "FROM orders WHERE status != 'voided' AND customer_name IS NOT NULL "
+            "AND customer_name != '' AND customer_name != 'Cliente' "
+            "GROUP BY customer_name HAVING visits > 1 ORDER BY visits DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [{"customer": r['customer_name'], "visits": r['visits'], "total_spent": round(r['spent'], 2)} for r in rows]
+
+    return {"error": f"Tool '{name}' not found"}
+
+
+@app.route('/admin/kuike')
+@login_required
+@admin_required
+def kuike_chat():
+    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    return render_template('kuike.html', api_configured=bool(api_key) and _anthropic_available)
+
+
+@app.route('/admin/kuike/chat', methods=['POST'])
+@login_required
+@admin_required
+def kuike_chat_api():
+    if not _anthropic_available:
+        return jsonify({'error': 'Anthropic SDK no instalado.'}), 500
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        return jsonify({'error': 'ANTHROPIC_API_KEY no configurada. Agrega la variable de entorno y reinicia el servidor.'}), 503
+
+    data = request.get_json(silent=True) or {}
+    messages = data.get('messages', [])
+    if not messages:
+        return jsonify({'error': 'Sin mensajes.'}), 400
+
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    # Agentic loop: call API, handle tool_use, call again
+    for _ in range(8):  # max 8 rounds to avoid runaway loops
+        response = client.messages.create(
+            model='claude-haiku-4-5-20251001',
+            max_tokens=1024,
+            system=_KUIKE_SYSTEM,
+            tools=_KUIKE_TOOLS,
+            messages=messages
+        )
+
+        if response.stop_reason == 'tool_use':
+            # Append assistant message with all content blocks
+            messages.append({'role': 'assistant', 'content': [
+                b.model_dump() for b in response.content
+            ]})
+            # Process each tool call and collect results
+            tool_results = []
+            for block in response.content:
+                if block.type == 'tool_use':
+                    try:
+                        result = _run_kuike_tool(block.name, block.input)
+                    except Exception as e:
+                        result = {'error': str(e)}
+                    tool_results.append({
+                        'type': 'tool_result',
+                        'tool_use_id': block.id,
+                        'content': json.dumps(result, ensure_ascii=False)
+                    })
+            messages.append({'role': 'user', 'content': tool_results})
+        else:
+            # Final text response
+            text = next((b.text for b in response.content if hasattr(b, 'text')), '')
+            return jsonify({'reply': text})
+
+    return jsonify({'reply': 'Lo siento, no pude completar la consulta. Intenta de nuevo.'})
 
 
 # ── Manejo de errores ─────────────────────────────────────────────────────────
