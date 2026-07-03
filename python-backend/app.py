@@ -2183,13 +2183,18 @@ def hold_order():
 
     # Print kitchen ticket so kitchen can start preparing
     try:
-        print_receipt_physical(
+        _, receipt_text = print_receipt_physical(
             cart=cart,
             total=total,
             payment_method='PEDIDO EN ESPERA',
             order_id=order_ref,
             customer_name=customer_name
         )
+        conn.execute(
+            "INSERT OR IGNORE INTO print_jobs (id, receipt_content, status, created_at) VALUES (?, ?, 'pending', ?)",
+            (order_ref, receipt_text, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+        conn.commit()
     except Exception as e:
         print(f"Error imprimiendo ticket retenido: {e}")
 
