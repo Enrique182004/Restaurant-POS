@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.0.23",
+    "date": "2026-07-02",
+    "changes": [
+      "Fixed customer name input — typing now works correctly on all pages",
+      "Name autocomplete replaced with styled custom dropdown (arrow keys, Enter to select)",
+      "Fixed cart quantity +/- buttons incrementing by 2 instead of 1"
+    ]
+  },
+  {
     "version": "1.0.22",
     "date": "2026-07-02",
     "changes": [
