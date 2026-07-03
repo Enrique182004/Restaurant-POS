@@ -169,14 +169,6 @@ endblock %} {% block styles %}
         title="Ver changelog"
         >v1.0.25</a
       >
-      <button
-        onclick="startTour()"
-        class="logout-btn"
-        style="cursor: pointer"
-        title="Recorrido guiado del panel"
-      >
-        🗺️ Tour
-      </button>
       <a href="{{ url_for('change_password') }}" class="logout-btn"
         >🔑 Contraseña</a
       >
@@ -433,6 +425,7 @@ endblock %} {% block styles %}
         });
     }
 
+    refresh();
     setInterval(refresh, 30000);
   })();
 </script>

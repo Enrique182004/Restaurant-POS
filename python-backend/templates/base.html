@@ -675,9 +675,17 @@
 
         // ── Smooth update banner (Electron IPC) ──────────────────────
         if (window.electronAPI && window.electronAPI.onUpdateReady) {
-          window.electronAPI.onUpdateReady(function () {
+          function showUpdateBanner() {
             document.getElementById("update-banner").classList.add("visible");
-          });
+          }
+          window.electronAPI.onUpdateReady(showUpdateBanner);
+          // Check if update was already downloaded before this page loaded
+          window.electronAPI
+            .getUpdateReady()
+            .then(function (ready) {
+              if (ready) showUpdateBanner();
+            })
+            .catch(function () {});
           document
             .getElementById("update-install-btn")
             .addEventListener("click", function () {

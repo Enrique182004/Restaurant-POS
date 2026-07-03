@@ -16,6 +16,8 @@ const { version: APP_VERSION } = require("./package.json");
 const { autoUpdater } = require("electron-updater");
 
 // ── Actualizaciones automáticas ───────────────────────────────────────────────
+let updateDownloaded = false;
+
 autoUpdater.on("update-available", () => {
   console.log(
     "[Updater] Actualización disponible — descargando en segundo plano...",
@@ -23,6 +25,7 @@ autoUpdater.on("update-available", () => {
 });
 
 autoUpdater.on("update-downloaded", () => {
+  updateDownloaded = true;
   // Notify the renderer — it shows a non-blocking banner instead of a dialog
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send("update-ready");
@@ -33,6 +36,9 @@ ipcMain.on("install-update", () => {
   isQuitting = true;
   autoUpdater.quitAndInstall(false, true);
 });
+
+// Renderer can poll this on page load to catch updates downloaded before the page was ready
+ipcMain.handle("get-update-ready", () => updateDownloaded);
 
 autoUpdater.on("error", (err) => {
   console.error("[Updater] Error:", err.message);
@@ -383,6 +389,7 @@ function iniciarFlask(backendDir, dbPath) {
         }
 
         setTimeout(async () => {
+          liberarPuerto(FLASK_PORT);
           await iniciarFlask(backendDir, dbPath);
           cargarAppConReintentos();
         }, 2000);
@@ -464,6 +471,7 @@ function iniciarPrintBridge(backendDir) {
 
   printBridgeProcess.on("close", (code) => {
     console.log(`[PrintBridge] Proceso terminó con código ${code}`);
+    printBridgeProcess = null;
     // Reiniciar el bridge si fue un crash, con límite de intentos
     if (
       !isQuitting &&
@@ -755,7 +763,8 @@ app.on("ready", async () => {
   const checkForUpdates = () =>
     autoUpdater.checkForUpdatesAndNotify().catch(() => {});
   setTimeout(checkForUpdates, 5000);
-  setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
+  const updaterInterval = setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
+  app.once("before-quit", () => clearInterval(updaterInterval));
 });
 
 // ── Gestión del ciclo de vida de la app ──────────────────────────────────────
@@ -792,6 +801,10 @@ process.on("SIGINT", terminarPorSenal);
 app.on("quit", () => {
   console.log("[App] Cerrando procesos hijos...");
 
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
   if (flaskProcess) {
     flaskProcess.kill("SIGKILL");
     console.log("[App] Flask terminado.");

@@ -1128,7 +1128,7 @@ def update_quantity(item_index, quantity):
             'new_total': new_total,
         })
 
-    return jsonify({'success': True, 'new_item_price': 0, 'new_total': 0})
+    return jsonify({'success': False, 'error': 'Índice de producto inválido'})
 
 # Updated update_item function to handle all item types including Complementos
 @app.route('/update_item/<int:item_index>', methods=['GET', 'POST'])
@@ -1387,7 +1387,7 @@ def apply_coupon():
     
     session['cart'] = cart
     session.modified = True
-    flash(f'Promoción "{promo["description"]}" aplicada con éxito', 'success')
+    flash(f'Promoción "{promo["description"] or promo["name"]}" aplicada con éxito', 'success')
     return redirect(url_for('view_cart'))
 
 def apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free):
@@ -1418,7 +1418,7 @@ def apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free):
         units_to_free = min(units_remaining, qty)
         if 'original_price' not in item:
             item['original_price'] = item['price']
-        item['price'] = max(0, item['price'] - unit_price * units_to_free)
+        item['price'] = max(0, item['original_price'] - unit_price * units_to_free)
         item['discount'] = f"{buy_qty + get_free}x{buy_qty} - ¡{units_to_free} GRATIS!"
         units_remaining -= units_to_free
 
@@ -1532,6 +1532,9 @@ def ticket():
         cash_portion = float(request.form.get('cash_portion', request.args.get('cash_portion', 0)))
         card_portion = float(request.form.get('card_portion', request.args.get('card_portion', 0)))
         amount_paid = cash_portion + card_portion
+        if amount_paid < total_price:
+            flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
+            return redirect(url_for('view_cart'))
         change = max(0, amount_paid - total_price)
     
     # Order ID for this transaction
@@ -2832,7 +2835,9 @@ def _kuike_local_response(text):
 
 def _period_start(period):
     now = datetime.now()
-    if period == 'week':
+    if period == 'yesterday':
+        d = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    elif period == 'week':
         d = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
     elif period == 'month':
         d = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

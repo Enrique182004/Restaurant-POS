@@ -28,7 +28,7 @@ def detect_period(text):
         return 'yesterday'
     if any(w in text for w in ['semana', 'week', 'semanal', 'esta semana', 'this week']):
         return 'week'
-    if any(w in text for w in ['mes', 'month', 'mensual', 'este mes', 'this month']):
+    if any(w in text for w in ['month', 'mensual', 'este mes', 'this month']) or re.search(r'\bmes\b', text):
         return 'month'
     if any(w in text for w in ['año', 'year', 'anual', 'este año', 'this year']):
         return 'alltime'
@@ -148,7 +148,7 @@ def _handle_recent_orders(text, period, plabel, run_tool):
     if not isinstance(data, list) or not data:
         return 'No hay órdenes recientes.'
     lines = [f'Últimas {len(data)} órdenes:']
-    for o in data[:10]:
+    for o in data:
         flag = '✓' if o.get('status') == 'completed' else '✗'
         lines.append(f'{flag} #{o["id"]} — {o.get("customer_name") or "Sin nombre"} — ${o.get("total", 0):.2f}')
     return '\n'.join(lines)
@@ -222,7 +222,7 @@ def _handle_customers(text, period, plabel, run_tool):
 # Each row: (trigger_keywords, handler_fn)
 _INTENTS = [
     (
-        ['hola', 'hello', 'hi ', 'hey', 'buenas', 'qué tal', 'que tal'],
+        ['hola', 'hello', 'hi', 'hey', 'buenas', 'qué tal', 'que tal'],
         _handle_greeting,
     ),
     (

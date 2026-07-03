@@ -606,6 +606,14 @@ styles %}
       { bg: "#fb923c", text: "#3a1a00", meta: "#7a3a00" },
     ];
 
+    function esc(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
     function renderQueue(orders) {
       const section = document.getElementById("queue-section");
       const list = document.getElementById("queue-list");
@@ -614,27 +622,42 @@ styles %}
         list.innerHTML = "";
         return;
       }
-      list.innerHTML = orders
-        .map((o, i) => {
-          const c = STICKY_COLORS[i % STICKY_COLORS.length];
-          return `
-        <form method="POST" action="/resume_order/${o.id}" style="margin:0">
+      list.innerHTML = "";
+      orders.forEach(function (o, i) {
+        const c = STICKY_COLORS[i % STICKY_COLORS.length];
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = `/resume_order/${o.id}`;
+        form.style.margin = "0";
+        form.innerHTML = `
           <input type="hidden" name="csrf_token" value="${csrfToken}">
           <button type="submit" class="queue-card" style="--qc-bg:${c.bg};--qc-text:${c.text};text-align:left;width:auto">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
-              <span class="queue-ref" style="color:${c.meta}">${o.order_ref}</span>
-              <span class="queue-btn-cancel" style="color:${c.text}"
-                onclick="event.stopPropagation();event.preventDefault();
-                  if(confirm('¿Cancelar ${o.order_ref}?')){
-                    fetch('/cancel_held_order/${o.id}',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'csrf_token=${csrfToken}'}).then(()=>loadQueue());
-                  }">✕</span>
+              <span class="queue-ref" style="color:${c.meta}">${esc(o.order_ref)}</span>
+              <span class="queue-btn-cancel" style="color:${c.text}" data-id="${o.id}" data-ref="${esc(o.order_ref)}">✕</span>
             </div>
-            <div class="queue-customer" style="color:${c.text}">${o.customer_name}</div>
+            <div class="queue-customer" style="color:${c.text}">${esc(o.customer_name)}</div>
             <div class="queue-meta" style="color:${c.meta}">$${parseFloat(o.total).toFixed(0)} · ${timeSince(o.created_at)}</div>
-          </button>
-        </form>`;
-        })
-        .join("");
+          </button>`;
+        form
+          .querySelector(".queue-btn-cancel")
+          .addEventListener("click", function (e) {
+            e.stopPropagation();
+            e.preventDefault();
+            const id = this.dataset.id;
+            const ref = this.dataset.ref;
+            if (confirm(`¿Cancelar ${ref}?`)) {
+              fetch(`/cancel_held_order/${id}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `csrf_token=${csrfToken}`,
+              }).then(() => loadQueue());
+            }
+          });
+        list.appendChild(form);
+      });
     }
 
     function loadQueue() {
@@ -709,7 +732,13 @@ styles %}
         li.textContent = name;
         li.dataset.name = name;
         li.addEventListener("mousedown", function (e) {
-          e.preventDefault();
+          e.preventDefault(); // keeps focus on desktop
+          nameInp.value = name;
+          nameInp.dispatchEvent(new Event("input", { bubbles: true }));
+          hideSuggestions();
+        });
+        li.addEventListener("click", function () {
+          // touch fallback
           nameInp.value = name;
           nameInp.dispatchEvent(new Event("input", { bubbles: true }));
           hideSuggestions();
