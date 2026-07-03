@@ -169,6 +169,34 @@ endblock %} {% block styles %}
         title="Ver changelog"
         >v1.0.26</a
       >
+      <button
+        id="update-check-btn"
+        onclick="triggerUpdateCheck()"
+        style="
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #888;
+          background: transparent;
+          border: 1px solid #333;
+          padding: 4px 10px;
+          border-radius: 20px;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        "
+        onmouseover="
+          this.style.borderColor = '#ff9800';
+          this.style.color = '#ff9800';
+        "
+        onmouseout="
+          if (!this.dataset.active) {
+            this.style.borderColor = '#333';
+            this.style.color = '#888';
+          }
+        "
+      >
+        🔄 Actualizaciones
+      </button>
       <a href="{{ url_for('change_password') }}" class="logout-btn"
         >🔑 Contraseña</a
       >
@@ -428,5 +456,61 @@ endblock %} {% block styles %}
     refresh();
     setInterval(refresh, 30000);
   })();
+
+  // ── Manual update check ──────────────────────────────────────────────────
+  function triggerUpdateCheck() {
+    if (!window.electronAPI || !window.electronAPI.checkForUpdatesNow) return;
+    var btn = document.getElementById("update-check-btn");
+    if (!btn) return;
+
+    btn.dataset.active = "1";
+    btn.disabled = true;
+    btn.textContent = "⏳ Buscando...";
+    btn.style.color = "#ff9800";
+    btn.style.borderColor = "#ff9800";
+
+    window.electronAPI.checkForUpdatesNow().then(function (res) {
+      if (res && res.state === "ready") {
+        btn.textContent = "⬆️ Lista para instalar";
+        btn.style.color = "#81c784";
+        btn.style.borderColor = "#81c784";
+        btn.disabled = false;
+        delete btn.dataset.active;
+      }
+      // Other states resolved via onUpdateStatus listener below
+    });
+
+    window.electronAPI.onUpdateStatus(function (data) {
+      btn.disabled = false;
+      delete btn.dataset.active;
+      if (data.state === "up-to-date") {
+        btn.textContent = "✓ Al día";
+        btn.style.color = "#81c784";
+        btn.style.borderColor = "#81c784";
+      } else if (data.state === "downloading") {
+        btn.textContent = "⬇️ Descargando...";
+        btn.style.color = "#ff9800";
+        btn.style.borderColor = "#ff9800";
+        btn.disabled = true;
+        btn.dataset.active = "1";
+      } else if (data.state === "ready") {
+        btn.textContent = "⬆️ Lista para instalar";
+        btn.style.color = "#81c784";
+        btn.style.borderColor = "#81c784";
+      } else if (data.state === "error") {
+        btn.textContent = "✗ Error al buscar";
+        btn.style.color = "#ff8a80";
+        btn.style.borderColor = "#ff8a80";
+      }
+      // Reset label after 5s if no further action needed
+      if (data.state === "up-to-date" || data.state === "error") {
+        setTimeout(function () {
+          btn.textContent = "🔄 Actualizaciones";
+          btn.style.color = "#888";
+          btn.style.borderColor = "#333";
+        }, 5000);
+      }
+    });
+  }
 </script>
 {% endblock %}

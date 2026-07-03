@@ -646,15 +646,20 @@ styles %}
             e.preventDefault();
             const id = this.dataset.id;
             const ref = this.dataset.ref;
-            if (confirm(`¿Cancelar ${ref}?`)) {
+            const cardForm = form;
+            showConfirm(`¿Cancelar ${ref}?`, function () {
+              cardForm.remove();
+              if (list.children.length === 0) section.style.display = "none";
               fetch(`/cancel_held_order/${id}`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/x-www-form-urlencoded",
                 },
                 body: `csrf_token=${csrfToken}`,
-              }).then(() => loadQueue());
-            }
+              })
+                .then(() => loadQueue())
+                .catch(() => loadQueue());
+            });
           });
         list.appendChild(form);
       });

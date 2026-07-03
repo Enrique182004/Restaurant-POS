@@ -2245,11 +2245,11 @@ def resume_order(held_id):
 def cancel_held_order(held_id):
     conn = get_db_connection()
     order = conn.execute('SELECT order_ref FROM held_orders WHERE id = ?', (held_id,)).fetchone()
-    if order:
-        conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
-        conn.commit()
-        flash(f'Orden {order["order_ref"]} cancelada.', 'success')
-    return redirect(url_for('home'))
+    if not order:
+        return jsonify({'ok': False, 'error': 'not_found'}), 404
+    conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
+    conn.commit()
+    return jsonify({'ok': True, 'ref': order['order_ref']})
 
 
 @app.route('/api/recent_customers')

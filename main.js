@@ -18,18 +18,33 @@ const { autoUpdater } = require("electron-updater");
 // ── Actualizaciones automáticas ───────────────────────────────────────────────
 let updateDownloaded = false;
 
+function _sendUpdateStatus(state) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("update-status", { state });
+  }
+}
+
 autoUpdater.on("update-available", () => {
-  console.log(
-    "[Updater] Actualización disponible — descargando en segundo plano...",
-  );
+  console.log("[Updater] Actualización disponible — descargando en segundo plano...");
+  _sendUpdateStatus("downloading");
+});
+
+autoUpdater.on("update-not-available", () => {
+  _sendUpdateStatus("up-to-date");
 });
 
 autoUpdater.on("update-downloaded", () => {
   updateDownloaded = true;
+  _sendUpdateStatus("ready");
   // Notify the renderer — it shows a non-blocking banner instead of a dialog
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send("update-ready");
   }
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("[Updater] Error:", err.message);
+  _sendUpdateStatus("error");
 });
 
 ipcMain.on("install-update", () => {
@@ -40,8 +55,10 @@ ipcMain.on("install-update", () => {
 // Renderer can poll this on page load to catch updates downloaded before the page was ready
 ipcMain.handle("get-update-ready", () => updateDownloaded);
 
-autoUpdater.on("error", (err) => {
-  console.error("[Updater] Error:", err.message);
+ipcMain.handle("check-for-updates-now", () => {
+  if (updateDownloaded) return { state: "ready" };
+  autoUpdater.checkForUpdatesAndNotify().catch(() => _sendUpdateStatus("error"));
+  return { state: "checking" };
 });
 
 // ── Estado global ─────────────────────────────────────────────────────────────
@@ -759,11 +776,11 @@ app.on("ready", async () => {
 
   cargarAppConReintentos();
 
-  // ── Verificar actualizaciones (5 seg después de cargar, luego cada 2 horas) ──
+  // ── Verificar actualizaciones (5 seg después de cargar, luego cada 30 min) ──
   const checkForUpdates = () =>
     autoUpdater.checkForUpdatesAndNotify().catch(() => {});
   setTimeout(checkForUpdates, 5000);
-  const updaterInterval = setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
+  const updaterInterval = setInterval(checkForUpdates, 30 * 60 * 1000);
   app.once("before-quit", () => clearInterval(updaterInterval));
 });
 
