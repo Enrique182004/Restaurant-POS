@@ -1,5 +1,10 @@
 [
   {
+    "version": "1.0.25",
+    "date": "2026-07-03",
+    "changes": ["Fixed held orders not printing the kitchen ticket"]
+  },
+  {
     "version": "1.0.24",
     "date": "2026-07-03",
     "changes": [
