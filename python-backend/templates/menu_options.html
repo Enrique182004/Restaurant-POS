@@ -302,7 +302,13 @@ block styles %}
               type="submit"
               class="opt-del-btn"
               title="Eliminar permanentemente"
-              onclick="event.preventDefault(); showConfirm('¿Eliminar {{ opt.name }}?', () => this.closest('form').submit())"
+              data-name="{{ opt.name }}"
+              onclick="
+                event.preventDefault();
+                showConfirm('¿Eliminar ' + this.dataset.name + '?', () =>
+                  this.closest('form').submit(),
+                );
+              "
             >
               ✕
             </button>

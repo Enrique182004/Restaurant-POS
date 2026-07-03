@@ -1525,12 +1525,19 @@ def ticket():
     
     # Get payment details from form or query parameters
     payment_method = request.form.get('payment_method', request.args.get('payment_method', 'card'))
-    amount_paid = float(request.form.get('amount_paid', request.args.get('amount_paid', total_price)))
+    try:
+        amount_paid = float(request.form.get('amount_paid', request.args.get('amount_paid', total_price)))
+    except (ValueError, TypeError):
+        amount_paid = total_price
     change = amount_paid - total_price if payment_method == 'cash' else 0
     # Split payment: store cash_portion and card_portion in amount_paid as a JSON string
     if payment_method == 'split':
-        cash_portion = float(request.form.get('cash_portion', request.args.get('cash_portion', 0)))
-        card_portion = float(request.form.get('card_portion', request.args.get('card_portion', 0)))
+        try:
+            cash_portion = float(request.form.get('cash_portion', request.args.get('cash_portion', 0)))
+            card_portion = float(request.form.get('card_portion', request.args.get('card_portion', 0)))
+        except (ValueError, TypeError):
+            cash_portion = 0.0
+            card_portion = 0.0
         amount_paid = cash_portion + card_portion
         if amount_paid < total_price:
             flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
@@ -2227,7 +2234,11 @@ def resume_order(held_id):
         flash('Orden no encontrada.', 'error')
         return redirect(url_for('home'))
 
-    cart = json.loads(order['cart_json'])
+    try:
+        cart = json.loads(order['cart_json'])
+    except (json.JSONDecodeError, TypeError):
+        flash('La orden guardada está corrupta y no se puede cargar.', 'error')
+        return redirect(url_for('home'))
     conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
     conn.commit()
 

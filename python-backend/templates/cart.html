@@ -721,10 +721,7 @@ styles %}
           items_json else ('🍙' if 'Bola de Arroz' in items_json else ('🍗' if
           'Boneless' in items_json else ('🥤' if 'Bebida' in items_json else
           '🎁'))) %}
-          <div
-            class="promo-item featured"
-            onclick="selectPromotion('{{ promo.name }}')"
-          >
+          <div class="promo-item featured" data-promo="{{ promo.name }}">
             <div class="promo-item-icon">{{ icono }}</div>
             <div class="promo-item-content">
               <div class="promo-item-code">{{ promo.name }}</div>
@@ -774,10 +771,7 @@ styles %}
       or '[]' %} {% set icono = '🍣' if 'Sushi' in items_json else ('🍙' if
       'Bola de Arroz' in items_json else ('🍗' if 'Boneless' in items_json else
       ('🥤' if 'Bebida' in items_json else '🎁'))) %}
-      <button
-        class="quick-promo-btn"
-        onclick="selectPromotion('{{ promo.name }}')"
-      >
+      <button class="quick-promo-btn" data-promo="{{ promo.name }}">
         <span class="quick-promo-icon">{{ icono }}</span>
         <span class="quick-promo-text"
           >{{ promo.description or promo.name }}</span
@@ -1023,6 +1017,12 @@ styles %}
 
     window._cartQuantitySetup = true;
     setupCartQuantityControls();
+
+    document.querySelectorAll("[data-promo]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        selectPromotion(this.dataset.promo);
+      });
+    });
 
     function filterPromotions(searchTerm) {
       const promoItems = document.querySelectorAll(".promo-item");

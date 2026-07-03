@@ -344,7 +344,17 @@ styles %}
       <div class="inv-qty-row">
         <button
           class="inventory-btn decrease"
-          onclick="actualizarInventario({{ item.id }}, -1, '{{ item.name }}', +this.closest('.inv-qty-row').querySelector('.inv-qty-input').value)"
+          data-id="{{ item.id }}"
+          data-name="{{ item.name }}"
+          onclick="
+            actualizarInventario(
+              +this.dataset.id,
+              -1,
+              this.dataset.name,
+              +this.closest('.inv-qty-row').querySelector('.inv-qty-input')
+                .value,
+            )
+          "
         >
           −
         </button>
@@ -362,7 +372,17 @@ styles %}
         </div>
         <button
           class="inventory-btn increase"
-          onclick="actualizarInventario({{ item.id }}, 1, '{{ item.name }}', +this.closest('.inv-qty-row').querySelector('.inv-qty-input').value)"
+          data-id="{{ item.id }}"
+          data-name="{{ item.name }}"
+          onclick="
+            actualizarInventario(
+              +this.dataset.id,
+              1,
+              this.dataset.name,
+              +this.closest('.inv-qty-row').querySelector('.inv-qty-input')
+                .value,
+            )
+          "
         >
           +
         </button>
@@ -399,7 +419,9 @@ styles %}
         <button
           class="inventory-btn delete"
           style="flex: none; width: 44px"
-          onclick="deleteItem({{ item.id }}, '{{ item.name }}')"
+          data-id="{{ item.id }}"
+          data-name="{{ item.name }}"
+          onclick="deleteItem(+this.dataset.id, this.dataset.name)"
         >
           🗑️
         </button>
