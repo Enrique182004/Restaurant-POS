@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.0.24",
+    "date": "2026-07-03",
+    "changes": [
+      "Auto-updater now checks for updates every 2 hours — no restart needed to see new versions"
+    ]
+  },
+  {
     "version": "1.0.23",
     "date": "2026-07-02",
     "changes": [

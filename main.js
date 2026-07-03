@@ -751,12 +751,11 @@ app.on("ready", async () => {
 
   cargarAppConReintentos();
 
-  // ── Verificar actualizaciones (5 seg después de cargar) ────────────────────
-  setTimeout(() => {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {
-      // Silencioso si no hay internet o no está configurado GitHub
-    });
-  }, 5000);
+  // ── Verificar actualizaciones (5 seg después de cargar, luego cada 2 horas) ──
+  const checkForUpdates = () =>
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  setTimeout(checkForUpdates, 5000);
+  setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
 });
 
 // ── Gestión del ciclo de vida de la app ──────────────────────────────────────
