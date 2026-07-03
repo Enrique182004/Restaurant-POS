@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.0.26",
+    "date": "2026-07-03",
+    "changes": [
+      "Fixed double-coupon stacking (BxGy promotions now use original price)",
+      "Fixed split payment allowing underpayment",
+      "Fixed 'yesterday' sales period returning no data",
+      "Fixed XSS risk in queue render and autocomplete",
+      "Added touch support for autocomplete on tablets",
+      "Fixed update banner missing if download completed before page load",
+      "Removed broken Tour button from admin dashboard",
+      "Fixed admin dashboard stats not loading until 30s after open",
+      "Fixed Kuike 'mes' matching inside 'momento'",
+      "Fixed recent orders capped at 10 regardless of request",
+      "Various Electron process cleanup fixes (port, tray, intervals)"
+    ]
+  },
+  {
     "version": "1.0.25",
     "date": "2026-07-03",
     "changes": ["Fixed held orders not printing the kitchen ticket"]
