@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
   setupFormValidation();
   setupButtonFeedback();
   setupCashPaymentCalculation();
-  setupCartQuantityControls();
+  if (!window._cartQuantitySetup) setupCartQuantityControls();
   setupFlashAutoDismiss();
   setupFormLoadingState();
   ensureTextSelection();

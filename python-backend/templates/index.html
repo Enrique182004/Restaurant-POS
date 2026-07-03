@@ -62,6 +62,48 @@ styles %}
   .customer-name-input::placeholder {
     color: #888;
   }
+  #name-suggestions {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #1a1a2e;
+    border: 1px solid #ff980044;
+    border-radius: 12px;
+    padding: 6px;
+    list-style: none;
+    z-index: 500;
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 152, 0, 0.08);
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  #name-suggestions li {
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #d0d0d0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition:
+      background 0.12s,
+      color 0.12s;
+  }
+  #name-suggestions li::before {
+    content: "👤";
+    font-size: 0.85rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+  #name-suggestions li:hover,
+  #name-suggestions li.active {
+    background: rgba(255, 152, 0, 0.12);
+    color: #ff9800;
+  }
   .customer-status {
     padding: 12px 16px;
     border-radius: 10px;
@@ -343,7 +385,7 @@ styles %}
       {% if session.get('customer_name') %} Nombre del Cliente {% else %} Nueva
       Orden - Nombre del Cliente {% endif %}
     </h2>
-    <div class="customer-input-container">
+    <div class="customer-input-container" style="position: relative">
       <input
         type="text"
         id="customer-name"
@@ -351,10 +393,9 @@ styles %}
         placeholder="Ingresa el nombre del cliente..."
         value="{{ session.get('customer_name', '') }}"
         maxlength="50"
-        list="recent-customers-list"
         autocomplete="off"
       />
-      <datalist id="recent-customers-list"></datalist>
+      <ul id="name-suggestions"></ul>
     </div>
     <div class="customer-status" id="customer-status">
       {% if session.get('customer_name') %}
@@ -607,17 +648,102 @@ styles %}
     setInterval(loadQueue, 30000);
 
     // ── Customer name autocomplete ─────────────────────────────────────────
+    var recentNames = [];
+    var suggestEl = document.getElementById("name-suggestions");
+    var nameInp = document.getElementById("customer-name");
+
     fetch("/api/recent_customers")
       .then((r) => r.json())
       .then((names) => {
-        const dl = document.getElementById("recent-customers-list");
-        names.forEach((n) => {
-          const opt = document.createElement("option");
-          opt.value = n;
-          dl.appendChild(opt);
-        });
+        recentNames = names || [];
       })
       .catch(() => {});
+
+    var activeIdx = -1;
+
+    function getItems() {
+      return Array.from(suggestEl.querySelectorAll("li"));
+    }
+
+    function setActive(idx) {
+      var items = getItems();
+      items.forEach(function (li) {
+        li.classList.remove("active");
+      });
+      activeIdx = Math.max(-1, Math.min(idx, items.length - 1));
+      if (activeIdx >= 0) {
+        items[activeIdx].classList.add("active");
+        items[activeIdx].scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function hideSuggestions() {
+      suggestEl.style.display = "none";
+      activeIdx = -1;
+    }
+
+    function selectActive() {
+      var items = getItems();
+      if (activeIdx >= 0 && items[activeIdx]) {
+        nameInp.value = items[activeIdx].dataset.name;
+        nameInp.dispatchEvent(new Event("input", { bubbles: true }));
+        hideSuggestions();
+      }
+    }
+
+    function showSuggestions(val) {
+      var q = val.trim().toLowerCase();
+      suggestEl.innerHTML = "";
+      activeIdx = -1;
+      if (!q) {
+        hideSuggestions();
+        return;
+      }
+      var matches = recentNames.filter((n) => n.toLowerCase().startsWith(q));
+      if (!matches.length) {
+        hideSuggestions();
+        return;
+      }
+      matches.slice(0, 6).forEach(function (name) {
+        var li = document.createElement("li");
+        li.textContent = name;
+        li.dataset.name = name;
+        li.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          nameInp.value = name;
+          nameInp.dispatchEvent(new Event("input", { bubbles: true }));
+          hideSuggestions();
+        });
+        suggestEl.appendChild(li);
+      });
+      suggestEl.style.display = "block";
+    }
+
+    nameInp.addEventListener("input", function () {
+      showSuggestions(this.value);
+    });
+    nameInp.addEventListener("focus", function () {
+      showSuggestions(this.value);
+    });
+    nameInp.addEventListener("blur", function () {
+      setTimeout(hideSuggestions, 150);
+    });
+    nameInp.addEventListener("keydown", function (e) {
+      var items = getItems();
+      if (suggestEl.style.display === "none" || !items.length) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive(activeIdx + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive(activeIdx - 1);
+      } else if (e.key === "Enter" && activeIdx >= 0) {
+        e.preventDefault();
+        selectActive();
+      } else if (e.key === "Escape") {
+        hideSuggestions();
+      }
+    });
   });
 </script>
 {% endblock %}
