@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.0.27",
+    "date": "2026-07-03",
+    "changes": [
+      "Ostión no longer requires 6 regular ingredients on rice balls",
+      "Ostión no longer requires 3 regular ingredients on sushi",
+      "Ostión can now be added freely alongside any number of regular ingredients"
+    ]
+  },
+  {
     "version": "1.0.26",
     "date": "2026-07-03",
     "changes": [

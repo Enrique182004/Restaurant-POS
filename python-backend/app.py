@@ -953,12 +953,6 @@ def customize_rice_ball():
                                    rice_ingredients=get_menu_options('rice_ingredient'),
                                    rice_sauces=get_menu_options('rice_sauce'))
 
-        if len(ostion_ingredients) > 0 and len(regular_ingredients) < 6:
-            flash('Ostión solo puede agregarse cuando tienes 6 ingredientes regulares', 'error')
-            return render_template('rice_ball.html', item=None,
-                                   rice_ingredients=get_menu_options('rice_ingredient'),
-                                   rice_sauces=get_menu_options('rice_sauce'))
-
         if len(ostion_ingredients) > 1:
             flash('Solo puedes agregar un Ostión', 'error')
             return render_template('rice_ball.html', item=None,
@@ -1031,10 +1025,6 @@ def customize_sushi():
 
         if len(regular_ingredients) < 1:
             flash('Selecciona al menos 1 ingrediente', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
-
-        if len(ostion_ingredients) > 0 and len(regular_ingredients) < 3:
-            flash('Ostión solo puede agregarse cuando tienes 3 ingredientes regulares', 'error')
             return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
 
         if len(ostion_ingredients) > 1:

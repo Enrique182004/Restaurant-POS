@@ -103,12 +103,6 @@
                     mostrarToast('Solo puedes seleccionar hasta 6 ingredientes regulares.', 'error');
                     return;
                 }
-                if (checkbox.value === 'Ostión' && regularIngredients.length >= 6 && ostionIngredients.length > 1) {
-                    checkbox.checked = false;
-                    card.classList.remove('selected');
-                    mostrarToast('Solo puedes agregar Ostión cuando ya tienes 6 ingredientes regulares.', 'error');
-                    return;
-                }
             }
 
             const form = document.querySelector('#customizationForm');
