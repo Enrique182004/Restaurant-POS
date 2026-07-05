@@ -1,5 +1,23 @@
 [
   {
+    "version": "1.0.28",
+    "date": "2026-07-04",
+    "changes": [
+      "Cart delete now shows a confirmation dialog before removing an item",
+      "Quantity minus button disabled when quantity is already 1",
+      "Promo code section collapsed by default on cart page",
+      "Rice ball customizer requires style (Fría/Empanizada) before submitting",
+      "Live estimated price shown on rice ball and sushi customizers",
+      "Ostión price on rice ball and sushi now reads from the DB price table",
+      "Split payment form now uses POST + CSRF; added quick-fill buttons for card",
+      "Cash overflow on split payment zeroes the card field instead of going negative",
+      "Promo discount correctly removed when quantity is changed (no stale pricing)",
+      "Queue panel shows last-refreshed timestamp",
+      "Admin dashboard stops polling when the browser tab is hidden",
+      "Price management page shows inline validation errors per field"
+    ]
+  },
+  {
     "version": "1.0.27",
     "date": "2026-07-03",
     "changes": [
