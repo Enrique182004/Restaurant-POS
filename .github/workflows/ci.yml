@@ -18,8 +18,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pytest
-        run: pip install pytest --quiet
+      - name: Install dependencies
+        run: pip install flask flask-wtf werkzeug pytest --quiet
 
       - name: Run tests
-        run: pytest python-backend/tests/test_kuike.py -v
+        run: pytest python-backend/tests/ -v --tb=short

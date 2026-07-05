@@ -11,12 +11,15 @@ def test_employees_attendance_page_blocks_non_admin(client):
 
 
 def test_employees_attendance_shows_employee_total(admin_client, app_module):
-    admin_client.post(
-        "/admin/employees/add",
-        data={"name": "Ana", "pay_amount": "1000", "days": ["1", "2", "3"]},
-    )
     conn = app_module.get_db_connection()
-    employee_id = conn.execute("SELECT id FROM employees WHERE name='Ana'").fetchone()["id"]
+    cur = conn.execute("INSERT INTO employees (name) VALUES (?)", ("Ana",))
+    employee_id = cur.lastrowid
+    # Schedule effective_from must be <= the queried week start
+    conn.execute(
+        "INSERT INTO employee_schedules (employee_id, effective_from, scheduled_days, pay_amount) "
+        "VALUES (?, ?, ?, ?)",
+        (employee_id, "2026-06-22", "1,2,3", 1000),
+    )
     conn.execute(
         "INSERT INTO attendance (employee_id, work_date) VALUES (?, ?)", (employee_id, "2026-06-23")
     )

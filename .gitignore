@@ -39,3 +39,18 @@ target/
 .env
 .env.*
 bundled-packages/
+
+# Screenshots / debug artifacts
+*.png
+*.jpg
+*.jpeg
+
+# Playwright MCP session data
+.playwright-mcp/
+
+# Session and handoff notes (AI-generated, not source)
+docs/HANDOFF-*.md
+docs/superpowers/
+
+# Python backend build output
+python-backend/build/
