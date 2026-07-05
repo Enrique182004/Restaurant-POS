@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.0.35",
+    "date": "2026-07-05",
+    "changes": [
+      "Order history now shows only the current shift by default (4pm–11pm today)",
+      "Period tabs added: Hoy / Esta semana / Todo el tiempo, plus a custom day calendar picker",
+      "Orders are grouped by day with a per-day revenue total in the header",
+      "Summary bar shows total orders and revenue for the selected period",
+      "CSV export and bulk-delete respect the same period filter",
+      "Voided orders excluded from daily revenue totals"
+    ]
+  },
+  {
     "version": "1.0.34",
     "date": "2026-07-05",
     "changes": [

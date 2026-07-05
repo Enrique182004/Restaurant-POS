@@ -1,154 +1,213 @@
 {% extends 'base.html' %} {% block title %}Historial de Órdenes{% endblock %} {%
 block styles %}
 <style>
-  .orders-container {
-    max-width: 900px;
+  .orders-wrap {
+    max-width: 960px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px 20px 60px;
   }
-  .page-header {
+  .orders-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
-  .back-link {
-    color: #555;
-    text-decoration: none;
-    font-size: 0.95rem;
-  }
-  h1 {
+  .orders-title {
     font-size: 1.8rem;
-    color: #2c3e50;
+    font-weight: 800;
+    color: #ff9800;
     margin: 0;
   }
-  .daily-summary {
-    background: #f0f4ff;
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 28px;
-  }
-  .daily-summary h2 {
-    font-size: 1rem;
-    color: #555;
-    margin: 0 0 10px;
-  }
-  .daily-row {
+  .header-actions {
     display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-    font-size: 0.95rem;
-  }
-  .daily-row strong {
-    color: #2c3e50;
-  }
-  .order-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-    margin-bottom: 16px;
-    overflow: hidden;
-  }
-  .order-card.voided {
-    opacity: 0.5;
-  }
-  .order-header {
-    display: flex;
-    justify-content: space-between;
+    gap: 10px;
     align-items: center;
-    padding: 14px 18px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #eee;
   }
-  .order-id {
-    font-weight: 700;
-    color: #e74c3c;
-    font-size: 1rem;
-  }
-  .order-meta {
-    font-size: 0.85rem;
-    color: #666;
-  }
-  .order-total {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: #2c3e50;
-  }
-  .badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-size: 0.78rem;
+  .export-btn {
+    padding: 8px 16px;
+    background: #1e1e1e;
+    color: #ff9800;
+    border: 1px solid #ff9800;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
     font-weight: 600;
   }
-  .badge-cash {
-    background: #d3f9d8;
-    color: #2b8a3e;
-  }
-  .badge-card {
-    background: #dbe4ff;
-    color: #3b5bdb;
-  }
-  .badge-voided {
-    background: #ffe3e3;
-    color: #c92a2a;
-  }
-  .order-items {
-    padding: 12px 18px;
-  }
-  .item-row {
+  .period-tabs {
     display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .period-tab {
+    padding: 8px 20px;
+    border-radius: 20px;
     font-size: 0.9rem;
-    border-bottom: 1px dashed #f0f0f0;
-  }
-  .item-row:last-child {
-    border-bottom: none;
-  }
-  .item-name {
-    color: #333;
-  }
-  .item-price {
-    color: #555;
-  }
-  .order-footer {
-    display: flex;
-    justify-content: flex-end;
-    padding: 10px 18px;
-    background: #fafafa;
-    border-top: 1px solid #eee;
-  }
-  .void-btn {
-    background: none;
-    border: 1px solid #e74c3c;
-    color: #e74c3c;
-    padding: 6px 16px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-  .void-btn:hover {
-    background: #ffe3e3;
-  }
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1.5px solid #2a2a2a;
     color: #aaa;
-    font-size: 1.1rem;
+    background: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.15s;
   }
+  .period-tab:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .period-tab.active {
+    background: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
+  }
+  .date-picker-wrap {
+    position: relative;
+  }
+  .cal-trigger {
+    cursor: pointer;
+    background: #1e1e1e;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .cal-trigger.active {
+    background: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
+  }
+  .cal-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 16px;
+    width: 272px;
+    z-index: 1000;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    animation: cal-in 0.15s ease;
+  }
+  @keyframes cal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-nav {
+    background: none;
+    border: 1px solid #2a2a2a;
+    color: #aaa;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 8px;
+    line-height: 1;
+    transition: all 0.12s;
+  }
+  .cal-nav:hover {
+    background: #2a2a2a;
+    color: #ff9800;
+    border-color: #ff9800;
+  }
+  .cal-nav:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+  #cal-month-label {
+    color: #f5f5f5;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+  }
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #555;
+    font-weight: 700;
+    padding: 3px 0 6px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day {
+    text-align: center;
+    padding: 7px 2px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #bbb;
+    cursor: pointer;
+    transition:
+      background 0.1s,
+      color 0.1s;
+    user-select: none;
+  }
+  .cal-day:hover {
+    background: #2a2a2a;
+    color: #ff9800;
+  }
+  .cal-day.today {
+    color: #ff9800;
+    font-weight: 700;
+  }
+  .cal-day.today::after {
+    content: "";
+    display: block;
+    width: 4px;
+    height: 4px;
+    background: #ff9800;
+    border-radius: 50%;
+    margin: 1px auto 0;
+  }
+  .cal-day.selected {
+    background: #ff9800 !important;
+    color: #121212 !important;
+    font-weight: 800;
+  }
+  .cal-day.selected.today::after {
+    background: #121212;
+  }
+  .cal-day.disabled {
+    color: #333;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cal-day.empty {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .filtros-form {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     background: #1e1e1e;
     border-radius: 14px;
-    padding: 16px;
+    padding: 14px 16px;
+    align-items: center;
   }
   .filtro-input {
     flex: 1;
-    min-width: 160px;
+    min-width: 180px;
     padding: 10px 14px;
     border-radius: 10px;
     border: 1px solid #3d3d3d;
@@ -195,29 +254,219 @@ block styles %}
     display: flex;
     align-items: center;
   }
-  .resultados-label {
-    font-size: 0.9rem;
+  .summary-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #1e1e1e;
+    border-radius: 14px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .summary-bar-label {
+    font-size: 0.85rem;
     color: #888;
-    margin-bottom: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex: 1;
+  }
+  .summary-bar-count {
+    font-size: 0.95rem;
+    color: #aaa;
+  }
+  .summary-bar-rev {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ff9800;
+  }
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 4px 6px;
+    margin-top: 18px;
+    border-bottom: 1px solid #2a2a2a;
+    margin-bottom: 10px;
+  }
+  .day-header-date {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .day-header-total {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #81c784;
+  }
+  .order-card {
+    background: #1e1e1e;
+    border-radius: 14px;
+    border: 1.5px solid #2a2a2a;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .order-card:hover {
+    border-color: #3a3a3a;
+  }
+  .order-card.voided {
+    opacity: 0.45;
+  }
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #252525;
+  }
+  .order-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .order-id {
+    font-weight: 700;
+    color: #ff9800;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .order-time {
+    font-size: 0.8rem;
+    color: #666;
+    white-space: nowrap;
+  }
+  .order-customer {
+    font-size: 0.82rem;
+    color: #888;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .order-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .badge-cash {
+    background: #1b3a1e;
+    color: #81c784;
+  }
+  .badge-card {
+    background: #1a2340;
+    color: #64b5f6;
+  }
+  .badge-split {
+    background: #2a1f3a;
+    color: #ce93d8;
+  }
+  .badge-voided {
+    background: #3a1a1a;
+    color: #ef9a9a;
+  }
+  .order-total {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #f5f5f5;
+  }
+  .order-items {
+    padding: 10px 16px;
+  }
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 0.88rem;
+    border-bottom: 1px dashed #2a2a2a;
+  }
+  .item-row:last-child {
+    border-bottom: none;
+  }
+  .item-name {
+    color: #ccc;
+  }
+  .item-price {
+    color: #888;
+  }
+  .order-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #1a1a1a;
+  }
+  .void-btn {
+    background: none;
+    border: 1px solid #555;
+    color: #aaa;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .void-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .reprint-btn {
+    background: none;
+    border: 1px solid #ff9800;
+    color: #ff9800;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .reprint-btn:hover {
+    background: #ff980020;
   }
   .delete-btn {
     background: none;
     border: 1px solid #c0392b;
-    color: #c0392b;
-    padding: 6px 16px;
+    color: #ef9a9a;
+    padding: 5px 14px;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     cursor: pointer;
+    transition: all 0.12s;
   }
   .delete-btn:hover {
-    background: #ffe3e3;
+    background: #3a1a1a;
   }
   .bulk-actions {
     display: flex;
     gap: 10px;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
+  }
+  .select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .order-checkbox {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #c0392b;
   }
   .btn-danger {
     padding: 8px 18px;
@@ -226,7 +475,7 @@ block styles %}
     background: #c0392b;
     color: #fff;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     cursor: pointer;
   }
   .btn-danger:hover {
@@ -237,53 +486,87 @@ block styles %}
     border-radius: 8px;
     border: 1px solid #c0392b;
     background: none;
-    color: #c0392b;
+    color: #ef9a9a;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     cursor: pointer;
   }
   .btn-danger-outline:hover {
-    background: #ffe3e3;
+    background: #3a1a1a;
   }
-  .order-checkbox {
-    margin-right: 10px;
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-    accent-color: #c0392b;
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #555;
+    font-size: 1rem;
   }
 </style>
 {% endblock %} {% block body %}
-<div class="orders-container">
-  <div class="page-header">
-    <h1>Historial de Órdenes</h1>
-    <div style="display: flex; gap: 10px; align-items: center">
+<div class="orders-wrap">
+  <div class="orders-header">
+    <h1 class="orders-title">Historial de Órdenes</h1>
+    <div class="header-actions">
       <a
-        href="{{ url_for('export_orders_csv', q=q, fecha=fecha, estado=estado) }}"
-        style="
-          padding: 8px 16px;
-          background: #2d2d2d;
-          color: #ff9800;
-          border: 1px solid #ff9800;
-          border-radius: 8px;
-          text-decoration: none;
-          font-size: 0.9rem;
-          font-weight: 600;
-        "
+        href="{{ url_for('export_orders_csv', period=period, date=selected_date, q=q, estado=estado) }}"
+        class="export-btn"
+        >⬇ CSV</a
       >
-        ⬇ Exportar CSV
-      </a>
-      <a href="{{ url_for('admin_dashboard') }}" class="back-link"
-        >← Volver al panel</a
-      >
+      <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
     </div>
   </div>
 
+  <!-- Period tabs -->
+  <div class="period-tabs">
+    <a
+      href="?period=today"
+      class="period-tab {% if period == 'today' %}active{% endif %}"
+      >Hoy</a
+    >
+    <a
+      href="?period=week"
+      class="period-tab {% if period == 'week' %}active{% endif %}"
+      >Esta semana</a
+    >
+    <a
+      href="?period=alltime"
+      class="period-tab {% if period == 'alltime' %}active{% endif %}"
+      >Todo el tiempo</a
+    >
+    <div class="date-picker-wrap" id="cal-wrap">
+      <button
+        id="cal-trigger"
+        type="button"
+        class="period-tab cal-trigger {% if period == 'custom' and selected_date %}active{% endif %}"
+      >
+        📅
+        <span id="cal-label"
+          >{% if period == 'custom' and selected_date %}{{ selected_date }}{%
+          else %}Día específico{% endif %}</span
+        >
+      </button>
+      <div id="cal-popup" class="cal-popup" style="display: none">
+        <div class="cal-header">
+          <button type="button" class="cal-nav" id="cal-prev">‹</button>
+          <span id="cal-month-label"></span>
+          <button type="button" class="cal-nav" id="cal-next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span
+          ><span>Vi</span><span>Sa</span><span>Do</span>
+        </div>
+        <div id="cal-grid" class="cal-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search + status filter -->
   <form
     class="filtros-form"
     method="GET"
     action="{{ url_for('order_history') }}"
   >
+    <input type="hidden" name="period" value="{{ period }}" />
+    <input type="hidden" name="date" value="{{ selected_date }}" />
     <input
       type="text"
       name="q"
@@ -291,66 +574,54 @@ block styles %}
       placeholder="Buscar por ID o cliente..."
       value="{{ q }}"
     />
-    <input
-      type="date"
-      name="fecha"
-      class="filtro-input"
-      value="{{ fecha }}"
-      style="max-width: 180px"
-    />
-    {% set sel_todas = not estado %} {% set sel_activas = estado == 'activas' %}
-    {% set sel_anuladas = estado == 'anuladas' %}
     <select name="estado" class="filtro-select">
-      <option value="" {% if sel_todas %}selected{% endif %}>Todas</option>
-      <option value="activas" {% if sel_activas %}selected{% endif %}>
+      <option value="">Todas</option>
+      <option value="activas" {% if estado="" ="activas" %}selected{% endif %}>
         Activas
       </option>
-      <option value="anuladas" {% if sel_anuladas %}selected{% endif %}>
+      <option
+        value="anuladas"
+        {%
+        if
+        estado=""
+        ="anuladas"
+        %}selected{%
+        endif
+        %}
+      >
         Anuladas
       </option>
     </select>
     <button type="submit" class="filtro-btn">🔍 Buscar</button>
-    {% if q or fecha or estado %}
-    <a href="{{ url_for('order_history') }}" class="filtro-limpiar"
+    {% if q or estado %}
+    <a
+      href="?period={{ period }}&date={{ selected_date }}"
+      class="filtro-limpiar"
       >✕ Limpiar</a
     >
     {% endif %}
   </form>
 
-  {% if q or fecha or estado %}
-  <div class="resultados-label">
-    {{ orders|length }} resultado{% if orders|length != 1 %}s{% endif %}
-    encontrado{% if orders|length != 1 %}s{% endif %}
-  </div>
-  {% endif %} {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %} {% for category, message in messages %}
-  <div class="alert alert-{{ category }}">
-    <div class="alert-content">{{ message }}</div>
-  </div>
-  {% endfor %} {% endif %} {% endwith %} {% if daily_totals %}
-  <div class="daily-summary">
-    <h2>Ventas por día</h2>
-    {% for day, total in daily_totals.items() %}
-    <div class="daily-row">
-      <span>{{ day }}</span>
-      <strong>${{ "%.2f"|format(total) }}</strong>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %} {% if orders %}
-
-  <!-- Bulk actions bar (standalone — no wrapping form to avoid nesting) -->
-  <div class="bulk-actions">
-    <label
-      style="
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: #888;
-        font-size: 0.9rem;
-        cursor: pointer;
-      "
+  <!-- Summary bar -->
+  {% set total_rev = daily_totals.values() | sum %}
+  <div class="summary-bar">
+    <span class="summary-bar-label">{{ label }}</span>
+    <span class="summary-bar-count"
+      >{{ orders | length }} orden{% if orders | length != 1 %}es{% endif
+      %}</span
     >
+    <span class="summary-bar-rev">${{ "%.2f" | format(total_rev) }}</span>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">
+    <div class="alert-content">{{ msg }}</div>
+  </div>
+  {% endfor %}{% endif %}{% endwith %} {% if orders %}
+  <!-- Bulk actions -->
+  <div class="bulk-actions">
+    <label class="select-all-label">
       <input type="checkbox" id="select-all" class="order-checkbox" />
       Seleccionar todo
     </label>
@@ -364,38 +635,55 @@ block styles %}
       data-confirm="¿Eliminar TODAS las órdenes visibles? Esta acción es permanente y no se puede deshacer."
     >
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="period" value="{{ period }}" />
+      <input type="hidden" name="date" value="{{ selected_date }}" />
       <input type="hidden" name="q" value="{{ q }}" />
-      <input type="hidden" name="fecha" value="{{ fecha }}" />
       <input type="hidden" name="estado" value="{{ estado }}" />
       <button type="submit" class="btn-danger">
-        🗑 Eliminar todas ({{ orders|length }})
+        🗑 Eliminar todas ({{ orders | length }})
       </button>
     </form>
   </div>
 
-  {% for entry in orders %} {% set o = entry.order %}
+  <!-- Orders grouped by day -->
+  {% set ns = namespace(current_day='') %} {% for entry in orders %} {% set o =
+  entry.order %} {% if entry.day != ns.current_day %} {% set ns.current_day =
+  entry.day %}
+  <div class="day-header">
+    <span class="day-header-date">{{ entry.day }}</span>
+    {% if daily_totals.get(entry.day) %}
+    <span class="day-header-total"
+      >${{ "%.2f" | format(daily_totals[entry.day]) }}</span
+    >
+    {% endif %}
+  </div>
+  {% endif %}
+
   <div class="order-card {% if o.status == 'voided' %}voided{% endif %}">
     <div class="order-header">
-      <div style="display: flex; align-items: center">
+      <div class="order-header-left">
         <input
           type="checkbox"
           data-order-id="{{ o.id }}"
           class="order-checkbox order-checkbox-item"
         />
         <span class="order-id">#{{ o.id }}</span>
-        <span class="order-meta">
-          · {{ o.date }} · {{ o.customer_name or 'Cliente' }}</span
+        <span class="order-time"
+          >{{ o.date[11:16] if o.date and o.date|length > 15 else '' }}</span
         >
+        <span class="order-customer">· {{ o.customer_name or 'Cliente' }}</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px">
+      <div class="order-header-right">
         {% if o.status == 'voided' %}
         <span class="badge badge-voided">Anulada</span>
+        {% elif o.payment_method == 'split' %}
+        <span class="badge badge-split">Mixto</span>
         {% elif o.payment_method == 'cash' %}
         <span class="badge badge-cash">Efectivo</span>
         {% else %}
         <span class="badge badge-card">Tarjeta</span>
         {% endif %}
-        <span class="order-total">${{ "%.2f"|format(o.total) }}</span>
+        <span class="order-total">${{ "%.2f" | format(o.total) }}</span>
       </div>
     </div>
 
@@ -405,24 +693,19 @@ block styles %}
         <span class="item-name"
           >{{ item.name }} x{{ item.get('quantity', 1) }}</span
         >
-        <span class="item-price">${{ "%.2f"|format(item.price) }}</span>
+        <span class="item-price">${{ "%.2f" | format(item.price) }}</span>
       </div>
       {% endfor %}
     </div>
 
-    <div class="order-footer" style="gap: 8px">
+    <div class="order-footer">
       <form
         method="POST"
         action="{{ url_for('reprint_ticket', order_id=o.id) }}"
         style="margin: 0"
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button
-          type="submit"
-          class="void-btn"
-          style="border-color: #ff9800; color: #ff9800"
-          title="Reenviar ticket a la impresora"
-        >
+        <button type="submit" class="reprint-btn" title="Reimprimir ticket">
           🖨 Reimprimir
         </button>
       </form>
@@ -430,21 +713,21 @@ block styles %}
       <form
         method="POST"
         action="{{ url_for('void_order', order_id=o.id) }}"
-        data-confirm="¿Anular la orden #{{ o.id }}? Esta acción no se puede deshacer."
         style="margin: 0"
+        data-confirm="¿Anular la orden #{{ o.id }}? Esta acción no se puede deshacer."
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="void-btn">Anular orden</button>
+        <button type="submit" class="void-btn">Anular</button>
       </form>
       {% endif %}
       <form
         method="POST"
         action="{{ url_for('delete_order', order_id=o.id) }}"
-        data-confirm="¿Eliminar permanentemente la orden #{{ o.id }}? Esta acción no se puede deshacer."
         style="margin: 0"
+        data-confirm="¿Eliminar permanentemente la orden #{{ o.id }}?"
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <button type="submit" class="delete-btn">🗑 Eliminar</button>
+        <button type="submit" class="delete-btn">🗑</button>
       </form>
     </div>
   </div>
@@ -460,44 +743,171 @@ block styles %}
           cb.checked = this.checked;
         }, this);
       });
-
     function submitSelected() {
       var checked = document.querySelectorAll(".order-checkbox-item:checked");
-      if (checked.length === 0) {
+      if (!checked.length) {
         alert("Selecciona al menos una orden.");
         return;
       }
       showConfirm(
         "¿Eliminar las órdenes seleccionadas? Esta acción es permanente.",
         function () {
-          _submitSelectedOrders(checked);
+          var form = document.createElement("form");
+          form.method = "POST";
+          form.action = '{{ url_for("delete_orders_selected") }}';
+          var csrf = document.createElement("input");
+          csrf.type = "hidden";
+          csrf.name = "csrf_token";
+          csrf.value = "{{ csrf_token() }}";
+          form.appendChild(csrf);
+          checked.forEach(function (cb) {
+            var inp = document.createElement("input");
+            inp.type = "hidden";
+            inp.name = "order_ids";
+            inp.value = cb.dataset.orderId;
+            form.appendChild(inp);
+          });
+          document.body.appendChild(form);
+          form.submit();
         },
       );
-      return;
-    }
-    function _submitSelectedOrders(checked) {
-      var form = document.createElement("form");
-      form.method = "POST";
-      form.action = "{{ url_for('delete_orders_selected') }}";
-      var csrf = document.createElement("input");
-      csrf.type = "hidden";
-      csrf.name = "csrf_token";
-      csrf.value = "{{ csrf_token() }}";
-      form.appendChild(csrf);
-      checked.forEach(function (cb) {
-        var inp = document.createElement("input");
-        inp.type = "hidden";
-        inp.name = "order_ids";
-        inp.value = cb.dataset.orderId;
-        form.appendChild(inp);
-      });
-      document.body.appendChild(form);
-      form.submit();
     }
   </script>
 
   {% else %}
-  <div class="empty-state">No hay órdenes registradas aún.</div>
+  <div class="empty-state">Sin órdenes en este período.</div>
   {% endif %}
 </div>
+
+<script>
+  (function () {
+    var SELECTED = "{{ selected_date or '' }}";
+    var TODAY = "{{ today_str }}";
+    var MONTHS = [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre",
+    ];
+    var MONTHS_S = [
+      "ene",
+      "feb",
+      "mar",
+      "abr",
+      "may",
+      "jun",
+      "jul",
+      "ago",
+      "sep",
+      "oct",
+      "nov",
+      "dic",
+    ];
+
+    var trigger = document.getElementById("cal-trigger");
+    var popup = document.getElementById("cal-popup");
+    var label = document.getElementById("cal-label");
+    var grid = document.getElementById("cal-grid");
+    var mlabel = document.getElementById("cal-month-label");
+    var btnPrev = document.getElementById("cal-prev");
+    var btnNext = document.getElementById("cal-next");
+
+    function fmtLabel(iso) {
+      var p = iso.split("-");
+      return parseInt(p[2]) + " " + MONTHS_S[parseInt(p[1]) - 1] + " " + p[0];
+    }
+    if (SELECTED) label.textContent = fmtLabel(SELECTED);
+
+    var tp = TODAY.split("-");
+    var todayY = +tp[0],
+      todayM = +tp[1] - 1,
+      todayD = +tp[2];
+    var viewY = SELECTED ? +SELECTED.split("-")[0] : todayY;
+    var viewM = SELECTED ? +SELECTED.split("-")[1] - 1 : todayM;
+
+    function render() {
+      mlabel.textContent = MONTHS[viewM] + " " + viewY;
+      btnNext.disabled =
+        viewY > todayY || (viewY === todayY && viewM >= todayM);
+      var sp = SELECTED ? SELECTED.split("-") : [];
+      var selY = sp[0] ? +sp[0] : 0,
+        selM = sp[1] ? +sp[1] - 1 : 0,
+        selD = sp[2] ? +sp[2] : 0;
+      var firstDow = new Date(viewY, viewM, 1).getDay();
+      var offset = firstDow === 0 ? 6 : firstDow - 1;
+      var days = new Date(viewY, viewM + 1, 0).getDate();
+      grid.innerHTML = "";
+      for (var i = 0; i < offset; i++) {
+        var e = document.createElement("div");
+        e.className = "cal-day empty";
+        grid.appendChild(e);
+      }
+      for (var d = 1; d <= days; d++) {
+        var cell = document.createElement("div");
+        cell.textContent = d;
+        var cls = "cal-day";
+        var isFuture =
+          viewY > todayY ||
+          (viewY === todayY && viewM > todayM) ||
+          (viewY === todayY && viewM === todayM && d > todayD);
+        if (isFuture) {
+          cls += " disabled";
+        } else {
+          if (d === selD && viewM === selM && viewY === selY)
+            cls += " selected";
+          if (d === todayD && viewM === todayM && viewY === todayY)
+            cls += " today";
+          (function (ds) {
+            cell.addEventListener("click", function () {
+              window.location.href = "?period=custom&date=" + ds;
+            });
+          })(
+            viewY +
+              "-" +
+              String(viewM + 1).padStart(2, "0") +
+              "-" +
+              String(d).padStart(2, "0"),
+          );
+        }
+        cell.className = cls;
+        grid.appendChild(cell);
+      }
+    }
+
+    btnPrev.addEventListener("click", function () {
+      viewM--;
+      if (viewM < 0) {
+        viewM = 11;
+        viewY--;
+      }
+      render();
+    });
+    btnNext.addEventListener("click", function () {
+      viewM++;
+      if (viewM > 11) {
+        viewM = 0;
+        viewY++;
+      }
+      render();
+    });
+    trigger.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var open = popup.style.display !== "none";
+      popup.style.display = open ? "none" : "block";
+      if (!open) render();
+    });
+    document.addEventListener("click", function (e) {
+      if (!document.getElementById("cal-wrap").contains(e.target))
+        popup.style.display = "none";
+    });
+  })();
+</script>
 {% endblock %}

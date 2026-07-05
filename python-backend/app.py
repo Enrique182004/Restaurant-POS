@@ -1773,37 +1773,74 @@ def reports():
     )
 
 
+def _order_date_range(period, selected_date, now):
+    """Return (start_str, end_str, label) for order history queries.
+
+    Day-specific periods (today / custom) are bounded to business hours
+    16:00–23:59 so only that shift's orders appear.  Week and alltime
+    use an open upper bound (end_str = None).
+    """
+    OPEN_H, CLOSE_H = 16, 23
+
+    if period == 'week':
+        monday = (now - timedelta(days=now.weekday())).replace(
+            hour=OPEN_H, minute=0, second=0, microsecond=0)
+        return monday.strftime('%Y-%m-%d %H:%M:%S'), None, 'Esta semana'
+
+    if period == 'alltime':
+        return '2000-01-01 00:00:00', None, 'Todo el tiempo'
+
+    if period == 'custom' and selected_date:
+        try:
+            day = datetime.strptime(selected_date, '%Y-%m-%d')
+        except ValueError:
+            day = now
+            selected_date = ''
+        start = day.replace(hour=OPEN_H, minute=0, second=0, microsecond=0)
+        end   = day.replace(hour=CLOSE_H, minute=59, second=59, microsecond=0)
+        return start.strftime('%Y-%m-%d %H:%M:%S'), end.strftime('%Y-%m-%d %H:%M:%S'), selected_date or 'Hoy'
+
+    # today (default)
+    start = now.replace(hour=OPEN_H, minute=0, second=0, microsecond=0)
+    end   = now.replace(hour=CLOSE_H, minute=59, second=59, microsecond=0)
+    return start.strftime('%Y-%m-%d %H:%M:%S'), end.strftime('%Y-%m-%d %H:%M:%S'), 'Hoy'
+
+
 @app.route('/admin/orders')
 @login_required
 @admin_required
 def order_history():
-    q         = request.args.get('q', '').strip()
-    fecha     = request.args.get('fecha', '').strip()
-    estado    = request.args.get('estado', '').strip()
+    q             = request.args.get('q', '').strip()
+    period        = request.args.get('period', 'today')
+    selected_date = request.args.get('date', '')
+    estado        = request.args.get('estado', '').strip()
+
+    now = datetime.now()
+    start_str, end_str, label = _order_date_range(period, selected_date, now)
+    if period == 'custom' and not selected_date:
+        period = 'today'
 
     conn = get_db_connection()
 
-    conditions = []
-    params = []
-
+    conditions = ['date >= ?']
+    params     = [start_str]
+    if end_str:
+        conditions.append('date <= ?')
+        params.append(end_str)
     if q:
-        conditions.append("(id LIKE ? OR customer_name LIKE ?)")
+        conditions.append('(id LIKE ? OR customer_name LIKE ?)')
         params += [f'%{q}%', f'%{q}%']
-    if fecha:
-        conditions.append("date LIKE ?")
-        params.append(f'{fecha}%')
     if estado == 'anuladas':
         conditions.append("status = 'voided'")
     elif estado == 'activas':
         conditions.append("status != 'voided'")
 
-    where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+    where  = 'WHERE ' + ' AND '.join(conditions)
     orders = conn.execute(
-        f'SELECT * FROM orders {where} ORDER BY date DESC LIMIT 200',
-        params
+        f'SELECT * FROM orders {where} ORDER BY date DESC LIMIT 500', params
     ).fetchall()
 
-    parsed = []
+    parsed       = []
     daily_totals = {}
     for o in orders:
         items = []
@@ -1812,11 +1849,15 @@ def order_history():
         except json.JSONDecodeError:
             pass
         day = o['date'][:10] if o['date'] else ''
-        daily_totals[day] = daily_totals.get(day, 0) + (o['total'] or 0)
+        if o['status'] != 'voided':
+            daily_totals[day] = daily_totals.get(day, 0) + (o['total'] or 0)
         parsed.append({'order': dict(o), 'items': items, 'day': day})
 
-    return render_template('orders.html', orders=parsed, daily_totals=daily_totals,
-                           q=q, fecha=fecha, estado=estado)
+    return render_template('orders.html',
+        orders=parsed, daily_totals=daily_totals,
+        q=q, period=period, selected_date=selected_date, estado=estado,
+        label=label, today_str=now.strftime('%Y-%m-%d'),
+    )
 
 
 @app.route('/admin/void_order/<order_id>', methods=['POST'])
@@ -1859,30 +1900,33 @@ def delete_orders_selected():
 @login_required
 @admin_required
 def delete_orders_all():
-    q      = request.form.get('q', '').strip()
-    fecha  = request.form.get('fecha', '').strip()
-    estado = request.form.get('estado', '').strip()
+    q             = request.form.get('q', '').strip()
+    period        = request.form.get('period', 'today')
+    selected_date = request.form.get('date', '')
+    estado        = request.form.get('estado', '').strip()
 
-    conditions = []
-    params = []
+    now = datetime.now()
+    start_str, end_str, _ = _order_date_range(period, selected_date, now)
 
+    conditions = ['date >= ?']
+    params     = [start_str]
+    if end_str:
+        conditions.append('date <= ?')
+        params.append(end_str)
     if q:
-        conditions.append("(id LIKE ? OR customer_name LIKE ?)")
+        conditions.append('(id LIKE ? OR customer_name LIKE ?)')
         params += [f'%{q}%', f'%{q}%']
-    if fecha:
-        conditions.append("date LIKE ?")
-        params.append(f'{fecha}%')
     if estado == 'anuladas':
         conditions.append("status = 'voided'")
     elif estado == 'activas':
         conditions.append("status != 'voided'")
 
-    where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
-    conn = get_db_connection()
+    where  = 'WHERE ' + ' AND '.join(conditions)
+    conn   = get_db_connection()
     cursor = conn.execute(f'DELETE FROM orders {where}', params)
     conn.commit()
     flash(f'{cursor.rowcount} orden(es) eliminada(s).', 'success')
-    return redirect(url_for('order_history', q=q, fecha=fecha, estado=estado))
+    return redirect(url_for('order_history', q=q, period=period, date=selected_date, estado=estado))
 
 
 @app.route('/admin/reprint/<order_id>', methods=['POST'])
@@ -1927,23 +1971,28 @@ def reprint_ticket(order_id):
 @admin_required
 def export_orders_csv():
     """Descarga las órdenes filtradas como archivo CSV."""
-    q      = request.args.get('q', '').strip()
-    fecha  = request.args.get('fecha', '').strip()
-    estado = request.args.get('estado', '').strip()
+    q             = request.args.get('q', '').strip()
+    period        = request.args.get('period', 'today')
+    selected_date = request.args.get('date', '')
+    estado        = request.args.get('estado', '').strip()
 
-    conditions, params = [], []
+    now = datetime.now()
+    start_str, end_str, _ = _order_date_range(period, selected_date, now)
+
+    conditions = ['date >= ?']
+    params     = [start_str]
+    if end_str:
+        conditions.append('date <= ?')
+        params.append(end_str)
     if q:
         conditions.append('(id LIKE ? OR customer_name LIKE ?)')
         params += [f'%{q}%', f'%{q}%']
-    if fecha:
-        conditions.append('date LIKE ?')
-        params.append(f'{fecha}%')
     if estado == 'anuladas':
         conditions.append("status = 'voided'")
     elif estado == 'activas':
         conditions.append("status != 'voided'")
 
-    where = ('WHERE ' + ' AND '.join(conditions)) if conditions else ''
+    where = 'WHERE ' + ' AND '.join(conditions)
 
     conn = get_db_connection()
     orders = conn.execute(
