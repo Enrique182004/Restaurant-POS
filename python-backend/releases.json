@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.0.29",
+    "date": "2026-07-04",
+    "changes": [
+      "Fixed editing a cart item (rice ball or sushi) with Ostión — was incorrectly rejected and used a hardcoded price",
+      "Backend split into focused modules (db.py, business.py) for easier maintenance",
+      "24 automated tests added for the full ordering flow (rice ball, sushi, cart, edit item, quantity, remove)",
+      "Shared CSS consolidated — back button, alert colors, and page title styles now in one place"
+    ]
+  },
+  {
     "version": "1.0.28",
     "date": "2026-07-04",
     "changes": [
