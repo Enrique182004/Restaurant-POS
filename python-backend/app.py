@@ -532,13 +532,22 @@ def admin_dashboard():
         "SELECT COUNT(*) FROM users WHERE password_changed = 0"
     ).fetchone()[0]
 
+    try:
+        releases_path = os.path.join(os.path.dirname(__file__), 'releases.json')
+        with open(releases_path, 'r', encoding='utf-8') as f:
+            releases_data = json.load(f)
+        app_version = releases_data[0]['version'] if releases_data else '—'
+    except Exception:
+        app_version = '—'
+
     return render_template('admin_dashboard.html',
                            today_total=today_total,
                            today_orders=today_orders,
                            low_stock_count=low_stock_count,
                            pending_prints=pending_prints,
                            printer_name=printer_name,
-                           users_with_default=users_with_default)
+                           users_with_default=users_with_default,
+                           app_version=app_version)
 
 @app.route('/admin/api/dashboard-summary')
 @login_required

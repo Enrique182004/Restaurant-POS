@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.0.36",
+    "date": "2026-07-05",
+    "changes": [
+      "Fixed update button: clicking it now installs the update directly when a download is ready — previously it would re-check instead of installing",
+      "Version badge in admin dashboard now shows the real installed version instead of a hardcoded number"
+    ]
+  },
+  {
     "version": "1.0.35",
     "date": "2026-07-05",
     "changes": [
