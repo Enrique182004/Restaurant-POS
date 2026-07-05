@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.0.32",
+    "date": "2026-07-04",
+    "changes": [
+      "Reports page date picker replaced with a custom calendar popup — click to open, navigate months, pick a day",
+      "Selected date shown as formatted label (e.g. '4 jul 2026') instead of raw ISO string",
+      "Future dates and months are disabled so invalid selections are not possible"
+    ]
+  },
+  {
     "version": "1.0.31",
     "date": "2026-07-04",
     "changes": [
