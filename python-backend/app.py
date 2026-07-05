@@ -1636,6 +1636,7 @@ def manage_prices():
 @admin_required
 def reports():
     period = request.args.get('period', 'today')
+    selected_date = request.args.get('date', '')
     now = datetime.now()
 
     if period == 'week':
@@ -1648,7 +1649,14 @@ def reports():
     elif period == 'alltime':
         start = datetime(2000, 1, 1)
         label = 'Todo el tiempo'
-    else:  # today
+    elif period == 'custom' and selected_date:
+        try:
+            start = datetime.strptime(selected_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0, microsecond=0)
+        except ValueError:
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            selected_date = ''
+        label = selected_date
+    else:  # today (and custom with no date)
         start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         label = 'Hoy'
 
@@ -1725,13 +1733,6 @@ def reports():
     voided = conn.execute(
         "SELECT COUNT(*) FROM orders WHERE date >= ? AND status = 'voided'", (start_str,)
     ).fetchone()[0]
-
-    # Custom date support
-    selected_date = request.args.get('date', '')
-    if period == 'custom' and selected_date:
-        label = selected_date
-        start = datetime.strptime(selected_date, '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-        start_str = start.strftime('%Y-%m-%d %H:%M:%S')
 
     return render_template('reports.html',
         period=period, label=label,
