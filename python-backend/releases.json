@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.0.37",
+    "date": "2026-07-05",
+    "changes": [
+      "Fixed Historial page crashing with a 500 error after the v1.0.35 update"
+    ]
+  },
+  {
     "version": "1.0.36",
     "date": "2026-07-05",
     "changes": [

@@ -1866,6 +1866,8 @@ def order_history():
         orders=parsed, daily_totals=daily_totals,
         q=q, period=period, selected_date=selected_date, estado=estado,
         label=label, today_str=now.strftime('%Y-%m-%d'),
+        estado_activas=(estado == 'activas'),
+        estado_anuladas=(estado == 'anuladas'),
     )
 
 

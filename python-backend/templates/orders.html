@@ -576,19 +576,10 @@ block styles %}
     />
     <select name="estado" class="filtro-select">
       <option value="">Todas</option>
-      <option value="activas" {% if estado="" ="activas" %}selected{% endif %}>
+      <option value="activas" {% if estado_activas %}selected{% endif %}>
         Activas
       </option>
-      <option
-        value="anuladas"
-        {%
-        if
-        estado=""
-        ="anuladas"
-        %}selected{%
-        endif
-        %}
-      >
+      <option value="anuladas" {% if estado_anuladas %}selected{% endif %}>
         Anuladas
       </option>
     </select>
