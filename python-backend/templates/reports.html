@@ -47,31 +47,135 @@ styles %}
     border-color: #ff9800;
   }
   .date-picker-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    position: relative;
   }
-  .date-input {
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border: 1px solid #333;
-    color: #aaa;
-    background: #1e1e1e;
-    transition: all 0.15s;
+  .cal-trigger {
     cursor: pointer;
-    outline: none;
-    color-scheme: dark;
+    background: #1e1e1e;
+    font-family: inherit;
+    white-space: nowrap;
   }
-  .date-input:hover {
-    border-color: #ff9800;
-    color: #ff9800;
-  }
-  .date-input.active {
+  .cal-trigger.active {
     background: #ff9800;
     color: #121212;
     border-color: #ff9800;
+  }
+  .cal-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 16px;
+    width: 272px;
+    z-index: 1000;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    animation: cal-in 0.15s ease;
+  }
+  @keyframes cal-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-nav {
+    background: none;
+    border: 1px solid #2a2a2a;
+    color: #aaa;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 8px;
+    line-height: 1;
+    transition: all 0.12s;
+  }
+  .cal-nav:hover {
+    background: #2a2a2a;
+    color: #ff9800;
+    border-color: #ff9800;
+  }
+  .cal-nav:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+  #cal-month-label {
+    color: #f5f5f5;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+  }
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #555;
+    font-weight: 700;
+    padding: 3px 0 6px;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day {
+    text-align: center;
+    padding: 7px 2px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: #bbb;
+    cursor: pointer;
+    transition:
+      background 0.1s,
+      color 0.1s;
+    user-select: none;
+  }
+  .cal-day:hover {
+    background: #2a2a2a;
+    color: #ff9800;
+  }
+  .cal-day.today {
+    color: #ff9800;
+    font-weight: 700;
+  }
+  .cal-day.today::after {
+    content: "";
+    display: block;
+    width: 4px;
+    height: 4px;
+    background: #ff9800;
+    border-radius: 50%;
+    margin: 1px auto 0;
+  }
+  .cal-day.selected {
+    background: #ff9800 !important;
+    color: #121212 !important;
+    font-weight: 800;
+  }
+  .cal-day.selected.today::after {
+    background: #121212;
+  }
+  .cal-day.disabled {
+    color: #333;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cal-day.empty {
+    visibility: hidden;
+    pointer-events: none;
   }
   .section-heading {
     font-size: 0.78rem;
@@ -349,24 +453,173 @@ styles %}
       class="period-tab {% if period == 'alltime' %}active{% endif %}"
       >Todo el tiempo</a
     >
-    <div class="date-picker-wrap">
-      <input
-        type="date"
-        id="custom-date-input"
-        class="date-input {% if period == 'custom' %}active{% endif %}"
-        value="{{ selected_date or '' }}"
-        max="{{ today_str }}"
-        title="Seleccionar día específico"
-      />
+    <div class="date-picker-wrap" id="cal-wrap">
+      <button
+        type="button"
+        id="cal-trigger"
+        class="period-tab cal-trigger {% if period == 'custom' and selected_date %}active{% endif %}"
+      >
+        📅
+        <span id="cal-label"
+          >{% if period == 'custom' and selected_date %}{{ selected_date }}{%
+          else %}Día específico{% endif %}</span
+        >
+      </button>
+      <div id="cal-popup" class="cal-popup" style="display: none">
+        <div class="cal-header">
+          <button type="button" class="cal-nav" id="cal-prev">‹</button>
+          <span id="cal-month-label"></span>
+          <button type="button" class="cal-nav" id="cal-next">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span
+          ><span>Vi</span><span>Sa</span><span>Do</span>
+        </div>
+        <div id="cal-grid" class="cal-grid"></div>
+      </div>
     </div>
   </div>
   <script>
     (function () {
-      var input = document.getElementById("custom-date-input");
-      input.addEventListener("change", function () {
-        if (this.value) {
-          window.location.href = "?period=custom&date=" + this.value;
+      var SELECTED = "{{ selected_date or '' }}";
+      var TODAY = "{{ today_str }}";
+      var MONTHS = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+      ];
+      var MONTHS_SHORT = [
+        "ene",
+        "feb",
+        "mar",
+        "abr",
+        "may",
+        "jun",
+        "jul",
+        "ago",
+        "sep",
+        "oct",
+        "nov",
+        "dic",
+      ];
+
+      var trigger = document.getElementById("cal-trigger");
+      var popup = document.getElementById("cal-popup");
+      var label = document.getElementById("cal-label");
+      var grid = document.getElementById("cal-grid");
+      var mlabel = document.getElementById("cal-month-label");
+      var btnPrev = document.getElementById("cal-prev");
+      var btnNext = document.getElementById("cal-next");
+
+      // Format label: "2026-07-04" → "4 jul 2026"
+      function fmtLabel(iso) {
+        var p = iso.split("-");
+        return (
+          parseInt(p[2]) + " " + MONTHS_SHORT[parseInt(p[1]) - 1] + " " + p[0]
+        );
+      }
+      if (SELECTED) label.textContent = fmtLabel(SELECTED);
+
+      var todayParts = TODAY.split("-");
+      var todayY = +todayParts[0],
+        todayM = +todayParts[1] - 1,
+        todayD = +todayParts[2];
+
+      var viewY = SELECTED ? +SELECTED.split("-")[0] : todayY;
+      var viewM = SELECTED ? +SELECTED.split("-")[1] - 1 : todayM;
+
+      function render() {
+        mlabel.textContent = MONTHS[viewM] + " " + viewY;
+        btnNext.disabled =
+          viewY > todayY || (viewY === todayY && viewM >= todayM);
+
+        var selY = 0,
+          selM = 0,
+          selD = 0;
+        if (SELECTED) {
+          var sp = SELECTED.split("-");
+          selY = +sp[0];
+          selM = +sp[1] - 1;
+          selD = +sp[2];
         }
+
+        var firstDow = new Date(viewY, viewM, 1).getDay(); // 0=Sun
+        var offset = firstDow === 0 ? 6 : firstDow - 1;
+        var days = new Date(viewY, viewM + 1, 0).getDate();
+
+        grid.innerHTML = "";
+        for (var i = 0; i < offset; i++) {
+          var e = document.createElement("div");
+          e.className = "cal-day empty";
+          grid.appendChild(e);
+        }
+        for (var d = 1; d <= days; d++) {
+          var cell = document.createElement("div");
+          cell.textContent = d;
+          var cls = "cal-day";
+          var isFuture =
+            viewY > todayY ||
+            (viewY === todayY && viewM > todayM) ||
+            (viewY === todayY && viewM === todayM && d > todayD);
+          if (isFuture) {
+            cls += " disabled";
+          } else {
+            if (d === selD && viewM === selM && viewY === selY)
+              cls += " selected";
+            if (d === todayD && viewM === todayM && viewY === todayY)
+              cls += " today";
+            (function (ds) {
+              cell.addEventListener("click", function () {
+                window.location.href = "?period=custom&date=" + ds;
+              });
+            })(
+              viewY +
+                "-" +
+                String(viewM + 1).padStart(2, "0") +
+                "-" +
+                String(d).padStart(2, "0"),
+            );
+          }
+          cell.className = cls;
+          grid.appendChild(cell);
+        }
+      }
+
+      btnPrev.addEventListener("click", function () {
+        viewM--;
+        if (viewM < 0) {
+          viewM = 11;
+          viewY--;
+        }
+        render();
+      });
+      btnNext.addEventListener("click", function () {
+        viewM++;
+        if (viewM > 11) {
+          viewM = 0;
+          viewY++;
+        }
+        render();
+      });
+
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var open = popup.style.display !== "none";
+        popup.style.display = open ? "none" : "block";
+        if (!open) render();
+      });
+      document.addEventListener("click", function (e) {
+        if (!document.getElementById("cal-wrap").contains(e.target))
+          popup.style.display = "none";
       });
     })();
   </script>
