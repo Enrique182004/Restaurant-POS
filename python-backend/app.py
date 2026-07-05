@@ -1676,12 +1676,23 @@ def reports():
 
     start_str = start.strftime('%Y-%m-%d %H:%M:%S')
 
+    # For a specific custom day, cap at midnight of the next day so only that
+    # day's orders are counted (without an upper bound, selecting July 3rd
+    # would return July 3rd + 4th + 5th ... and inflate every total).
+    if period == 'custom' and selected_date:
+        end_str = (start + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+        date_clause = "date >= ? AND date < ?"
+        date_args = (start_str, end_str)
+    else:
+        date_clause = "date >= ?"
+        date_args = (start_str,)
+
     conn = get_db_connection()
 
     # Core summary
     row = conn.execute(
-        "SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as rev FROM orders "
-        "WHERE date >= ? AND status != 'voided'", (start_str,)
+        f"SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as rev FROM orders "
+        f"WHERE {date_clause} AND status != 'voided'", date_args
     ).fetchone()
     total_orders = row['cnt']
     total_revenue = row['rev']
@@ -1689,9 +1700,9 @@ def reports():
 
     # Payment method split
     pay_rows = conn.execute(
-        "SELECT payment_method, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
-        "FROM orders WHERE date >= ? AND status != 'voided' "
-        "GROUP BY payment_method", (start_str,)
+        f"SELECT payment_method, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
+        f"FROM orders WHERE {date_clause} AND status != 'voided' "
+        f"GROUP BY payment_method", date_args
     ).fetchall()
     payment_split = {r['payment_method']: {'count': r['cnt'], 'revenue': r['rev']} for r in pay_rows}
 
@@ -1712,9 +1723,9 @@ def reports():
 
     # Hourly distribution within selected period — orders + revenue
     hour_rows = conn.execute(
-        "SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
-        "FROM orders WHERE date >= ? AND status != 'voided' "
-        "GROUP BY hr ORDER BY hr", (start_str,)
+        f"SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
+        f"FROM orders WHERE {date_clause} AND status != 'voided' "
+        f"GROUP BY hr ORDER BY hr", date_args
     ).fetchall()
     hourly = {h: {'cnt': 0, 'rev': 0.0} for h in range(8, 23)}
     for r in hour_rows:
@@ -1723,7 +1734,7 @@ def reports():
 
     # Item popularity — parse JSON items, track qty + revenue
     all_orders = conn.execute(
-        "SELECT items, total FROM orders WHERE date >= ? AND status != 'voided'", (start_str,)
+        f"SELECT items, total FROM orders WHERE {date_clause} AND status != 'voided'", date_args
     ).fetchall()
     item_counts = {}
     item_revenue = {}
@@ -1745,7 +1756,7 @@ def reports():
 
     # Voided orders count
     voided = conn.execute(
-        "SELECT COUNT(*) FROM orders WHERE date >= ? AND status = 'voided'", (start_str,)
+        f"SELECT COUNT(*) FROM orders WHERE {date_clause} AND status = 'voided'", date_args
     ).fetchone()[0]
 
     return render_template('reports.html',

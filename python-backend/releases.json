@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.0.34",
+    "date": "2026-07-05",
+    "changes": [
+      "Fixed reports page: selecting a specific day now shows only that day's earnings — previously it was accumulating all days from the selected date forward, causing inflated totals",
+      "6 automated tests added to lock in correct per-day revenue isolation"
+    ]
+  },
+  {
     "version": "1.0.33",
     "date": "2026-07-04",
     "changes": [
