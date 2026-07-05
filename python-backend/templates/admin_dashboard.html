@@ -453,8 +453,20 @@ endblock %} {% block styles %}
         });
     }
 
+    var refreshInterval = null;
+    function startRefresh() {
+      if (!refreshInterval) refreshInterval = setInterval(refresh, 30000);
+    }
+    function stopRefresh() {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { stopRefresh(); }
+      else { refresh(); startRefresh(); }
+    });
     refresh();
-    setInterval(refresh, 30000);
+    startRefresh();
   })();
 
   // ── Manual update check ──────────────────────────────────────────────────

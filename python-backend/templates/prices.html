@@ -153,4 +153,26 @@ block styles %}
     </form>
   </div>
 </div>
+<script>
+  document.querySelector("form").addEventListener("submit", function (e) {
+    var hasError = false;
+    this.querySelectorAll(".price-input").forEach(function (input) {
+      var row = input.closest(".price-row");
+      var existing = row.querySelector(".price-field-error");
+      if (existing) existing.remove();
+      input.style.borderColor = "";
+      var val = parseFloat(input.value);
+      if (isNaN(val) || val < 0) {
+        input.style.borderColor = "#ff6b6b";
+        var err = document.createElement("span");
+        err.className = "price-field-error";
+        err.style.cssText = "color:#ff6b6b;font-size:0.78rem;margin-left:6px;";
+        err.textContent = "Valor inválido";
+        input.closest(".price-input-wrap").appendChild(err);
+        hasError = true;
+      }
+    });
+    if (hasError) e.preventDefault();
+  });
+</script>
 {% endblock %}

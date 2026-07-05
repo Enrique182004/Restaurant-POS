@@ -368,6 +368,29 @@ styles %}
   .quantity-btn:active {
     background-color: #444;
   }
+  .quantity-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .promo-toggle-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #1e1e1e;
+    border: 2px solid #ff9800;
+    border-radius: 14px;
+    color: #ff9800;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: background 0.2s;
+  }
+  .promo-toggle-btn:hover {
+    background: rgba(255, 152, 0, 0.08);
+  }
   .quantity-input {
     width: 50px;
     text-align: center;
@@ -691,7 +714,11 @@ styles %}
     </form>
   </div>
 
-  <div class="promo-section">
+  <button type="button" class="promo-toggle-btn" onclick="togglePromo()">
+    <span>🎯 Agregar código promocional</span>
+    <span id="promo-chevron">▼</span>
+  </button>
+  <div class="promo-section" id="promo-section-body" style="display: none">
     <div class="promo-header">
       <h2 class="promo-title">🎯 Promociones Disponibles</h2>
       <span class="promo-subtitle">Busca y aplica códigos promocionales</span>
@@ -904,7 +931,17 @@ styles %}
           style="margin: 0"
         >
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="item-action delete">Eliminar</button>
+          <button
+            type="button"
+            class="item-action delete"
+            onclick="
+              showConfirm('¿Eliminar este ítem del pedido?', () =>
+                this.closest('form').submit(),
+              )
+            "
+          >
+            Eliminar
+          </button>
         </form>
       </div>
     </div>
@@ -1056,6 +1093,16 @@ styles %}
         input.parentNode.replaceChild(newInput, input);
       });
 
+      function syncMinus(index) {
+        const inp = document.querySelector(
+          `.quantity-input[data-index="${index}"]`,
+        );
+        const btn = document.querySelector(
+          `.quantity-btn.minus[data-index="${index}"]`,
+        );
+        if (inp && btn) btn.disabled = parseInt(inp.value) <= 1;
+      }
+
       document.querySelectorAll(".quantity-btn.plus").forEach((btn) => {
         btn.addEventListener("click", function () {
           const index = this.getAttribute("data-index");
@@ -1065,6 +1112,7 @@ styles %}
           let value = parseInt(input.value);
           if (isNaN(value)) value = 1;
           input.value = value + 1;
+          syncMinus(index);
           showLoadingIndicator(this.closest(".cart-item"));
           updateQuantity(index, value + 1);
         });
@@ -1080,6 +1128,7 @@ styles %}
           if (isNaN(value)) value = 1;
           if (value > 1) {
             input.value = value - 1;
+            syncMinus(index);
             showLoadingIndicator(this.closest(".cart-item"));
             updateQuantity(index, value - 1);
           }
@@ -1090,6 +1139,7 @@ styles %}
         input.addEventListener("input", function () {
           this.value = this.value.replace(/[^0-9]/g, "");
           if (this.value === "" || parseInt(this.value) < 1) this.value = 1;
+          syncMinus(this.getAttribute("data-index"));
         });
         input.addEventListener("change", function () {
           const index = this.getAttribute("data-index");
@@ -1098,9 +1148,15 @@ styles %}
             value = 1;
             this.value = 1;
           }
+          syncMinus(index);
           showLoadingIndicator(this.closest(".cart-item"));
           updateQuantity(index, value);
         });
+      });
+
+      // Initialize minus button states on load
+      document.querySelectorAll(".quantity-input").forEach((input) => {
+        syncMinus(input.getAttribute("data-index"));
       });
     }
 
@@ -1141,6 +1197,12 @@ styles %}
             }
             const totalEl = document.querySelector(".total-amount");
             if (totalEl) totalEl.textContent = "$" + data.new_total.toFixed(2);
+            if (data.promo_cleared) {
+              mostrarToast(
+                "Promoción removida. Reaplícala si sigue siendo válida.",
+                "error",
+              );
+            }
           }
         })
         .catch(() => {
@@ -1154,6 +1216,19 @@ styles %}
         });
     }
   });
+
+  function togglePromo() {
+    var body = document.getElementById("promo-section-body");
+    var chevron = document.getElementById("promo-chevron");
+    if (!body) return;
+    if (body.style.display === "none") {
+      body.style.display = "block";
+      chevron.textContent = "▲";
+    } else {
+      body.style.display = "none";
+      chevron.textContent = "▼";
+    }
+  }
 
   function selectPromotion(promoCode) {
     const promoSearch = document.getElementById("promo-search");

@@ -11,6 +11,9 @@
         .sauce-options { grid-template-columns: repeat(3, 1fr); }
         @media (max-width: 768px) { .premium-grid { max-width: 250px; } .sauce-options { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 480px) { .sauce-options { grid-template-columns: repeat(2, 1fr); } }
+        .live-price-bar { display:flex; justify-content:space-between; align-items:center; background:#1e1e1e; border:2px solid #ff9800; border-radius:12px; padding:12px 20px; margin-bottom:20px; }
+        .live-price-label { color:#ccc; font-size:0.95rem; font-weight:600; }
+        .live-price-value { color:#ff9800; font-size:1.5rem; font-weight:800; }
     </style>
 {% endblock %}
 {% block body %}
@@ -187,6 +190,11 @@
                 </div>
             </div>
 
+            <div class="live-price-bar">
+                <span class="live-price-label">Precio estimado</span>
+                <span class="live-price-value" id="live-price-value">—</span>
+            </div>
+
             <div class="action-buttons">
                 <button type="button" id="cancel-btn" class="action-button cancel-button" data-url="{% if item %}{{ url_for('view_cart') }}{% else %}/{% endif %}">
                     <span class="button-icon">✕</span> Cancelar
@@ -200,6 +208,17 @@
 
     
     <script>
+        var OSTION_PRICE = {{ ostion_price | default(10) }};
+
+        function updateSushiLivePrice() {
+            var prepCard = document.querySelector('.option-card input[name="prepared"]:checked');
+            var basePrice = prepCard ? parseFloat(prepCard.closest('.option-card').dataset.price || 0) : 0;
+            var ostionChecked = document.querySelector('input[name="ingredients"][value="Ostión"]:checked');
+            var total = basePrice + (ostionChecked ? OSTION_PRICE : 0);
+            var el = document.getElementById('live-price-value');
+            if (el) el.textContent = basePrice > 0 ? '$' + total.toFixed(0) : '—';
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const cancelBtn = document.getElementById('cancel-btn');
             if (cancelBtn) {
@@ -211,6 +230,11 @@
 
             initializeSelections();
             setupOptionCardSelection();
+            updateSushiLivePrice();
+
+            document.querySelectorAll('input[name="prepared"], input[name="ingredients"]').forEach(function(el) {
+                el.addEventListener('change', updateSushiLivePrice);
+            });
 
             const MAX_INGREDIENTS = 3;
             initializeIngredientValidation();

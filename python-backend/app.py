@@ -945,23 +945,29 @@ def customize_rice_ball():
             flash('Máximo 6 ingredientes regulares permitidos', 'error')
             return render_template('rice_ball.html', item=None,
                                    rice_ingredients=get_menu_options('rice_ingredient'),
-                                   rice_sauces=get_menu_options('rice_sauce'))
+                                   rice_sauces=get_menu_options('rice_sauce'),
+                                   base_price=get_item_price('Bola de Arroz'),
+                                   ostion_price=get_item_price('Ostión'))
 
         if len(regular_ingredients) < 1:
             flash('Selecciona al menos 1 ingrediente', 'error')
             return render_template('rice_ball.html', item=None,
                                    rice_ingredients=get_menu_options('rice_ingredient'),
-                                   rice_sauces=get_menu_options('rice_sauce'))
+                                   rice_sauces=get_menu_options('rice_sauce'),
+                                   base_price=get_item_price('Bola de Arroz'),
+                                   ostion_price=get_item_price('Ostión'))
 
         if len(ostion_ingredients) > 1:
             flash('Solo puedes agregar un Ostión', 'error')
             return render_template('rice_ball.html', item=None,
                                    rice_ingredients=get_menu_options('rice_ingredient'),
-                                   rice_sauces=get_menu_options('rice_sauce'))
+                                   rice_sauces=get_menu_options('rice_sauce'),
+                                   base_price=get_item_price('Bola de Arroz'),
+                                   ostion_price=get_item_price('Ostión'))
 
         base_price = get_item_price('Bola de Arroz')
         ostion_count = len(ostion_ingredients)
-        ostion_price = ostion_count * 10.0
+        ostion_price = ostion_count * get_item_price('Ostión')
         total_price = base_price + ostion_price
 
         item = {
@@ -986,7 +992,9 @@ def customize_rice_ball():
 
     return render_template('rice_ball.html', item=None,
                            rice_ingredients=get_menu_options('rice_ingredient'),
-                           rice_sauces=get_menu_options('rice_sauce'))
+                           rice_sauces=get_menu_options('rice_sauce'),
+                           base_price=get_item_price('Bola de Arroz'),
+                           ostion_price=get_item_price('Ostión'))
 
 # Customize Sushi with enhanced Ostión validation - UPDATED TO REDIRECT TO HOME
 @app.route('/customize/sushi', methods=['GET', 'POST'])
@@ -1010,30 +1018,30 @@ def customize_sushi():
         # Validate required fields
         if not style:
             flash('Por favor selecciona si deseas tu sushi Frío o Empanizado.', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
         if not prepared:
             flash('Por favor selecciona una opción de preparado.', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
         regular_ingredients = [ing for ing in ingredients if ing != 'Ostión']
         ostion_ingredients = [ing for ing in ingredients if ing == 'Ostión']
 
         if len(regular_ingredients) > 3:
             flash('Máximo 3 ingredientes regulares permitidos', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
         if len(regular_ingredients) < 1:
             flash('Selecciona al menos 1 ingrediente', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
         if len(ostion_ingredients) > 1:
             flash('Solo puedes agregar un Ostión', 'error')
-            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+            return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
         base_price = get_item_price('Sushi', prepared)
         ostion_count = len(ostion_ingredients)
-        ostion_price = ostion_count * 10.0
+        ostion_price = ostion_count * get_item_price('Ostión')
         total_price = base_price + ostion_price
 
         item = {
@@ -1091,20 +1099,20 @@ def update_quantity(item_index, quantity):
     
     cart = session.get('cart', [])
     if item_index < len(cart):
-        # Get current quantity and price
         current_quantity = cart[item_index].get('quantity', 1)
         current_price = cart[item_index]['price']
-        
-        # Calculate unit price if not already present
+        had_promo = 'original_price' in cart[item_index]
+
+        # When a promo was active use the original (pre-discount) price as unit basis
+        if had_promo:
+            cart[item_index]['unit_price'] = cart[item_index]['original_price'] / current_quantity
+
         if 'unit_price' not in cart[item_index]:
             cart[item_index]['unit_price'] = current_price / current_quantity
-        
-        # Get unit price
+
         unit_price = cart[item_index]['unit_price']
-        
         cart[item_index]['quantity'] = quantity
         cart[item_index]['price'] = unit_price * quantity
-        # Clear stale promotion data so the displayed price stays accurate
         cart[item_index].pop('original_price', None)
         cart[item_index].pop('discount', None)
 
@@ -1116,6 +1124,7 @@ def update_quantity(item_index, quantity):
             'success': True,
             'new_item_price': cart[item_index]['price'],
             'new_total': new_total,
+            'promo_cleared': had_promo,
         })
 
     return jsonify({'success': False, 'error': 'Índice de producto inválido'})

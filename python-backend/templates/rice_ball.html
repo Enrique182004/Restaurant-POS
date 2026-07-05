@@ -19,14 +19,27 @@
                 }
             }
 
+            var BASE_PRICE = {{ base_price | default(0) }};
+            var OSTION_PRICE = {{ ostion_price | default(10) }};
+
+            function updateLivePrice() {
+                var ostionChecked = document.querySelector('input[name="ingredients"][value="Ostión"]:checked');
+                var total = BASE_PRICE + (ostionChecked ? OSTION_PRICE : 0);
+                var el = document.getElementById('live-price-value');
+                if (el) el.textContent = '$' + total.toFixed(0);
+            }
+
             function initializeIngredientValidation() {
                 const ingredientCheckboxes = document.querySelectorAll('.ingredient-checkbox');
                 ingredientCheckboxes.forEach(checkbox => {
                     checkbox.addEventListener('change', function() {
                         if (this.checked) { handleIngredientLimit(this, this.closest('.option-card')); }
+                        updateLivePrice();
                     });
                 });
             }
+
+            updateLivePrice();
 
             function initializeSelections() {
                 document.querySelectorAll('.option-card input[type="checkbox"]').forEach(checkbox => {
@@ -114,6 +127,12 @@
                         mostrarErrorEnSeccion('.ingredients-grid', 'Por favor selecciona al menos 1 ingrediente.');
                         return;
                     }
+                    const selectedStyle = document.querySelector('input[name="style"]:checked');
+                    if (!selectedStyle) {
+                        event.preventDefault();
+                        mostrarErrorEnSeccion('.style-options', 'Por favor selecciona Fría o Empanizada.');
+                        return;
+                    }
                 });
             }
         });
@@ -129,6 +148,9 @@
         .sauce-options { grid-template-columns: repeat(3, 1fr); }
         @media (max-width: 768px) { .premium-grid { max-width: 250px; } .sauce-options { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 480px) { .sauce-options { grid-template-columns: repeat(2, 1fr); } }
+        .live-price-bar { display:flex; justify-content:space-between; align-items:center; background:#1e1e1e; border:2px solid #ff9800; border-radius:12px; padding:12px 20px; margin-bottom:20px; }
+        .live-price-label { color:#ccc; font-size:0.95rem; font-weight:600; }
+        .live-price-value { color:#ff9800; font-size:1.5rem; font-weight:800; }
     </style>
 {% endblock %}
 {% block body %}
@@ -280,6 +302,11 @@
                 <div class="notes-container">
                     <textarea name="notes" id="notes" rows="3" placeholder="Añade detalles o solicitudes adicionales..." class="notes-input">{% if item and item.notes %}{{ item.notes }}{% endif %}</textarea>
                 </div>
+            </div>
+
+            <div class="live-price-bar">
+                <span class="live-price-label">Precio estimado</span>
+                <span class="live-price-value" id="live-price-value">$0</span>
             </div>
 
             <div class="action-buttons">

@@ -25,7 +25,9 @@ function _sendUpdateStatus(state) {
 }
 
 autoUpdater.on("update-available", () => {
-  console.log("[Updater] Actualización disponible — descargando en segundo plano...");
+  console.log(
+    "[Updater] Actualización disponible — descargando en segundo plano...",
+  );
   _sendUpdateStatus("downloading");
 });
 
@@ -57,7 +59,9 @@ ipcMain.handle("get-update-ready", () => updateDownloaded);
 
 ipcMain.handle("check-for-updates-now", () => {
   if (updateDownloaded) return { state: "ready" };
-  autoUpdater.checkForUpdatesAndNotify().catch(() => _sendUpdateStatus("error"));
+  autoUpdater
+    .checkForUpdatesAndNotify()
+    .catch(() => _sendUpdateStatus("error"));
   return { state: "checking" };
 });
 

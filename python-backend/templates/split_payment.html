@@ -201,6 +201,7 @@ styles %}
           placeholder="0"
         />
       </div>
+      <div class="quick-row" id="card-quick"></div>
     </div>
   </div>
 
@@ -213,7 +214,8 @@ styles %}
     </span>
   </div>
 
-  <form method="GET" action="{{ url_for('ticket') }}" id="split-form">
+  <form method="POST" action="{{ url_for('ticket') }}" id="split-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="payment_method" value="split" />
     <input type="hidden" name="cash_portion" id="cash-hidden" value="0" />
     <input type="hidden" name="card_portion" id="card-hidden" value="0" />
@@ -256,6 +258,32 @@ styles %}
       }
     });
 
+    // Quick-amount buttons for card
+    var cardQuickRow = document.getElementById('card-quick');
+    [50, 100, 200].forEach(function (v) {
+      if (v < total) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'quick-btn';
+        b.textContent = '$' + v;
+        b.addEventListener('click', function () {
+          cardInput.value = v;
+          recalc();
+        });
+        cardQuickRow.appendChild(b);
+      }
+    });
+    var allCardBtn = document.createElement('button');
+    allCardBtn.type = 'button';
+    allCardBtn.className = 'quick-btn';
+    allCardBtn.textContent = 'Todo';
+    allCardBtn.addEventListener('click', function () {
+      cardInput.value = total.toFixed(2);
+      cashInput.value = '0';
+      recalc();
+    });
+    cardQuickRow.appendChild(allCardBtn);
+
     function recalc() {
       var cash = parseFloat(cashInput.value) || 0;
       var card = parseFloat(cardInput.value) || 0;
@@ -291,6 +319,8 @@ styles %}
       var remainder = total - cash;
       if (remainder >= 0) {
         cardInput.value = remainder.toFixed(2);
+      } else {
+        cardInput.value = '0';
       }
       recalc();
     });
