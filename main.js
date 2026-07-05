@@ -51,6 +51,20 @@ autoUpdater.on("error", (err) => {
 
 ipcMain.on("install-update", () => {
   isQuitting = true;
+  // Snapshot the DB right before applying the update so there is always a
+  // point-in-time restore available even if today's daily backup is hours old.
+  if (app.isPackaged && resolvedDbPath && fs.existsSync(resolvedDbPath)) {
+    try {
+      const backupsDir = path.join(app.getPath("userData"), "backups");
+      fs.mkdirSync(backupsDir, { recursive: true });
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const dest = path.join(backupsDir, `restaurant_preupdate_${ts}.db`);
+      fs.copyFileSync(resolvedDbPath, dest);
+      console.log("[DB] Backup pre-actualización creado:", dest);
+    } catch (e) {
+      console.error("[DB] Error en backup pre-actualización:", e.message);
+    }
+  }
   autoUpdater.quitAndInstall(false, true);
 });
 
@@ -72,6 +86,7 @@ let flaskProcess = null;
 let printBridgeProcess = null;
 let inventoryServiceProcess = null;
 let isQuitting = false;
+let resolvedDbPath = null; // set once DB path is known, used for pre-update backup
 let flaskRestarts = 0;
 const MAX_FLASK_RESTARTS = 3;
 let printBridgeRestarts = 0;
@@ -756,6 +771,7 @@ app.on("ready", async () => {
     }
   }
 
+  resolvedDbPath = dbPath;
   console.log("[DB] Usando base de datos en:", dbPath);
 
   // ── Paso 1: Flask ─────────────────────────────────────────────────────────

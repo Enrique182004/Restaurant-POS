@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.0.33",
+    "date": "2026-07-04",
+    "changes": [
+      "Database snapshot created automatically right before every update installs — point-in-time restore is always available",
+      "SQLite WAL mode enabled — a crash or power cut during a write no longer risks corrupting the database",
+      "Database integrity checked at every startup — owner is warned if corruption is detected before it causes lost orders",
+      "Developer database files can no longer be accidentally bundled into a release build"
+    ]
+  },
+  {
     "version": "1.0.32",
     "date": "2026-07-04",
     "changes": [

@@ -58,6 +58,20 @@ app.teardown_appcontext(_cerrar_db)
 
 def init_db():
     conn = get_db_connection()
+
+    # WAL mode: uncommitted writes are rolled back on crash instead of
+    # leaving the DB in a half-written state.
+    conn.execute('PRAGMA journal_mode=WAL')
+
+    # Detect corruption early; log a warning but don't crash so the owner
+    # can still open the app and restore from a backup manually.
+    integrity = conn.execute('PRAGMA quick_check').fetchone()[0]
+    if integrity != 'ok':
+        import logging
+        logging.getLogger(__name__).error(
+            '[DB] Integrity check failed: %s — restore from a backup in userData/backups/', integrity
+        )
+
     conn.execute('''
     CREATE TABLE IF NOT EXISTS orders (
         id TEXT PRIMARY KEY,
