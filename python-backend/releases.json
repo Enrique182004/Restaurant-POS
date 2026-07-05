@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.0.30",
+    "date": "2026-07-04",
+    "changes": [
+      "Fixed employee weekly pay not showing when viewing past weeks",
+      "CI now runs all 132 automated tests on every push (was only running 1 file)",
+      "12 automated tests added for the payment flow (coupon, cash, card, split, ticket)",
+      "Database file removed from git history — no more binary noise on every order"
+    ]
+  },
+  {
     "version": "1.0.29",
     "date": "2026-07-04",
     "changes": [
