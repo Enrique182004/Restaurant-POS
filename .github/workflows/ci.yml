@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install flask flask-wtf werkzeug pytest --quiet
+        run: pip install flask flask-wtf werkzeug pytest requests --quiet
 
       - name: Run tests
         run: pytest python-backend/tests/ -v --tb=short
