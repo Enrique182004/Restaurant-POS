@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.0.31",
+    "date": "2026-07-04",
+    "changes": [
+      "Fixed reports page: selecting a specific date now shows data for that day instead of always showing today"
+    ]
+  },
+  {
     "version": "1.0.30",
     "date": "2026-07-04",
     "changes": [
