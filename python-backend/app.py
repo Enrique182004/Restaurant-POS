@@ -10,6 +10,10 @@ import json
 import csv
 import io
 from functools import wraps
+from db import (get_db_connection, _cerrar_db, get_item_price,
+                get_sushi_prep_prices, get_menu_options, log_activity)
+from business import (format_num, get_week_bounds, resolve_employee_schedule,
+                      compute_employee_pay, parse_scheduled_days, apply_bxgy_promotion)
 
 # Soporte para modo PyInstaller (bundled) y desarrollo normal.
 # FLASK_APP_DIR indica dónde están templates/ y static/ en producción.
@@ -46,63 +50,11 @@ csrf.init_app(app)
 # Set session lifetime
 app.permanent_session_lifetime = timedelta(hours=24)
 
-@app.template_filter('num')
-def format_num(value):
-    """Renders whole numbers without a trailing .0 (e.g. 5.0 -> 5) for editable qty inputs."""
-    try:
-        f = float(value)
-    except (TypeError, ValueError):
-        return value
-    return int(f) if f == int(f) else f
+app.jinja_env.filters['num'] = format_num
 
 # ── Base de datos ──────────────────────────────────────────────────────────────
 
-class _GConnection:
-    """
-    Envuelve una conexión SQLite almacenada en Flask g.
-    conn.close() es no-op: teardown_appcontext cierra la conexión real al
-    final de cada request, garantizando que nunca quede abierta aunque
-    una ruta lance una excepción.
-    """
-    def __init__(self, conn):
-        self.__dict__['_conn'] = conn
-
-    def __getattr__(self, name):
-        return getattr(self.__dict__['_conn'], name)
-
-    def close(self):
-        pass  # teardown_appcontext maneja el cierre
-
-
-def get_db_connection():
-    """
-    Dentro de un request: devuelve la conexión cacheada en g (o la crea).
-    Fuera de request (ej: init_db al arrancar): devuelve una conexión directa.
-    """
-    try:
-        if 'db' not in g:
-            conn = sqlite3.connect(_DB_PATH)
-            conn.row_factory = sqlite3.Row
-            g.db = _GConnection(conn)
-            g._raw_db = conn
-        return g.db
-    except RuntimeError:
-        # Fuera de contexto de aplicación (inicio de servidor, tests sin contexto)
-        conn = sqlite3.connect(_DB_PATH)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-
-@app.teardown_appcontext
-def _cerrar_db(error):
-    """Cierra la conexión real al final de cada request, sin importar si hubo error."""
-    raw = g.pop('_raw_db', None)
-    g.pop('db', None)
-    if raw is not None:
-        try:
-            raw.close()
-        except Exception:
-            pass
+app.teardown_appcontext(_cerrar_db)
 
 def init_db():
     conn = get_db_connection()
@@ -425,76 +377,6 @@ def init_db():
     conn.close()
 
 
-def log_activity(action, description):
-    """Append a row to activity_log. actor comes from Flask session if available."""
-    try:
-        actor = 'sistema'
-        try:
-            from flask import session as _s
-            actor = _s.get('username', 'sistema')
-        except Exception:
-            pass
-        conn = get_db_connection()
-        conn.execute(
-            'INSERT INTO activity_log (action, description, actor, timestamp) VALUES (?, ?, ?, ?)',
-            (action, description, actor, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        )
-        conn.commit()
-    except Exception:
-        pass
-
-
-# ── Empleados y asistencia: helpers ───────────────────────────────────────────
-
-def get_week_bounds(reference_date):
-    """reference_date: 'YYYY-MM-DD'. Returns (monday, sunday) as 'YYYY-MM-DD' strings
-    for the Mon-Sun week containing reference_date."""
-    d = datetime.strptime(reference_date, '%Y-%m-%d')
-    monday = d - timedelta(days=d.weekday())
-    sunday = monday + timedelta(days=6)
-    return monday.strftime('%Y-%m-%d'), sunday.strftime('%Y-%m-%d')
-
-
-def resolve_employee_schedule(conn, employee_id, week_start):
-    """Returns the employee_schedules row in effect for the week starting on
-    week_start ('YYYY-MM-DD', a Monday), or None if no version applies yet."""
-    return conn.execute(
-        '''SELECT * FROM employee_schedules
-           WHERE employee_id = ? AND effective_from <= ?
-           ORDER BY effective_from DESC, id DESC LIMIT 1''',
-        (employee_id, week_start)
-    ).fetchone()
-
-
-def compute_employee_pay(conn, employee_id, week_start, week_end):
-    """Returns (total_pay, per_day_rate, days_worked, scheduled_days) for one
-    employee for the Mon-Sun week [week_start, week_end]. Any day marked
-    present counts toward pay, not only the employee's scheduled days."""
-    schedule = resolve_employee_schedule(conn, employee_id, week_start)
-    if schedule is None:
-        return 0.0, 0.0, 0, []
-
-    scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',') if x != '']
-    per_day_rate = (schedule['pay_amount'] / len(scheduled_days)) if scheduled_days else 0.0
-
-    days_worked = conn.execute(
-        'SELECT COUNT(*) FROM attendance WHERE employee_id = ? AND work_date BETWEEN ? AND ?',
-        (employee_id, week_start, week_end)
-    ).fetchone()[0]
-
-    total_pay = round(per_day_rate * days_worked, 2)
-    return total_pay, per_day_rate, days_worked, scheduled_days
-
-
-def parse_scheduled_days(form):
-    """Reads the 'days' multi-value field from a submitted form and returns
-    a sorted, deduped CSV string of valid weekday ints (0=Mon..6=Sun),
-    or '' if nothing valid was selected."""
-    raw = form.getlist('days')
-    days = sorted({int(d) for d in raw if d.isascii() and d.isdigit() and 0 <= int(d) <= 6})
-    return ','.join(str(d) for d in days)
-
-
 # Login decorator
 def login_required(f):
     @wraps(f)
@@ -760,50 +642,21 @@ def manage_menu_options():
         menu_opts[cat] = opts
     return render_template('menu_options.html', menu_opts=menu_opts)
 
-def get_item_price(item_type, style=None):
-    """Get item price from the database (editable by admin)."""
-    if item_type == 'Sushi' and style:
-        if 'Seco' in style or 'Salsas Aparte' in style:
-            key = 'Sushi Seco'
-        elif 'Flamin' in style:
-            key = 'Sushi Flamin'
-        else:
-            key = 'Sushi Preparado'
-    else:
-        key = item_type
+def _calc_rice_ball_price(ingredients):
+    """Return (base, ostion, total) for a rice ball ingredient list."""
+    ostion_count = sum(1 for i in ingredients if i == 'Ostión')
+    base  = get_item_price('Bola de Arroz')
+    extra = ostion_count * get_item_price('Ostión')
+    return base, extra, base + extra
 
-    conn = get_db_connection()
-    row = conn.execute('SELECT price FROM menu_prices WHERE key = ?', (key,)).fetchone()
-    if row:
-        return row['price']
-    # Fallback: check menu_options (for newly-added beverages)
-    row = conn.execute(
-        "SELECT price FROM menu_options WHERE category='beverage' AND name=? AND active=1",
-        (key,)
-    ).fetchone()
-    return row['price'] if row else 0.0
 
-def get_sushi_prep_prices():
-    """Return live prices for the three sushi preparation options."""
-    conn = get_db_connection()
-    def p(key):
-        row = conn.execute('SELECT price FROM menu_prices WHERE key=?', (key,)).fetchone()
-        return int(row['price']) if row else 0
-    prices = {
-        'Sushi Preparado':      p('Sushi Preparado'),
-        'Seco':                 p('Sushi Seco'),
-        'Sushi Flamin':         p('Sushi Flamin'),
-    }
-    return prices
+def _calc_sushi_price(ingredients, prepared):
+    """Return (base, ostion, total) for a sushi order."""
+    ostion_count = sum(1 for i in ingredients if i == 'Ostión')
+    base  = get_item_price('Sushi', prepared)
+    extra = ostion_count * get_item_price('Ostión')
+    return base, extra, base + extra
 
-def get_menu_options(category):
-    """Return active menu options for a given category as a list of dicts."""
-    conn = get_db_connection()
-    rows = conn.execute(
-        'SELECT * FROM menu_options WHERE category=? AND active=1 ORDER BY sort_order, name',
-        (category,)
-    ).fetchall()
-    return [dict(r) for r in rows]
 
 # Customize Beverages - UPDATED TO REDIRECT TO HOME
 @app.route('/customize/beverages', methods=['GET', 'POST'])
@@ -965,10 +818,7 @@ def customize_rice_ball():
                                    base_price=get_item_price('Bola de Arroz'),
                                    ostion_price=get_item_price('Ostión'))
 
-        base_price = get_item_price('Bola de Arroz')
-        ostion_count = len(ostion_ingredients)
-        ostion_price = ostion_count * get_item_price('Ostión')
-        total_price = base_price + ostion_price
+        base_price, ostion_price, total_price = _calc_rice_ball_price(ingredients)
 
         item = {
             'name': 'Bola de Arroz',
@@ -1039,10 +889,7 @@ def customize_sushi():
             flash('Solo puedes agregar un Ostión', 'error')
             return render_template('sushi.html', item=None, sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
-        base_price = get_item_price('Sushi', prepared)
-        ostion_count = len(ostion_ingredients)
-        ostion_price = ostion_count * get_item_price('Ostión')
-        total_price = base_price + ostion_price
+        base_price, ostion_price, total_price = _calc_sushi_price(ingredients, prepared)
 
         item = {
             'name': 'Sushi',
@@ -1188,25 +1035,25 @@ def update_item(item_index):
                 flash('Máximo 6 ingredientes regulares permitidos', 'error')
                 return render_template('rice_ball.html', item=item, item_index=item_index,
                                        rice_ingredients=get_menu_options('rice_ingredient'),
-                                       rice_sauces=get_menu_options('rice_sauce'))
+                                       rice_sauces=get_menu_options('rice_sauce'),
+                                       base_price=get_item_price('Bola de Arroz'),
+                                       ostion_price=get_item_price('Ostión'))
 
             if len(regular_ingredients) < 1:
                 flash('Selecciona al menos 1 ingrediente', 'error')
                 return render_template('rice_ball.html', item=item, item_index=item_index,
                                        rice_ingredients=get_menu_options('rice_ingredient'),
-                                       rice_sauces=get_menu_options('rice_sauce'))
-
-            if len(ostion_ingredients) > 0 and len(regular_ingredients) < 6:
-                flash('Ostión solo puede agregarse cuando tienes 6 ingredientes regulares', 'error')
-                return render_template('rice_ball.html', item=item, item_index=item_index,
-                                       rice_ingredients=get_menu_options('rice_ingredient'),
-                                       rice_sauces=get_menu_options('rice_sauce'))
+                                       rice_sauces=get_menu_options('rice_sauce'),
+                                       base_price=get_item_price('Bola de Arroz'),
+                                       ostion_price=get_item_price('Ostión'))
 
             if len(ostion_ingredients) > 1:
                 flash('Solo puedes agregar un Ostión', 'error')
                 return render_template('rice_ball.html', item=item, item_index=item_index,
                                        rice_ingredients=get_menu_options('rice_ingredient'),
-                                       rice_sauces=get_menu_options('rice_sauce'))
+                                       rice_sauces=get_menu_options('rice_sauce'),
+                                       base_price=get_item_price('Bola de Arroz'),
+                                       ostion_price=get_item_price('Ostión'))
             
             item['base'] = request.form.getlist('base')
             item['ingredients'] = ingredients
@@ -1215,11 +1062,7 @@ def update_item(item_index):
             item['toppings'] = request.form.getlist('toppings')
             item['notes'] = request.form.get('notes', '')
             
-            # Recalculate price with ostión charges
-            base_price = get_item_price('Bola de Arroz')
-            ostion_count = len(ostion_ingredients)
-            ostion_price = ostion_count * 10.0
-            total_price = base_price + ostion_price
+            base_price, ostion_price, total_price = _calc_rice_ball_price(ingredients)
             item['unit_price'] = total_price
             item['price'] = total_price * item.get('quantity', 1)
             item['ostion_cost'] = ostion_price
@@ -1236,22 +1079,17 @@ def update_item(item_index):
             if len(regular_ingredients) > 3:
                 flash('Máximo 3 ingredientes regulares permitidos', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
             if len(regular_ingredients) < 1:
                 flash('Selecciona al menos 1 ingrediente', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
-
-            if len(ostion_ingredients) > 0 and len(regular_ingredients) < 3:
-                flash('Ostión solo puede agregarse cuando tienes 3 ingredientes regulares', 'error')
-                return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
             if len(ostion_ingredients) > 1:
                 flash('Solo puedes agregar un Ostión', 'error')
                 return render_template('sushi.html', item=item, item_index=item_index,
-                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+                                       sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
             
             item['base'] = request.form.getlist('base')
             item['ingredients'] = ingredients
@@ -1267,11 +1105,7 @@ def update_item(item_index):
             item['toppings'] = request.form.getlist('toppings')
             item['notes'] = request.form.get('notes', '')
             
-            # Recalculate price with dynamic pricing and ostión charges
-            base_price = get_item_price('Sushi', prepared)
-            ostion_count = len(ostion_ingredients)
-            ostion_price = ostion_count * 10.0
-            total_price = base_price + ostion_price
+            base_price, ostion_price, total_price = _calc_sushi_price(ingredients, prepared)
             item['unit_price'] = total_price
             item['price'] = total_price * item.get('quantity', 1)
             item['ostion_cost'] = ostion_price
@@ -1296,10 +1130,12 @@ def update_item(item_index):
     elif item['type'] == 'Bola de Arroz':
         return render_template('rice_ball.html', item=item, item_index=item_index,
                                rice_ingredients=get_menu_options('rice_ingredient'),
-                               rice_sauces=get_menu_options('rice_sauce'))
+                               rice_sauces=get_menu_options('rice_sauce'),
+                               base_price=get_item_price('Bola de Arroz'),
+                               ostion_price=get_item_price('Ostión'))
     elif item['type'] == 'Sushi':
         return render_template('sushi.html', item=item, item_index=item_index,
-                               sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices())
+                               sushi_ingredients=get_menu_options('sushi_ingredient'), sushi_sauces=get_menu_options('sushi_sauce'), sushi_prep_prices=get_sushi_prep_prices(), ostion_price=get_item_price('Ostión'))
 
 # Remove Item
 @app.route('/remove_item/<int:item_index>', methods=['POST'])
@@ -1388,40 +1224,6 @@ def apply_coupon():
     session.modified = True
     flash(f'Promoción "{promo["description"] or promo["name"]}" aplicada con éxito', 'success')
     return redirect(url_for('view_cart'))
-
-def apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free):
-    """Generic NxM promotion: buy buy_qty, get get_free free (cheapest units discounted)."""
-    # Count total matching units
-    total_quantity = 0
-    for item in cart:
-        if not applicable_items or item['type'] in applicable_items:
-            total_quantity += item.get('quantity', 1)
-
-    required = buy_qty + get_free
-    if total_quantity < required:
-        return False
-
-    # How many free units are earned across the full cart
-    free_units = (total_quantity // required) * get_free
-
-    # Sort matching cart entries by unit price ascending so cheapest are made free first
-    matching = [i for i in cart if not applicable_items or i['type'] in applicable_items]
-    matching.sort(key=lambda i: i.get('unit_price', i['price'] / max(i.get('quantity', 1), 1)))
-
-    units_remaining = free_units
-    for item in matching:
-        if units_remaining <= 0:
-            break
-        unit_price = item.get('unit_price', item['price'] / max(item.get('quantity', 1), 1))
-        qty = item.get('quantity', 1)
-        units_to_free = min(units_remaining, qty)
-        if 'original_price' not in item:
-            item['original_price'] = item['price']
-        item['price'] = max(0, item['original_price'] - unit_price * units_to_free)
-        item['discount'] = f"{buy_qty + get_free}x{buy_qty} - ¡{units_to_free} GRATIS!"
-        units_remaining -= units_to_free
-
-    return True
 
 # Payment selection page
 @app.route('/payment')
