@@ -143,9 +143,6 @@ function mostrarErrorEnSeccion(selector, mensaje) {
 // ── Inicialización ────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", function () {
-  updateIngredientCounter();
-  setupIngredientLimit();
-  setupOptionCardSelection();
   setupCancelButton();
   setupFormValidation();
   setupButtonFeedback();
@@ -213,121 +210,6 @@ function ensureTextSelection() {
     "* { user-select: auto !important; -webkit-user-select: auto !important; }" +
     "input, label, button { pointer-events: auto !important; }";
   document.head.appendChild(style);
-}
-
-// ── Contador de ingredientes ──────────────────────────────────────────────────
-
-function updateIngredientCounter() {
-  var checkboxes = document.querySelectorAll(".ingredient-checkbox");
-  var counter = document.getElementById("selected-count");
-  if (!counter || checkboxes.length === 0) return;
-
-  var MAX = document.querySelector(".preparation-options") ? 3 : 6;
-  var n = document.querySelectorAll(".ingredient-checkbox:checked").length;
-
-  counter.textContent = n;
-  counter.style.color = n > MAX ? "#e74c3c" : n === MAX ? "#f39c12" : "#2ecc71";
-}
-
-// ── Límite de ingredientes ────────────────────────────────────────────────────
-
-function setupIngredientLimit() {
-  var checkboxes = document.querySelectorAll(".ingredient-checkbox");
-  if (checkboxes.length === 0) return;
-
-  var esSushi = !!document.querySelector(".preparation-options");
-  var MAX = esSushi ? 3 : 6;
-  var msg = esSushi
-    ? "Solo puedes seleccionar hasta 3 ingredientes para el sushi."
-    : "Solo puedes seleccionar hasta 6 ingredientes.";
-
-  checkboxes.forEach(function (cb) {
-    cb.addEventListener("change", function () {
-      var n = document.querySelectorAll(".ingredient-checkbox:checked").length;
-      if (n > MAX && this.checked) {
-        mostrarErrorEnSeccion(".ingredient-checkbox", msg);
-        this.checked = false;
-        var card = this.closest(".option-card");
-        if (card) card.classList.remove("selected");
-      }
-      updateIngredientCounter();
-    });
-  });
-}
-
-// ── Selección visual de tarjetas ──────────────────────────────────────────────
-
-function setupOptionCardSelection() {
-  var esSushi = !!document.querySelector(".preparation-options");
-  var MAX = esSushi ? 3 : 6;
-  var msg = esSushi
-    ? "Solo puedes seleccionar hasta 3 ingredientes para el sushi."
-    : "Solo puedes seleccionar hasta 6 ingredientes.";
-
-  document.querySelectorAll(".option-card").forEach(function (card) {
-    var cb = card.querySelector('input[type="checkbox"]');
-    if (cb) {
-      if (cb.checked) card.classList.add("selected");
-
-      card.addEventListener("click", function (e) {
-        if (
-          e.target === cb ||
-          e.target.tagName === "LABEL" ||
-          e.target.closest("label")
-        )
-          return;
-
-        cb.checked = !cb.checked;
-        card.classList.toggle("selected", cb.checked);
-
-        if (cb.classList.contains("ingredient-checkbox")) {
-          var n = document.querySelectorAll(
-            ".ingredient-checkbox:checked",
-          ).length;
-          if (n > MAX && cb.checked) {
-            mostrarErrorEnSeccion(".ingredient-checkbox", msg);
-            cb.checked = false;
-            card.classList.remove("selected");
-          }
-          updateIngredientCounter();
-        }
-
-        cb.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    }
-
-    var radio = card.querySelector('input[type="radio"]');
-    if (radio) {
-      if (radio.checked) card.classList.add("selected");
-
-      card.addEventListener("click", function (e) {
-        if (
-          e.target === radio ||
-          e.target.tagName === "LABEL" ||
-          e.target.closest("label")
-        )
-          return;
-
-        radio.checked = true;
-
-        var name = radio.getAttribute("name");
-        document
-          .querySelectorAll('input[name="' + name + '"]')
-          .forEach(function (r) {
-            var c = r.closest(".option-card");
-            if (c) c.classList.remove("selected");
-          });
-        card.classList.add("selected");
-
-        if (name === "prepared") {
-          var sauce = document.getElementById("sauce_field");
-          if (sauce) sauce.value = radio.value;
-        }
-
-        radio.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    }
-  });
 }
 
 // ── Botón cancelar ────────────────────────────────────────────────────────────

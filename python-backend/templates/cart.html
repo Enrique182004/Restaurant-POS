@@ -391,6 +391,50 @@ styles %}
   .promo-toggle-btn:hover {
     background: rgba(255, 152, 0, 0.08);
   }
+  .promo-applied-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    background: rgba(255, 152, 0, 0.08);
+    border: 2px solid #ff9800;
+    border-radius: 14px;
+    color: #ff9800;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .promo-applied-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .promo-applied-detail {
+    color: #f5f5f5;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+  .promo-remove-btn {
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 10px;
+    color: #aaa;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .promo-remove-btn:hover {
+    border-color: #e53935;
+    color: #e53935;
+  }
   .quantity-input {
     width: 50px;
     text-align: center;
@@ -714,10 +758,27 @@ styles %}
     </form>
   </div>
 
+  {% if applied_discount %}
+  <div class="promo-applied-bar">
+    <span class="promo-applied-text">
+      <span>🎯 Promoción aplicada</span>
+      <span class="promo-applied-detail">{{ applied_discount }}</span>
+    </span>
+    <form
+      method="POST"
+      action="{{ url_for('remove_coupon') }}"
+      style="margin: 0"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <button type="submit" class="promo-remove-btn">Quitar promoción</button>
+    </form>
+  </div>
+  {% else %}
   <button type="button" class="promo-toggle-btn" onclick="togglePromo()">
     <span>🎯 Agregar código promocional</span>
     <span id="promo-chevron">▼</span>
   </button>
+  {% endif %}
   <div class="promo-section" id="promo-section-body" style="display: none">
     <div class="promo-header">
       <h2 class="promo-title">🎯 Promociones Disponibles</h2>

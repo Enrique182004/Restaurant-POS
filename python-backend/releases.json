@@ -1,5 +1,24 @@
 [
   {
+    "version": "2.0.0",
+    "date": "2026-07-08",
+    "changes": [
+      "New: Respaldo page in the admin panel — export the full database to a file and import it on another computer (guided 3-step migration), with automatic safety backup before every import",
+      "New: applied promotions can now be removed from the cart with one tap — an orange 'Promoción aplicada' bar shows the active discount",
+      "Fixed: clicking the frame of an ingredient card no longer toggles it twice and silently reverts the selection",
+      "Fixed: Ostión is no longer wrongly counted against the regular ingredient limit on the sushi page",
+      "Fixed: duplicate order-ID collisions can no longer make a sale fail — the system retries with a fresh ID automatically",
+      "Fixed: exact split payments no longer rejected due to floating-point rounding",
+      "Fixed: applying a second promo code over an existing one is now blocked with a clear message",
+      "Fixed: discount labels show '10% off' instead of '10.0% off'",
+      "Fixed: inventory add-item errors now show the real reason instead of a generic message",
+      "Fixed: app startup no longer races the crash-recovery watchdog (duplicate load loops)",
+      "Redesign: login, payment and cash payment screens converted to the dark orange/black theme",
+      "Polish: visible keyboard-focus outline, selected-card glow, tabular numbers for prices",
+      "Internal: stale duplicate backend file removed, shared backup helper, 14 new automated tests (152 total)"
+    ]
+  },
+  {
     "version": "1.0.37",
     "date": "2026-07-05",
     "changes": [

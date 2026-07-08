@@ -782,7 +782,7 @@ styles %}
               cerrarModal();
               location.reload();
             } else {
-              mostrarToast("Error al agregar item.", "error");
+              mostrarToast(data.error || "Error al agregar item.", "error");
               btn.disabled = false;
               btn.textContent = "Agregar";
             }

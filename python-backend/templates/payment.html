@@ -6,13 +6,14 @@ styles %}
     margin: 0 auto;
   }
   .payment-summary {
-    background-color: white;
+    background-color: #1e1e1e;
+    border: 1px solid #2b2b2b;
     border-radius: 16px;
     padding: 25px;
     margin: 30px 0;
     display: flex;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
   .summary-icon {
     font-size: 3rem;
@@ -24,18 +25,18 @@ styles %}
   }
   .summary-label {
     font-size: 1.1rem;
-    color: #666;
+    color: #999;
     margin-bottom: 5px;
   }
   .summary-total {
     font-size: 2.2rem;
     font-weight: 800;
-    color: #2c3e50;
+    color: #ff9800;
   }
   .section-title {
     font-size: 1.5rem;
     margin: 30px 0 20px;
-    color: #333;
+    color: #f5f5f5;
     font-weight: 700;
   }
   .payment-methods {
@@ -45,20 +46,22 @@ styles %}
     margin-bottom: 40px;
   }
   .payment-method-card {
-    background-color: white;
+    background-color: #1e1e1e;
     border-radius: 16px;
     padding: 25px;
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: transform 0.2s ease;
-    border: 2px solid transparent;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease;
+    border: 2px solid #2b2b2b;
   }
   .payment-method-card:hover {
-    border-color: #3498db;
+    border-color: #ff9800;
   }
   .payment-method-card:active {
     transform: scale(0.98);
@@ -71,10 +74,10 @@ styles %}
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 10px;
-    color: #2c3e50;
+    color: #f5f5f5;
   }
   .method-description {
-    color: #666;
+    color: #999;
     text-align: center;
   }
   .payment-method-card:nth-child(1) .method-icon {
@@ -127,7 +130,7 @@ styles %}
       </a>
 
       <a href="{{ url_for('split_payment') }}" class="payment-method-card">
-        <div class="method-icon" style="color: #9b59b6">💵💳</div>
+        <div class="method-icon">💵💳</div>
         <div class="method-name">Mixto</div>
         <div class="method-description">
           Parte en efectivo, parte con tarjeta

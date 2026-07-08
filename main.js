@@ -660,39 +660,55 @@ function iniciarInventoryService(dbPath) {
 }
 
 // ── Cargar la app Flask con reintentos ────────────────────────────────────────
+// Evita que el flujo de arranque y el watchdog de Flask lancen dos bucles
+// de reintentos en paralelo.
+let cargaEnProgreso = false;
+
 function cargarAppConReintentos() {
+  if (cargaEnProgreso) return;
   if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  cargaEnProgreso = true;
 
   let intentos = 0;
   const MAX_INTENTOS = 20;
 
   function intentar() {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      cargaEnProgreso = false;
+      return;
+    }
 
-    mainWindow.loadURL(FLASK_URL).catch(() => {
-      if (intentos < MAX_INTENTOS) {
-        intentos++;
-        setTimeout(intentar, 1000);
-      } else {
-        // La app sigue sin responder después de 20 segundos — mostrar error
-        mainWindow.loadURL(
-          "data:text/html," +
-            encodeURIComponent(
-              '<!doctype html><html lang="es"><head><meta charset="UTF-8">' +
-                "<style>body{background:#121212;color:#f5f5f5;font-family:sans-serif;" +
-                "display:flex;flex-direction:column;align-items:center;justify-content:center;" +
-                "height:100vh;margin:0;text-align:center;gap:16px;}" +
-                "h2{color:#ff9800;}p{color:#888;max-width:400px;}" +
-                "button{background:#ff9800;color:#121212;border:none;padding:12px 28px;" +
-                "border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}</style></head>" +
-                "<body><h2>⚠️ Error al iniciar</h2>" +
-                "<p>El servidor tardó demasiado en responder. Cierra y vuelve a abrir la aplicación.</p>" +
-                '<button onclick="location.reload()">Reintentar</button>' +
-                "</body></html>",
-            ),
-        );
-      }
-    });
+    mainWindow
+      .loadURL(FLASK_URL)
+      .then(() => {
+        cargaEnProgreso = false;
+      })
+      .catch(() => {
+        if (intentos < MAX_INTENTOS) {
+          intentos++;
+          setTimeout(intentar, 1000);
+        } else {
+          // La app sigue sin responder después de 20 segundos — mostrar error
+          cargaEnProgreso = false;
+          mainWindow.loadURL(
+            "data:text/html," +
+              encodeURIComponent(
+                '<!doctype html><html lang="es"><head><meta charset="UTF-8">' +
+                  "<style>body{background:#121212;color:#f5f5f5;font-family:sans-serif;" +
+                  "display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+                  "height:100vh;margin:0;text-align:center;gap:16px;}" +
+                  "h2{color:#ff9800;}p{color:#888;max-width:400px;}" +
+                  "button{background:#ff9800;color:#121212;border:none;padding:12px 28px;" +
+                  "border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}</style></head>" +
+                  "<body><h2>⚠️ Error al iniciar</h2>" +
+                  "<p>El servidor tardó demasiado en responder. Cierra y vuelve a abrir la aplicación.</p>" +
+                  '<button onclick="location.reload()">Reintentar</button>' +
+                  "</body></html>",
+              ),
+          );
+        }
+      });
   }
 
   intentar();

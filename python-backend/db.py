@@ -55,6 +55,20 @@ def _cerrar_db(error):
             pass
 
 
+def backup_db_to_file(src_path, dst_path):
+    """Snapshot consistente src → dst vía la API de backup de SQLite (no una
+    copia de archivo plana, que podría capturar una escritura a medias)."""
+    src = sqlite3.connect(src_path)
+    try:
+        dst = sqlite3.connect(dst_path)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
+    finally:
+        src.close()
+
+
 def get_item_price(item_type, style=None):
     """Get item price from the database (editable by admin)."""
     if item_type == 'Sushi' and style:

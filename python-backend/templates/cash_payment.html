@@ -8,28 +8,33 @@ block styles %}
   }
 
   .cash-input-section {
-    background-color: white;
+    background-color: #1e1e1e;
     border-radius: 16px;
     padding: 25px;
     margin: 30px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   .cash-input-container {
     display: flex;
     align-items: center;
     margin: 20px 0;
-    background-color: #f8f9fa;
+    background-color: #2d2d2d;
+    border: 2px solid #3d3d3d;
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s;
+  }
+
+  .cash-input-container:focus-within {
+    border-color: #ff9800;
   }
 
   .input-prefix {
     font-size: 2rem;
     font-weight: 700;
     padding: 0 20px;
-    color: #666;
+    color: #999;
   }
 
   .cash-input {
@@ -39,8 +44,12 @@ block styles %}
     padding: 20px 0;
     font-size: 2rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: #f5f5f5;
     text-align: left;
+  }
+
+  .cash-input::placeholder {
+    color: #777;
   }
 
   .cash-input:focus {
@@ -56,59 +65,59 @@ block styles %}
   }
 
   .quick-amount-btn {
-    background-color: #e9ecef;
-    border: 2px solid #dee2e6;
+    background-color: #2d2d2d;
+    border: 2px solid #3d3d3d;
     padding: 15px 25px;
     border-radius: 12px;
     font-size: 1.3rem;
     font-weight: 600;
-    color: #495057;
+    color: #f5f5f5;
     cursor: pointer;
     transition: all 0.2s;
     min-width: 120px;
   }
 
   .quick-amount-btn:hover {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
+    background-color: #ff9800;
+    color: #121212;
+    border-color: #ff9800;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
   }
 
   .quick-amount-btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
   }
 
   .change-display {
-    background-color: #ebfbee;
+    background-color: rgba(46, 204, 113, 0.08);
     border-radius: 16px;
     padding: 25px;
     margin: 30px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 2px dashed #40c057;
+    border: 2px dashed #2b8a3e;
   }
 
   .change-label {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #2b8a3e;
+    color: #69db7c;
     margin-bottom: 10px;
   }
 
   .change-amount {
     font-size: 2.8rem;
     font-weight: 800;
-    color: #2b8a3e;
+    color: #69db7c;
   }
 
   .print-button {
     display: none;
-    background-color: #9775fa;
-    color: white;
+    background-color: #ff9800;
+    color: #121212;
     padding: 20px 0;
     border-radius: 12px;
     font-weight: 700;
@@ -116,13 +125,17 @@ block styles %}
     text-align: center;
     margin: 30px 0;
     text-decoration: none;
-    box-shadow: 0 4px 12px rgba(151, 117, 250, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
     transition: all 0.2s ease;
+  }
+
+  .print-button:hover {
+    background-color: #f57c00;
   }
 
   .print-button:active {
     transform: translateY(2px);
-    box-shadow: 0 2px 6px rgba(151, 117, 250, 0.3);
+    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
   }
 
   .print-icon {
