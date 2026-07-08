@@ -758,14 +758,11 @@ styles %}
     </form>
   </div>
 
-  {% set promo = namespace(active=false, text='') %} {% for item in cart or []
-  %} {% if item.get('discount') and not promo.active %} {% set promo.active =
-  true %} {% set promo.text = item.discount %} {% endif %} {% endfor %} {% if
-  promo.active %}
+  {% if applied_discount %}
   <div class="promo-applied-bar">
     <span class="promo-applied-text">
       <span>🎯 Promoción aplicada</span>
-      <span class="promo-applied-detail">{{ promo.text }}</span>
+      <span class="promo-applied-detail">{{ applied_discount }}</span>
     </span>
     <form
       method="POST"

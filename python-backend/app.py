@@ -13,7 +13,7 @@ import tempfile
 from functools import wraps
 from db import (get_db_connection, _cerrar_db, get_item_price,
                 get_sushi_prep_prices, get_menu_options, log_activity,
-                _get_db_path)
+                _get_db_path, backup_db_to_file)
 from business import (format_num, get_week_bounds, resolve_employee_schedule,
                       compute_employee_pay, parse_scheduled_days, apply_bxgy_promotion)
 
@@ -959,8 +959,10 @@ def view_cart():
         if 'unit_price' not in item:
             item['unit_price'] = item['price'] / quantity
         total_price += item['price']
+    applied_discount = next((item['discount'] for item in cart if item.get('discount')), '')
     return render_template('cart.html', cart=cart, total_price=total_price, promotions=promotions,
-                           order_id=session.get('order_id', ''))
+                           order_id=session.get('order_id', ''),
+                           applied_discount=applied_discount)
 
 # Update Item Quantity
 @app.route('/update_quantity/<int:item_index>/<int:quantity>', methods=['POST'])
@@ -1185,20 +1187,17 @@ def apply_coupon():
     if not coupon_code:
         flash('Por favor ingresa un código de promoción', 'error')
         return redirect(url_for('view_cart'))
-    
-    # Connect to database
-    conn = get_db_connection()
-    promo = conn.execute('SELECT * FROM promotions WHERE name = ? AND active = 1', (coupon_code,)).fetchone()
-    
-    if not promo:
-        flash('Código de promoción inválido o expirado', 'error')
-        return redirect(url_for('view_cart'))
-    
-    # Apply promotion
-    cart = session.get('cart', [])
 
+    cart = session.get('cart', [])
     if any('discount' in item for item in cart):
         flash('Ya hay una promoción aplicada a esta orden. Para usar otro código, elimina los artículos y agrégalos de nuevo.', 'error')
+        return redirect(url_for('view_cart'))
+
+    conn = get_db_connection()
+    promo = conn.execute('SELECT * FROM promotions WHERE name = ? AND active = 1', (coupon_code,)).fetchone()
+
+    if not promo:
+        flash('Código de promoción inválido o expirado', 'error')
         return redirect(url_for('view_cart'))
 
     total_price = 0
@@ -1244,10 +1243,10 @@ def apply_coupon():
                 # Apply discount
                 if promo['type'] == 'percentage':
                     item['price'] = item['original_price'] * (1 - promo['value'] / 100)
-                    item['discount'] = f"{promo['value']:g}% off"
+                    item['discount'] = f"{format_num(promo['value'])}% off"
                 else:  # fixed amount
                     item['price'] = max(0, item['original_price'] - promo['value'])
-                    item['discount'] = f"${promo['value']:g} off"
+                    item['discount'] = f"${format_num(promo['value'])} off"
     
     session['cart'] = cart
     session.modified = True
@@ -1262,10 +1261,8 @@ def remove_coupon():
 
     for item in cart:
         if 'original_price' in item:
-            item['price'] = item['original_price']
-            del item['original_price']
-        if 'discount' in item:
-            del item['discount']
+            item['price'] = item.pop('original_price')
+        item.pop('discount', None)
 
     session['cart'] = cart
     session.modified = True
@@ -2770,19 +2767,21 @@ def respaldo():
 @login_required
 @admin_required
 def respaldo_exportar():
-    # Snapshot consistente vía la API de backup de SQLite (no una copia de
-    # archivo plana, que podría capturar una escritura a medias).
+    # Snapshot a un tempfile que se borra de inmediato: el contenido viaja en
+    # memoria para no acumular archivos huérfanos en el directorio temporal.
     fd, tmp_path = tempfile.mkstemp(suffix='.db')
     os.close(fd)
-    src = sqlite3.connect(_get_db_path())
-    dst = sqlite3.connect(tmp_path)
     try:
-        src.backup(dst)
+        backup_db_to_file(_get_db_path(), tmp_path)
+        with open(tmp_path, 'rb') as f:
+            data = f.read()
     finally:
-        dst.close()
-        src.close()
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
     log_activity('respaldo_exportado', 'Respaldo de la base de datos exportado')
-    return send_file(tmp_path, as_attachment=True,
+    return send_file(io.BytesIO(data), as_attachment=True,
                      download_name=f'ebiball_respaldo_{datetime.now().strftime("%Y-%m-%d")}.db')
 
 
@@ -2823,23 +2822,11 @@ def respaldo_importar():
         os.makedirs(backups_dir, exist_ok=True)
         pre_import_path = os.path.join(
             backups_dir, f'pre_import_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db')
-        actual = sqlite3.connect(db_path)
-        pre = sqlite3.connect(pre_import_path)
-        try:
-            actual.backup(pre)
-        finally:
-            pre.close()
-            actual.close()
+        backup_db_to_file(db_path, pre_import_path)
 
         # Restaurar DENTRO del archivo existente (no reemplazar/mover el archivo:
         # el servicio Java de inventario mantiene handles abiertos; Windows los bloquea).
-        src = sqlite3.connect(tmp_path)
-        dst = sqlite3.connect(db_path)
-        try:
-            src.backup(dst)
-        finally:
-            dst.close()
-            src.close()
+        backup_db_to_file(tmp_path, db_path)
 
         # log_activity antes de limpiar la sesión (lee el usuario de la sesión)
         log_activity('respaldo_importado', 'Base de datos restaurada desde un respaldo')
