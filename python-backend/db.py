@@ -59,11 +59,13 @@ def backup_db_to_file(src_path, dst_path):
     """Snapshot consistente src → dst vía la API de backup de SQLite (no una
     copia de archivo plana, que podría capturar una escritura a medias)."""
     src = sqlite3.connect(src_path)
-    dst = sqlite3.connect(dst_path)
     try:
-        src.backup(dst)
+        dst = sqlite3.connect(dst_path)
+        try:
+            src.backup(dst)
+        finally:
+            dst.close()
     finally:
-        dst.close()
         src.close()
 
 
