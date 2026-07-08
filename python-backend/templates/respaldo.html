@@ -1,0 +1,172 @@
+{% extends 'base.html' %} {% block title %}Respaldo{% endblock %} {% block
+styles %}
+<style>
+  .respaldo-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  .respaldo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .respaldo-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ff9800;
+    margin: 0;
+  }
+  .respaldo-card {
+    background: #1e1e1e;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .respaldo-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #f5f5f5;
+    margin: 0 0 14px;
+  }
+  .respaldo-meta {
+    color: #888;
+    font-size: 0.88rem;
+    margin-top: 12px;
+  }
+  .respaldo-export-btn {
+    display: inline-block;
+    background: #ff9800;
+    color: #121212;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 13px 24px;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .respaldo-export-btn:hover {
+    background: #f57c00;
+  }
+  .respaldo-import-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .respaldo-file-input {
+    flex: 1;
+    min-width: 220px;
+    background: #2d2d2d;
+    border: 2px solid #3d3d3d;
+    border-radius: 12px;
+    color: #f5f5f5;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  .respaldo-import-btn {
+    background: #333;
+    color: #f5f5f5;
+    border: 1px solid #444;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 12px 22px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .respaldo-import-btn:hover {
+    border-color: #ff9800;
+    color: #ff9800;
+  }
+  .respaldo-warning {
+    color: #f87171;
+    font-size: 0.85rem;
+    margin-top: 14px;
+  }
+  .respaldo-steps {
+    margin: 0;
+    padding-left: 22px;
+    color: #ccc;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  .respaldo-steps li {
+    margin-bottom: 8px;
+  }
+  .respaldo-steps li::marker {
+    color: #ff9800;
+    font-weight: 700;
+  }
+</style>
+{% endblock %} {% block body %}
+<div class="respaldo-wrap">
+  <div class="respaldo-header">
+    <h1 class="respaldo-title">💾 Respaldo</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Panel</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}{% for cat, msg in messages %}
+  <div class="alert alert-{{ cat }}">
+    <div class="alert-content">{{ msg }}</div>
+  </div>
+  {% endfor %}{% endif %}{% endwith %}
+
+  <div class="respaldo-card">
+    <h2 class="respaldo-card-title">Exportar</h2>
+    <a href="{{ url_for('respaldo_exportar') }}" class="respaldo-export-btn">
+      ⬇️ Descargar respaldo
+    </a>
+    <div class="respaldo-meta">
+      {{ total_ordenes }} órdenes registradas · {{ db_size_kb }} KB
+    </div>
+  </div>
+
+  <div class="respaldo-card">
+    <h2 class="respaldo-card-title">Importar</h2>
+    <form
+      method="POST"
+      action="{{ url_for('respaldo_importar') }}"
+      enctype="multipart/form-data"
+      class="respaldo-import-form"
+      data-confirm="Esto reemplazará TODOS los datos actuales del sistema con los del respaldo. ¿Continuar?"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input
+        type="file"
+        name="respaldo"
+        accept=".db"
+        class="respaldo-file-input"
+        required
+      />
+      <button type="submit" class="respaldo-import-btn">
+        ⬆️ Importar respaldo
+      </button>
+    </form>
+    <div class="respaldo-warning">
+      ⚠️ Importar un respaldo reemplaza todos los datos actuales del sistema.
+      Esta acción no se puede deshacer.
+    </div>
+  </div>
+
+  <div class="respaldo-card">
+    <h2 class="respaldo-card-title">Cambiar de computadora</h2>
+    <ol class="respaldo-steps">
+      <li>Exporta el respaldo en esta computadora y guárdalo en una USB.</li>
+      <li>
+        Instala Ebi Ball POS en la computadora nueva e inicia sesión (admin /
+        admin123).
+      </li>
+      <li>Importa el respaldo desde la USB en esta página.</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}
