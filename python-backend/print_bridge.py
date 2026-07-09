@@ -18,6 +18,7 @@ PRINTER_NAME  = os.environ.get('POS_PRINTER_NAME', 'Printer_POS_80')
 POLL_INTERVAL = 2    # segundos entre revisiones de la cola
 MAX_WIDTH     = 42   # chars por línea para papel 80mm (deja margen derecho para evitar borrosidad)
 LEFT_MARGIN   = 6    # margen izquierdo (evita corte y zona gris del cabezal)
+FEED_LINES    = 4    # líneas en blanco al final del ticket (espacio para el corte manual)
 MAX_RETRIES   = 5    # abandonar job después de N fallos consecutivos
 FALLOS_ANTES_REDETECTAR = 3   # re-detectar impresora tras N fallos seguidos
 VERIFICAR_IMPRESORA_CADA = 30 # revisar estado de impresora cada N ciclos (60s)
@@ -224,10 +225,10 @@ class ThermalPrintBridge:
         cleaned = self.clean_text(receipt_content)
         result = bytearray(ESC_INIT)
 
-        # Margen amplio de papel en blanco al final: el corte es manual (sin
-        # cuchilla automática), así que hace falta suficiente espacio para
-        # que el corte no se lleve contenido del ticket.
-        for line in ('\n' + cleaned + '\n' * 8).split('\n'):
+        # Papel en blanco al final para el corte manual (sin cuchilla
+        # automática). FEED_LINES ajusta cuánto: suficiente para no llevarse
+        # contenido del ticket, sin desperdiciar papel.
+        for line in ('\n' + cleaned + '\n' * FEED_LINES).split('\n'):
             if line.startswith('\x02'):
                 # Línea de nombre de artículo — doble altura
                 contenido = line[1:]

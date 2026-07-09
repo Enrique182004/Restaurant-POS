@@ -608,6 +608,47 @@ def add_menu_option():
     flash(f'"{name}" agregado al menú', 'success')
     return redirect(url_for('manage_menu_options'))
 
+@app.route('/admin/menu-options/update/<int:option_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_menu_option(option_id):
+    conn = get_db_connection()
+    option = conn.execute('SELECT * FROM menu_options WHERE id=?', (option_id,)).fetchone()
+    if not option:
+        flash('Opción no encontrada', 'error')
+        return redirect(url_for('manage_menu_options'))
+
+    name = request.form.get('name', '').strip()
+    icon = request.form.get('icon', '').strip() or option['icon']
+    try:
+        price = float(request.form.get('price', option['price']) or 0)
+    except ValueError:
+        price = option['price']
+
+    if not name:
+        flash('El nombre no puede quedar vacío', 'error')
+        return redirect(url_for('manage_menu_options'))
+
+    duplicate = conn.execute(
+        'SELECT id FROM menu_options WHERE category=? AND name=? AND id!=?',
+        (option['category'], name, option_id)
+    ).fetchone()
+    if duplicate:
+        flash(f'Ya existe "{name}" en esta categoría', 'error')
+        return redirect(url_for('manage_menu_options'))
+
+    conn.execute('UPDATE menu_options SET name=?, icon=?, price=? WHERE id=?',
+                 (name, icon, price, option_id))
+    # Las bebidas cobran por nombre vía menu_prices: mantenerlo en sincronía
+    if option['category'] == 'beverage':
+        conn.execute('UPDATE menu_prices SET key=?, label=?, price=? WHERE key=?',
+                     (name, name, price, option['name']))
+    conn.commit()
+    log_activity('menu_opcion_editada',
+                 f'"{option["name"]}" → "{name}" (${price:g}) en {option["category"]}')
+    flash(f'"{name}" actualizado', 'success')
+    return redirect(url_for('manage_menu_options'))
+
 @app.route('/admin/menu-options/delete/<int:option_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -1415,8 +1456,12 @@ def ticket():
                 if _intento == 4:
                     raise
                 order_id = str(uuid.uuid4())[:8]
+        # La orden ya se cobró: si venía de la cola de pedidos, sácala de ahí.
+        held_id = session.pop('held_id', None)
+        if held_id:
+            conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
         conn.commit()
-        
+
         # Save receipt file and queue print job
         receipt_file_success = False
         try:
@@ -1683,6 +1728,9 @@ def manage_prices():
 def new_order():
     session.pop('cart', None)
     session.pop('customer_name', None)
+    # Si había una orden retenida cargada, se abandona la edición pero la
+    # orden se queda en la cola (no se borra: la cocina ya la tiene).
+    session.pop('held_id', None)
     session['order_id'] = str(uuid.uuid4())[:8]
     session['cart'] = []
     session.modified = True
@@ -1704,6 +1752,11 @@ def hold_order():
     created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     conn = get_db_connection()
+    # Si esta orden venía de la cola (resume), reemplaza la entrada anterior
+    # en vez de duplicarla.
+    prev_held = session.pop('held_id', None)
+    if prev_held:
+        conn.execute('DELETE FROM held_orders WHERE id = ?', (prev_held,))
     cursor = conn.execute(
         'INSERT INTO held_orders (order_ref, customer_name, cart_json, total, created_at) VALUES (?, ?, ?, ?, ?)',
         ('', customer_name, json.dumps(cart), total, created_at)
@@ -1761,12 +1814,14 @@ def resume_order(held_id):
     except (json.JSONDecodeError, TypeError):
         flash('La orden guardada está corrupta y no se puede cargar.', 'error')
         return redirect(url_for('home'))
-    conn.execute('DELETE FROM held_orders WHERE id = ?', (held_id,))
-    conn.commit()
 
+    # La orden retenida NO se borra aquí: si cierran sesión o se pierde la
+    # sesión antes de cobrar, debe seguir en la cola. Se borra al cobrar
+    # (/ticket) o al re-retenerla (hold_order).
     session['cart'] = cart
     session['customer_name'] = order['customer_name']
     session['order_id'] = str(uuid.uuid4())[:8]
+    session['held_id'] = held_id
     session.modified = True
 
     flash(f'Orden {order["order_ref"]} cargada. Modifica si es necesario y procede al pago.', 'success')

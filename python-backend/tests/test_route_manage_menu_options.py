@@ -52,3 +52,49 @@ def test_toggle_menu_option_redirects_to_manage_menu_options(admin_client, app_m
     resp = admin_client.post(f"/admin/menu-options/toggle/{option_id}")
     assert resp.status_code == 302
     assert resp.headers["Location"] == "/admin/menu-options"
+
+
+# ---------------------------------------------------------------------------
+# /admin/menu-options/update/<id> — editar nombre, icono y precio
+# ---------------------------------------------------------------------------
+
+def _add_and_get_id(admin_client, app_module, name, category='beverage', price='25'):
+    admin_client.post('/admin/menu-options/add',
+                      data={'category': category, 'name': name, 'icon': '🥤', 'price': price})
+    conn = app_module.get_db_connection()
+    row = conn.execute('SELECT id FROM menu_options WHERE name=?', (name,)).fetchone()
+    conn.close()
+    return row['id']
+
+
+def test_update_menu_option_renames_and_reprices(admin_client, app_module):
+    option_id = _add_and_get_id(admin_client, app_module, 'Limonada')
+    resp = admin_client.post(f'/admin/menu-options/update/{option_id}',
+                             data={'name': 'Limonada Grande', 'icon': '🍋', 'price': '30'})
+    assert resp.status_code == 302
+    conn = app_module.get_db_connection()
+    row = conn.execute('SELECT name, icon, price FROM menu_options WHERE id=?', (option_id,)).fetchone()
+    assert (row['name'], row['icon'], row['price']) == ('Limonada Grande', '🍋', 30.0)
+    # bebidas: menu_prices debe seguir el rename para que el cobro use el precio nuevo
+    price_row = conn.execute("SELECT price FROM menu_prices WHERE key='Limonada Grande'").fetchone()
+    conn.close()
+    assert price_row is not None and price_row['price'] == 30.0
+
+
+def test_update_menu_option_rejects_duplicate_name(admin_client, app_module):
+    _add_and_get_id(admin_client, app_module, 'Jamaica')
+    option_id = _add_and_get_id(admin_client, app_module, 'Horchata')
+    resp = admin_client.post(f'/admin/menu-options/update/{option_id}',
+                             data={'name': 'Jamaica', 'price': '25'}, follow_redirects=True)
+    assert 'Ya existe'.encode() in resp.data
+    conn = app_module.get_db_connection()
+    row = conn.execute('SELECT name FROM menu_options WHERE id=?', (option_id,)).fetchone()
+    conn.close()
+    assert row['name'] == 'Horchata'
+
+
+def test_update_menu_option_rejects_empty_name(admin_client, app_module):
+    option_id = _add_and_get_id(admin_client, app_module, 'Naranjada')
+    resp = admin_client.post(f'/admin/menu-options/update/{option_id}',
+                             data={'name': '  ', 'price': '25'}, follow_redirects=True)
+    assert 'no puede quedar'.encode() in resp.data
