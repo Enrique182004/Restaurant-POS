@@ -136,6 +136,72 @@ block styles %}
   .opt-item-inactive {
     opacity: 0.45;
   }
+  .opt-wrap {
+    display: inline-flex;
+    flex-direction: column;
+  }
+  .opt-wrap.editing {
+    flex-basis: 100%;
+  }
+  .opt-wrap.dragging {
+    opacity: 0.35;
+  }
+  .opt-item {
+    cursor: pointer;
+  }
+  .opt-drag-handle {
+    cursor: grab;
+    color: #555;
+    font-size: 0.85rem;
+    padding-right: 2px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .opt-drag-handle:hover {
+    color: #ff9800;
+  }
+  .opt-edit-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 4px 0 8px;
+  }
+  .opt-icon-input {
+    width: 54px;
+    text-align: center;
+  }
+  .opt-save-btn {
+    background: #ff9800;
+    color: #121212;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .opt-save-btn:hover {
+    background: #f57c00;
+  }
+  .opt-cancel-btn {
+    background: none;
+    color: #999;
+    border: 1px solid #444;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .opt-cancel-btn:hover {
+    color: #f5f5f5;
+    border-color: #666;
+  }
   .opt-sold-out {
     font-size: 0.68rem;
     font-weight: 700;
@@ -228,7 +294,7 @@ block styles %}
   '🥤', 'boneless_sauce': '🍗', 'extra_sauce': '🌶️', 'rice_ingredient': '🍙',
   'rice_sauce': '🔴', 'sushi_ingredient': '🍣', 'sushi_sauce': '🔴' } %} {% for
   cat, opts in menu_opts.items() %}
-  <details class="menu-section">
+  <details class="menu-section" data-cat="{{ cat }}">
     <summary class="menu-section-title">
       <span
         >{{ cat_icons[cat] }} &nbsp;{{ cat_labels[cat] }}
@@ -236,55 +302,117 @@ block styles %}
       >
     </summary>
     <div class="menu-section-body">
-      <div class="opt-list">
+      <div class="opt-list" data-cat="{{ cat }}">
         {% for opt in opts %}
-        <div
-          class="opt-item {% if not opt.active %}opt-item-inactive{% endif %}"
-        >
-          <span class="opt-icon">{{ opt.icon }}</span>
-          <span class="opt-name">{{ opt.name }}</span>
-          {% if cat == 'beverage' %}<span class="opt-price"
-            >${{ "%.0f"|format(opt.price) }}</span
-          >{% endif %} {% if not opt.active %}<span class="opt-sold-out"
-            >Agotado</span
-          >{% endif %}
+        <div class="opt-wrap" data-id="{{ opt.id }}">
+          <div
+            class="opt-item {% if not opt.active %}opt-item-inactive{% endif %}"
+            id="opt-row-{{ opt.id }}"
+            onclick="optItemTapped(event, {{ opt.id }})"
+            title="Toca para editar"
+          >
+            <span class="opt-drag-handle" title="Arrastra para reordenar"
+              >⠿</span
+            >
+            <span class="opt-icon">{{ opt.icon }}</span>
+            <span class="opt-name">{{ opt.name }}</span>
+            {% if cat == 'beverage' %}<span class="opt-price"
+              >${{ "%.0f"|format(opt.price) }}</span
+            >{% endif %} {% if not opt.active %}<span class="opt-sold-out"
+              >Agotado</span
+            >{% endif %}
+            <form
+              method="POST"
+              action="{{ url_for('toggle_menu_option', option_id=opt.id) }}"
+              style="display: inline; margin: 0"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button
+                type="submit"
+                class="opt-toggle-btn {% if opt.active %}opt-toggle-active{% else %}opt-toggle-inactive{% endif %}"
+                title="{{ 'Desactivar' if opt.active else 'Activar' }}"
+              >
+                {{ '●' if opt.active else '○' }}
+              </button>
+            </form>
+            {% if opt.active %}
+            <form
+              method="POST"
+              action="{{ url_for('delete_menu_option', option_id=opt.id) }}"
+              style="display: inline; margin: 0"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button
+                type="submit"
+                class="opt-del-btn"
+                title="Eliminar permanentemente"
+                data-name="{{ opt.name }}"
+                onclick="
+                  event.preventDefault();
+                  showConfirm('¿Eliminar ' + this.dataset.name + '?', () =>
+                    this.closest('form').submit(),
+                  );
+                "
+              >
+                ✕
+              </button>
+            </form>
+            {% endif %}
+          </div>
           <form
             method="POST"
-            action="{{ url_for('toggle_menu_option', option_id=opt.id) }}"
-            style="display: inline; margin: 0"
+            action="{{ url_for('update_menu_option', option_id=opt.id) }}"
+            class="opt-edit-form"
+            id="opt-edit-{{ opt.id }}"
+            style="display: none"
+            onsubmit="rememberSection('{{ cat }}')"
           >
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input
+              type="text"
+              name="icon"
+              value="{{ opt.icon }}"
+              class="opt-input opt-icon-input"
+              maxlength="4"
+              title="Icono"
+            />
+            <input
+              type="text"
+              name="name"
+              value="{{ opt.name }}"
+              class="opt-input"
+              required
+              maxlength="40"
+            />
+            {% if cat == 'beverage' %}
+            <input
+              type="number"
+              name="price"
+              value="{{ opt.price | num }}"
+              class="opt-input opt-price-input"
+              min="0"
+              step="0.5"
+            />
+            {% else %}
+            <input type="hidden" name="price" value="{{ opt.price }}" />
+            {% endif %}
+            <button type="submit" class="opt-save-btn">Guardar</button>
             <button
-              type="submit"
-              class="opt-toggle-btn {% if opt.active %}opt-toggle-active{% else %}opt-toggle-inactive{% endif %}"
-              title="{{ 'Desactivar' if opt.active else 'Activar' }}"
+              type="button"
+              class="opt-cancel-btn"
+              onclick="toggleOptEdit({{ opt.id }})"
             >
-              {{ '●' if opt.active else '○' }}
+              Cancelar
             </button>
           </form>
-          {% if opt.active %}
-          <form
-            method="POST"
-            action="{{ url_for('delete_menu_option', option_id=opt.id) }}"
-            style="display: inline; margin: 0"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <button
-              type="submit"
-              class="opt-del-btn"
-              title="Eliminar permanentemente"
-              data-name="{{ opt.name }}"
-              onclick="
-                event.preventDefault();
-                showConfirm('¿Eliminar ' + this.dataset.name + '?', () =>
-                  this.closest('form').submit(),
-                );
-              "
-            >
-              ✕
-            </button>
-          </form>
-          {% endif %}
         </div>
         {% endfor %} {% if not opts %}
         <span style="color: #555; font-size: 0.85rem; padding: 4px 0"
@@ -332,4 +460,121 @@ block styles %}
   </details>
   {% endfor %}
 </div>
+<script>
+  // ── Editar al tocar ─────────────────────────────────────────────────────
+  function toggleOptEdit(id) {
+    var form = document.getElementById("opt-edit-" + id);
+    var row = document.getElementById("opt-row-" + id);
+    var wrap = row.closest(".opt-wrap");
+    var open = form.style.display !== "none";
+    form.style.display = open ? "none" : "flex";
+    row.style.display = open ? "" : "none";
+    wrap.classList.toggle("editing", !open);
+    if (!open) form.querySelector('input[name="name"]').focus();
+  }
+
+  function optItemTapped(event, id) {
+    // Los botones internos (agotado ●, eliminar ✕) y el asa de arrastre
+    // tienen su propia acción — solo el resto del chip abre la edición.
+    if (event.target.closest("button, form, .opt-drag-handle")) return;
+    toggleOptEdit(id);
+  }
+
+  // ── Secciones que se quedan abiertas entre recargas ─────────────────────
+  var OPEN_KEY = "menuOptsOpen";
+  var SCROLL_KEY = "menuOptsScrollCat";
+
+  function savedOpen() {
+    try {
+      return JSON.parse(localStorage.getItem(OPEN_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function rememberSection(cat) {
+    localStorage.setItem(SCROLL_KEY, cat);
+  }
+
+  document.querySelectorAll("details.menu-section").forEach(function (d) {
+    var cat = d.dataset.cat;
+    if (savedOpen()[cat]) d.open = true;
+    d.addEventListener("toggle", function () {
+      var state = savedOpen();
+      state[cat] = d.open;
+      localStorage.setItem(OPEN_KEY, JSON.stringify(state));
+    });
+    // Guardar/agregar recarga la página: recuerda dónde estaba el usuario
+    d.querySelectorAll("form").forEach(function (f) {
+      f.addEventListener("submit", function () {
+        rememberSection(cat);
+      });
+    });
+  });
+
+  (function restoreScroll() {
+    var cat = localStorage.getItem(SCROLL_KEY);
+    if (!cat) return;
+    localStorage.removeItem(SCROLL_KEY);
+    var section = document.querySelector(
+      'details.menu-section[data-cat="' + cat + '"]',
+    );
+    if (section) {
+      section.open = true;
+      section.scrollIntoView({ block: "start" });
+    }
+  })();
+
+  // ── Drag & drop para reordenar dentro de la misma sección ───────────────
+  document.querySelectorAll(".opt-drag-handle").forEach(function (handle) {
+    handle.addEventListener("pointerdown", function (startEv) {
+      startEv.preventDefault();
+      var wrap = handle.closest(".opt-wrap");
+      var list = wrap.closest(".opt-list");
+      wrap.classList.add("dragging");
+
+      function onMove(ev) {
+        var target = document
+          .elementFromPoint(ev.clientX, ev.clientY)
+          ?.closest(".opt-wrap");
+        if (!target || target === wrap || target.parentElement !== list) return;
+        var box = target.getBoundingClientRect();
+        var before =
+          ev.clientY < box.top + box.height / 2 ||
+          (ev.clientY < box.bottom && ev.clientX < box.left + box.width / 2);
+        list.insertBefore(wrap, before ? target : target.nextSibling);
+      }
+
+      function onUp() {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.removeEventListener("pointercancel", onUp);
+        wrap.classList.remove("dragging");
+        var ids = Array.from(list.querySelectorAll(".opt-wrap")).map(
+          function (w) {
+            return parseInt(w.dataset.id, 10);
+          },
+        );
+        fetch("{{ url_for('reorder_menu_options') }}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token() }}",
+          },
+          body: JSON.stringify({ ids: ids }),
+        })
+          .then(function (r) {
+            if (!r.ok) throw new Error();
+          })
+          .catch(function () {
+            mostrarToast("No se pudo guardar el nuevo orden.", "error");
+          });
+      }
+
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      document.addEventListener("pointercancel", onUp);
+    });
+  });
+</script>
 {% endblock %}

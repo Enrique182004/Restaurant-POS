@@ -21,5 +21,8 @@ jobs:
       - name: Install dependencies
         run: pip install flask flask-wtf werkzeug pytest requests --quiet
 
+      - name: Check version sync
+        run: python scripts/check_version_sync.py
+
       - name: Run tests
         run: pytest python-backend/tests/ -v --tb=short
