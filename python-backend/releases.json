@@ -1,5 +1,20 @@
 [
   {
+    "version": "2.1.0",
+    "date": "2026-07-09",
+    "changes": [
+      "Pedidos retenidos ya no se pierden: al reanudar una orden se queda en la cola hasta cobrarla — cerrar sesión ya no la borra",
+      "Opciones del menú: toca cualquier ingrediente/salsa para editar su nombre y emoji; arrastra con el asa para reordenarlos (el orden se refleja en las pantallas de pedido)",
+      "Las secciones de opciones del menú se quedan abiertas al guardar cambios — ya no colapsan ni te mandan arriba",
+      "Tickets usan menos papel: espacio en blanco final reducido a la mitad",
+      "Cobros protegidos: crear una venta ahora requiere POST — un refresh o prefetch del navegador ya no puede duplicar órdenes",
+      "Redondeo de dinero exacto a centavos (Decimal) en cupones, cantidades y pagos divididos — pagos exactos ya no fallan por decimales flotantes",
+      "Un código promocional con compra mínima vacía ya no rompe el carrito",
+      "Historial y reportes más rápidos: índice en la fecha de órdenes",
+      "Interno: backend dividido en módulos por dominio (app.py 3070 → 1928 líneas), 19 pruebas nuevas (171 en total), verificación de versión en CI"
+    ]
+  },
+  {
     "version": "2.0.0",
     "date": "2026-07-08",
     "changes": [
@@ -146,7 +161,9 @@
   {
     "version": "1.0.25",
     "date": "2026-07-03",
-    "changes": ["Fixed held orders not printing the kitchen ticket"]
+    "changes": [
+      "Fixed held orders not printing the kitchen ticket"
+    ]
   },
   {
     "version": "1.0.24",
