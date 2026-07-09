@@ -1,4 +1,11 @@
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
+
+
+def money(value):
+    """Redondea un precio a centavos exactos vía Decimal. Evita que errores de
+    punto flotante (103.50000000000001) se guarden o rompan comparaciones."""
+    return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
 
 def format_num(value):
@@ -87,7 +94,7 @@ def apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free):
         units_to_free = min(units_remaining, qty)
         if 'original_price' not in item:
             item['original_price'] = item['price']
-        item['price'] = max(0, item['original_price'] - unit_price * units_to_free)
+        item['price'] = money(max(0, item['original_price'] - unit_price * units_to_free))
         item['discount'] = f"{buy_qty + get_free}x{buy_qty} - ¡{units_to_free} GRATIS!"
         units_remaining -= units_to_free
 

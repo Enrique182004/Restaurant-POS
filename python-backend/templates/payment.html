@@ -45,12 +45,19 @@ styles %}
     gap: 20px;
     margin-bottom: 40px;
   }
+  .payment-method-form {
+    display: contents;
+  }
   .payment-method-card {
     background-color: #1e1e1e;
     border-radius: 16px;
     padding: 25px;
     text-decoration: none;
     color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    width: 100%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
@@ -80,10 +87,10 @@ styles %}
     color: #999;
     text-align: center;
   }
-  .payment-method-card:nth-child(1) .method-icon {
+  .metodo-efectivo .method-icon {
     color: #27ae60;
   }
-  .payment-method-card:nth-child(2) .method-icon {
+  .metodo-tarjeta .method-icon {
     color: #3498db;
   }
   @media (max-width: 480px) {
@@ -114,20 +121,30 @@ styles %}
     <h2 class="section-title">Selecciona un método de pago</h2>
 
     <div class="payment-methods">
-      <a href="{{ url_for('cash_payment') }}" class="payment-method-card">
+      <a
+        href="{{ url_for('cash_payment') }}"
+        class="payment-method-card metodo-efectivo"
+      >
         <div class="method-icon">💵</div>
         <div class="method-name">Efectivo</div>
         <div class="method-description">Pago con dinero en efectivo</div>
       </a>
 
-      <a
-        href="{{ url_for('ticket', payment_method='card') }}"
-        class="payment-method-card"
+      <form
+        method="POST"
+        action="{{ url_for('ticket') }}"
+        class="payment-method-form"
       >
-        <div class="method-icon">💳</div>
-        <div class="method-name">Tarjeta</div>
-        <div class="method-description">Pago con tarjeta de débito/crédito</div>
-      </a>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="payment_method" value="card" />
+        <button type="submit" class="payment-method-card metodo-tarjeta">
+          <div class="method-icon">💳</div>
+          <div class="method-name">Tarjeta</div>
+          <div class="method-description">
+            Pago con tarjeta de débito/crédito
+          </div>
+        </button>
+      </form>
 
       <a href="{{ url_for('split_payment') }}" class="payment-method-card">
         <div class="method-icon">💵💳</div>

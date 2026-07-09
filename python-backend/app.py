@@ -15,7 +15,8 @@ from db import (get_db_connection, _cerrar_db, get_item_price,
                 get_sushi_prep_prices, get_menu_options, log_activity,
                 _get_db_path, backup_db_to_file)
 from business import (format_num, get_week_bounds, resolve_employee_schedule,
-                      compute_employee_pay, parse_scheduled_days, apply_bxgy_promotion)
+                      compute_employee_pay, parse_scheduled_days, apply_bxgy_promotion,
+                      money)
 
 # Soporte para modo PyInstaller (bundled) y desarrollo normal.
 # FLASK_APP_DIR indica dónde están templates/ y static/ en producción.
@@ -87,7 +88,10 @@ def init_db():
         customer_name TEXT
     )
     ''')
-    
+
+    # Historial y reportes filtran por rango de fecha en cada carga
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_orders_date ON orders(date)')
+
     # Create promotions table with new columns
     conn.execute('''
     CREATE TABLE IF NOT EXISTS promotions (
@@ -959,6 +963,7 @@ def view_cart():
         if 'unit_price' not in item:
             item['unit_price'] = item['price'] / quantity
         total_price += item['price']
+    total_price = money(total_price)
     applied_discount = next((item['discount'] for item in cart if item.get('discount')), '')
     return render_template('cart.html', cart=cart, total_price=total_price, promotions=promotions,
                            order_id=session.get('order_id', ''),
@@ -986,7 +991,7 @@ def update_quantity(item_index, quantity):
 
         unit_price = cart[item_index]['unit_price']
         cart[item_index]['quantity'] = quantity
-        cart[item_index]['price'] = unit_price * quantity
+        cart[item_index]['price'] = money(unit_price * quantity)
         cart[item_index].pop('original_price', None)
         cart[item_index].pop('discount', None)
 
@@ -1208,7 +1213,7 @@ def apply_coupon():
         total_price += item['price']
 
     # Check minimum purchase requirement
-    if promo['min_purchase'] > 0 and total_price < promo['min_purchase']:
+    if (promo['min_purchase'] or 0) > 0 and total_price < promo['min_purchase']:
         flash(f'Se requiere una compra mínima de ${promo["min_purchase"]} para aplicar esta promoción', 'error')
         return redirect(url_for('view_cart'))
     
@@ -1242,10 +1247,10 @@ def apply_coupon():
                 
                 # Apply discount
                 if promo['type'] == 'percentage':
-                    item['price'] = item['original_price'] * (1 - promo['value'] / 100)
+                    item['price'] = money(item['original_price'] * (1 - promo['value'] / 100))
                     item['discount'] = f"{format_num(promo['value'])}% off"
                 else:  # fixed amount
-                    item['price'] = max(0, item['original_price'] - promo['value'])
+                    item['price'] = money(max(0, item['original_price'] - promo['value']))
                     item['discount'] = f"${format_num(promo['value'])} off"
     
     session['cart'] = cart
@@ -1281,6 +1286,7 @@ def payment():
     total_price = 0
     for item in cart:
         total_price += item['price']
+    total_price = money(total_price)
 
     return render_template('payment.html', total_price=total_price)
 
@@ -1296,6 +1302,7 @@ def cash_payment():
     total_price = 0
     for item in cart:
         total_price += item['price']
+    total_price = money(total_price)
 
     return render_template('cash_payment.html', total_price=total_price)
 
@@ -1358,37 +1365,38 @@ def update_printer_api():
 
 
 # Replace your existing ticket route with this complete version
-@app.route('/ticket', methods=['GET', 'POST'])
+@app.route('/ticket', methods=['POST'])
 @login_required
 def ticket():
+    # POST-only: crear una orden muta estado — por GET un refresh, el botón
+    # atrás o un prefetch del navegador podían duplicar ventas (y sin CSRF).
     cart = session.get('cart', [])
-    
+
     # Calculate total price correctly
     total_price = 0
     for item in cart:
         total_price += item['price']
-    total_price = round(total_price, 2)
+    total_price = money(total_price)
 
-    # Get payment details from form or query parameters
-    payment_method = request.form.get('payment_method', request.args.get('payment_method', 'card'))
+    payment_method = request.form.get('payment_method', 'card')
     try:
-        amount_paid = float(request.form.get('amount_paid', request.args.get('amount_paid', total_price)))
+        amount_paid = money(float(request.form.get('amount_paid', total_price)))
     except (ValueError, TypeError):
         amount_paid = total_price
-    change = amount_paid - total_price if payment_method == 'cash' else 0
+    change = money(amount_paid - total_price) if payment_method == 'cash' else 0
     # Split payment: store cash_portion and card_portion in amount_paid as a JSON string
     if payment_method == 'split':
         try:
-            cash_portion = float(request.form.get('cash_portion', request.args.get('cash_portion', 0)))
-            card_portion = float(request.form.get('card_portion', request.args.get('card_portion', 0)))
+            cash_portion = float(request.form.get('cash_portion', 0))
+            card_portion = float(request.form.get('card_portion', 0))
         except (ValueError, TypeError):
             cash_portion = 0.0
             card_portion = 0.0
-        amount_paid = round(cash_portion + card_portion, 2)
+        amount_paid = money(cash_portion + card_portion)
         if amount_paid < total_price:
             flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
             return redirect(url_for('view_cart'))
-        change = max(0, amount_paid - total_price)
+        change = money(max(0, amount_paid - total_price))
     
     # Order ID for this transaction
     order_id = session.get('order_id')
@@ -2198,7 +2206,7 @@ def recent_customers():
 @login_required
 def split_payment():
     cart = session.get('cart', [])
-    total_price = sum(item['price'] for item in cart)
+    total_price = money(sum(item['price'] for item in cart))
     return render_template('split_payment.html', total_price=total_price)
 
 

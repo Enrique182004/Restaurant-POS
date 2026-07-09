@@ -114,16 +114,24 @@ block styles %}
     color: #69db7c;
   }
 
-  .print-button {
+  .print-form {
     display: none;
+    margin: 30px 0;
+  }
+
+  .print-button {
+    display: block;
+    width: 100%;
     background-color: #ff9800;
     color: #121212;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
     padding: 20px 0;
     border-radius: 12px;
     font-weight: 700;
     font-size: 1.2rem;
     text-align: center;
-    margin: 30px 0;
     text-decoration: none;
     box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
     transition: all 0.2s ease;
@@ -201,14 +209,19 @@ block styles %}
     <div class="change-amount" id="change-due">$0.00</div>
   </div>
 
-  <a
-    href="{{ url_for('ticket') }}"
-    class="print-button"
-    id="print-ticket"
-    style="display: none"
+  <form
+    method="POST"
+    action="{{ url_for('ticket') }}"
+    class="print-form"
+    id="print-form"
   >
-    <span class="print-icon">🖨️</span> Imprimir Ticket
-  </a>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <input type="hidden" name="payment_method" value="cash" />
+    <input type="hidden" name="amount_paid" id="amount-paid-hidden" value="" />
+    <button type="submit" class="print-button" id="print-ticket">
+      <span class="print-icon">🖨️</span> Imprimir Ticket
+    </button>
+  </form>
 
   <div class="action-buttons">
     <a href="{{ url_for('payment') }}" class="action-button cancel-button">
@@ -221,7 +234,14 @@ block styles %}
     var totalPrice = {{ total_price }};
     var amountInput = document.getElementById("amount-given");
     var changeDue = document.getElementById("change-due");
+    var printForm = document.getElementById("print-form");
     var printBtn = document.getElementById("print-ticket");
+    var amountHidden = document.getElementById("amount-paid-hidden");
+
+    printForm.addEventListener("submit", function () {
+      printBtn.disabled = true;
+      printBtn.textContent = "Procesando…";
+    });
 
     document.querySelectorAll(".quick-amount-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -236,7 +256,7 @@ block styles %}
       var paid = parseFloat(amountInput.value);
       if (isNaN(paid) || paid < totalPrice) {
         changeDue.textContent = "$0.00";
-        printBtn.style.display = "none";
+        printForm.style.display = "none";
         if (!isNaN(paid) && paid < totalPrice) {
           mostrarToast("El monto pagado es menor al total.", "error");
         }
@@ -244,9 +264,8 @@ block styles %}
       }
       var change = paid - totalPrice;
       changeDue.textContent = "$" + change.toFixed(2);
-      printBtn.style.display = "block";
-      printBtn.href =
-        "/ticket?payment_method=cash&amount_paid=" + paid.toFixed(2);
+      printForm.style.display = "block";
+      amountHidden.value = paid.toFixed(2);
     }
   })();
 </script>

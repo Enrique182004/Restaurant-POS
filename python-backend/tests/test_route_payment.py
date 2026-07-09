@@ -80,13 +80,22 @@ def test_apply_coupon_valid_code_redirects(admin_client, app_module):
 
 
 # ---------------------------------------------------------------------------
-# /ticket — GET and POST
+# /ticket — POST only (GET creaba órdenes: refresh/prefetch duplicaba ventas)
 # ---------------------------------------------------------------------------
 
-def test_ticket_get_no_cart_does_not_crash(admin_client):
-    _set_cart(admin_client, [])
+def test_ticket_get_is_rejected_and_creates_no_order(admin_client):
+    import os, sqlite3
+    _set_cart(admin_client, [BEBIDA_ITEM])
+    db = os.environ['RESTAURANT_DB_PATH']
+    c = sqlite3.connect(db)
+    before = c.execute('SELECT COUNT(*) FROM orders').fetchone()[0]
+    c.close()
     resp = admin_client.get('/ticket')
-    assert resp.status_code in (200, 302)
+    assert resp.status_code == 405
+    c = sqlite3.connect(db)
+    after = c.execute('SELECT COUNT(*) FROM orders').fetchone()[0]
+    c.close()
+    assert after == before
 
 
 def test_ticket_post_cash_with_valid_cart(admin_client):
