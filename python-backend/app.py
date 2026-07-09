@@ -649,6 +649,21 @@ def update_menu_option(option_id):
     flash(f'"{name}" actualizado', 'success')
     return redirect(url_for('manage_menu_options'))
 
+@app.route('/admin/menu-options/reorder', methods=['POST'])
+@login_required
+@admin_required
+def reorder_menu_options():
+    """Persiste el orden de las opciones tras un drag & drop en el admin."""
+    data = request.get_json(silent=True) or {}
+    ids = data.get('ids', [])
+    if not ids or not all(isinstance(i, int) for i in ids):
+        return jsonify({'ok': False, 'error': 'ids inválidos'}), 400
+    conn = get_db_connection()
+    for pos, option_id in enumerate(ids):
+        conn.execute('UPDATE menu_options SET sort_order=? WHERE id=?', (pos, option_id))
+    conn.commit()
+    return jsonify({'ok': True})
+
 @app.route('/admin/menu-options/delete/<int:option_id>', methods=['POST'])
 @login_required
 @admin_required

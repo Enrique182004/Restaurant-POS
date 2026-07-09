@@ -98,3 +98,37 @@ def test_update_menu_option_rejects_empty_name(admin_client, app_module):
     resp = admin_client.post(f'/admin/menu-options/update/{option_id}',
                              data={'name': '  ', 'price': '25'}, follow_redirects=True)
     assert 'no puede quedar'.encode() in resp.data
+
+
+# ---------------------------------------------------------------------------
+# /admin/menu-options/reorder — drag & drop persiste sort_order
+# ---------------------------------------------------------------------------
+
+def test_reorder_menu_options_persists_new_order(admin_client, app_module):
+    ids = [
+        _add_and_get_id(admin_client, app_module, 'Ordenada A'),
+        _add_and_get_id(admin_client, app_module, 'Ordenada B'),
+        _add_and_get_id(admin_client, app_module, 'Ordenada C'),
+    ]
+    reordered = [ids[2], ids[0], ids[1]]
+    resp = admin_client.post('/admin/menu-options/reorder', json={'ids': reordered})
+    assert resp.status_code == 200
+    assert resp.get_json()['ok'] is True
+    conn = app_module.get_db_connection()
+    rows = conn.execute(
+        'SELECT id FROM menu_options WHERE id IN (?, ?, ?) ORDER BY sort_order',
+        ids,
+    ).fetchall()
+    conn.close()
+    assert [r['id'] for r in rows] == reordered
+    # el orden nuevo llega al lado del cliente (get_menu_options usa sort_order)
+    names = [o['name'] for o in app_module.get_menu_options('beverage')
+             if o['name'].startswith('Ordenada')]
+    assert names == ['Ordenada C', 'Ordenada A', 'Ordenada B']
+
+
+def test_reorder_menu_options_rejects_bad_payload(admin_client):
+    resp = admin_client.post('/admin/menu-options/reorder', json={'ids': ['x', 'y']})
+    assert resp.status_code == 400
+    resp = admin_client.post('/admin/menu-options/reorder', json={})
+    assert resp.status_code == 400
