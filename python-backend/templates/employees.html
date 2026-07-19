@@ -209,7 +209,12 @@
   {% endif %} {% for row in rows %}
   <div class="emp-card">
     <div class="emp-card-header">
-      <div class="emp-name">{{ row.name }}</div>
+      <div class="emp-name">
+        {{ row.name }}
+        <span style="font-size: 0.75rem; color: #888; font-weight: 600"
+          >· {{ 'Gerente' if row.role == 'gerente' else 'Empleado' }}</span
+        >
+      </div>
       <div class="emp-total">
         ${{ "%.2f"|format(row.total_pay) }} · {{ row.days_worked }} día(s)
       </div>

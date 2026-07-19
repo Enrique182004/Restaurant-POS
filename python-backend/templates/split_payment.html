@@ -151,6 +151,60 @@ styles %}
     color: #121212;
     border-color: #ff9800;
   }
+  .cash-currency-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .mini-currency-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #3a3a3a;
+    background: #2a2a2a;
+    color: #ccc;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mini-currency-btn.active {
+    background: #ff9800;
+    border-color: #ff9800;
+    color: #121212;
+  }
+  .cash-mxn-eq {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4ecb71;
+    margin-top: 6px;
+  }
+  .split-rate-hint {
+    font-size: 0.8rem;
+    color: #777;
+    text-align: center;
+    margin: -12px 0 16px;
+  }
+  .split-change {
+    background: rgba(46, 204, 113, 0.08);
+    border: 2px dashed #2b8a3e;
+    border-radius: 16px;
+    padding: 14px 24px;
+    margin: 0 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .split-change-label {
+    font-size: 0.9rem;
+    color: #69db7c;
+    font-weight: 600;
+  }
+  .split-change-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #69db7c;
+  }
   @media (max-width: 480px) {
     .split-sections {
       grid-template-columns: 1fr;
@@ -174,8 +228,16 @@ styles %}
   <div class="split-sections">
     <div class="split-card">
       <div class="split-card-title">💵 Efectivo</div>
+      <div class="cash-currency-toggle">
+        <button type="button" class="mini-currency-btn active" id="cash-mxn">
+          MXN
+        </button>
+        <button type="button" class="mini-currency-btn" id="cash-usd">
+          USD
+        </button>
+      </div>
       <div class="split-input-wrap">
-        <div class="split-prefix">$</div>
+        <div class="split-prefix" id="cash-prefix">$</div>
         <input
           type="number"
           id="cash-input"
@@ -186,6 +248,7 @@ styles %}
           autofocus
         />
       </div>
+      <div class="cash-mxn-eq" id="cash-mxn-eq" style="display: none"></div>
       <div class="quick-row" id="cash-quick"></div>
     </div>
     <div class="split-card">
@@ -205,6 +268,10 @@ styles %}
     </div>
   </div>
 
+  <div class="split-rate-hint" id="split-rate-hint" style="display: none">
+    Tipo de cambio: 1 USD = ${{ "%.2f"|format(usd_rate) }} MXN
+  </div>
+
   <div class="split-remaining" id="remaining-box">
     <span class="split-remaining-label" id="remaining-label"
       >Falta por asignar</span
@@ -214,12 +281,23 @@ styles %}
     </span>
   </div>
 
+  <div class="split-change" id="change-box" style="display: none">
+    <span class="split-change-label">Cambio a entregar (MXN)</span>
+    <span class="split-change-value" id="change-value">$0.00</span>
+  </div>
+
   <form method="POST" action="{{ url_for('ticket') }}" id="split-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="payment_method" value="split" />
     <input type="hidden" name="ticket_token" value="{{ ticket_token }}" />
     <input type="hidden" name="cash_portion" id="cash-hidden" value="0" />
     <input type="hidden" name="card_portion" id="card-hidden" value="0" />
+    <input
+      type="hidden"
+      name="cash_currency"
+      id="cash-currency-hidden"
+      value="mxn"
+    />
     <button type="submit" class="split-confirm-btn" id="confirm-btn" disabled>
       ✓ Confirmar Pago Mixto
     </button>
@@ -234,6 +312,8 @@ styles %}
 <script>
   (function () {
     var total = {{ total_price }};
+    var usdRate = {{ usd_rate }};
+    var cashCurrency = 'mxn';
     var cashInput = document.getElementById('cash-input');
     var cardInput = document.getElementById('card-input');
     var remainBox = document.getElementById('remaining-box');
@@ -242,22 +322,57 @@ styles %}
     var confirmBtn = document.getElementById('confirm-btn');
     var cashHidden = document.getElementById('cash-hidden');
     var cardHidden = document.getElementById('card-hidden');
+    var cashCurrencyHidden = document.getElementById('cash-currency-hidden');
+    var cashMxnBtn = document.getElementById('cash-mxn');
+    var cashUsdBtn = document.getElementById('cash-usd');
+    var cashPrefix = document.getElementById('cash-prefix');
+    var cashMxnEq = document.getElementById('cash-mxn-eq');
+    var rateHint = document.getElementById('split-rate-hint');
+    var changeBox = document.getElementById('change-box');
+    var changeVal = document.getElementById('change-value');
 
-    // Quick-amount buttons for cash
+    function cashInMxn() {
+      var cash = parseFloat(cashInput.value) || 0;
+      return cashCurrency === 'usd' ? cash * usdRate : cash;
+    }
+
+    function setCashCurrency(cur) {
+      cashCurrency = cur;
+      cashCurrencyHidden.value = cur;
+      cashMxnBtn.classList.toggle('active', cur === 'mxn');
+      cashUsdBtn.classList.toggle('active', cur === 'usd');
+      cashPrefix.textContent = cur === 'usd' ? 'US$' : '$';
+      rateHint.style.display = cur === 'usd' ? 'block' : 'none';
+      cashInput.value = '';
+      buildCashQuick();
+      autofillCard();
+      recalc();
+    }
+    cashMxnBtn.addEventListener('click', function () { setCashCurrency('mxn'); });
+    cashUsdBtn.addEventListener('click', function () { setCashCurrency('usd'); });
+
+    // Quick-amount buttons for cash (denominaciones según la moneda)
     var quickRow = document.getElementById('cash-quick');
-    [50, 100, 200].forEach(function (v) {
-      if (v < total) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'quick-btn';
-        b.textContent = '$' + v;
-        b.addEventListener('click', function () {
-          cashInput.value = v;
-          recalc();
-        });
-        quickRow.appendChild(b);
-      }
-    });
+    function buildCashQuick() {
+      quickRow.innerHTML = '';
+      var denominations = cashCurrency === 'usd' ? [5, 10, 20] : [50, 100, 200];
+      var totalInCur = cashCurrency === 'usd' ? total / usdRate : total;
+      denominations.forEach(function (v) {
+        if (v < totalInCur) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'quick-btn';
+          b.textContent = (cashCurrency === 'usd' ? 'US$' : '$') + v;
+          b.addEventListener('click', function () {
+            cashInput.value = v;
+            autofillCard();
+            recalc();
+          });
+          quickRow.appendChild(b);
+        }
+      });
+    }
+    buildCashQuick();
 
     // Quick-amount buttons for card
     var cardQuickRow = document.getElementById('card-quick');
@@ -287,25 +402,49 @@ styles %}
 
     function recalc() {
       var cash = parseFloat(cashInput.value) || 0;
+      var cashMxn = cashInMxn();
       var card = parseFloat(cardInput.value) || 0;
-      var assigned = cash + card;
+      var assigned = cashMxn + card;
       var diff = total - assigned;
 
+      // El servidor recibe el efectivo en su moneda original y la convierte.
       cashHidden.value = cash.toFixed(2);
       cardHidden.value = card.toFixed(2);
 
+      if (cashCurrency === 'usd' && cash > 0) {
+        cashMxnEq.style.display = 'block';
+        cashMxnEq.textContent = '= $' + cashMxn.toFixed(2) + ' MXN';
+      } else {
+        cashMxnEq.style.display = 'none';
+      }
+
+      var change = assigned - total;
+      if (change > 0.005 && card <= total + 0.005) {
+        changeBox.style.display = 'flex';
+        changeVal.textContent = '$' + change.toFixed(2);
+      } else {
+        changeBox.style.display = 'none';
+      }
+
       remainVal.textContent = '$' + Math.abs(diff).toFixed(2);
 
-      if (Math.abs(diff) < 0.01) {
+      if (card > total + 0.005) {
+        // La tarjeta se cobra exacta: no puede pasarse del total.
+        remainLbl.textContent = 'Tarjeta excede el total';
+        remainVal.className = 'split-remaining-value over';
+        remainBox.className = 'split-remaining over';
+        confirmBtn.disabled = true;
+      } else if (Math.abs(diff) < 0.01) {
         remainLbl.textContent = 'Listo ✓';
         remainVal.className = 'split-remaining-value balanced';
         remainBox.className = 'split-remaining balanced';
         confirmBtn.disabled = false;
       } else if (assigned > total) {
-        remainLbl.textContent = 'Excede en';
-        remainVal.className = 'split-remaining-value over';
-        remainBox.className = 'split-remaining over';
-        confirmBtn.disabled = true;
+        // Sobra efectivo: se entrega como cambio en MXN.
+        remainLbl.textContent = 'Listo ✓ (con cambio)';
+        remainVal.className = 'split-remaining-value balanced';
+        remainBox.className = 'split-remaining balanced';
+        confirmBtn.disabled = false;
       } else {
         remainLbl.textContent = 'Falta por asignar';
         remainVal.className = 'split-remaining-value';
@@ -315,14 +454,12 @@ styles %}
     }
 
     // Auto-fill card with remainder when cash changes
+    function autofillCard() {
+      var remainder = total - cashInMxn();
+      cardInput.value = remainder >= 0 ? remainder.toFixed(2) : '0';
+    }
     cashInput.addEventListener('input', function () {
-      var cash = parseFloat(cashInput.value) || 0;
-      var remainder = total - cash;
-      if (remainder >= 0) {
-        cardInput.value = remainder.toFixed(2);
-      } else {
-        cardInput.value = '0';
-      }
+      autofillCard();
       recalc();
     });
     cardInput.addEventListener('input', recalc);

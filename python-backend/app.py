@@ -190,6 +190,10 @@ def init_db():
     conn.execute(
         "INSERT OR IGNORE INTO config (key, value) VALUES ('printer_name', 'Printer_POS_80')"
     )
+    # Tipo de cambio USD → MXN, editable por el admin en el panel.
+    conn.execute(
+        "INSERT OR IGNORE INTO config (key, value) VALUES ('usd_rate', '18.00')"
+    )
 
     # Menu options — admin-manageable lists per category
     conn.execute('''
@@ -286,11 +290,21 @@ def init_db():
                 (cat, name, icon, price, sort)
             )
 
-    # Add new columns if they don't exist        
+    # Add new columns if they don't exist
     try:
         conn.execute('ALTER TABLE orders ADD COLUMN customer_name TEXT')
     except sqlite3.OperationalError:
         pass  # Column already exists
+
+    # Pagos en dólares: moneda usada, monto original en USD y tipo de cambio
+    # aplicado (el total y el cambio siempre quedan en MXN).
+    for _col in ("paid_currency TEXT DEFAULT 'mxn'",
+                 'paid_amount_usd REAL DEFAULT 0',
+                 'usd_rate REAL DEFAULT 0'):
+        try:
+            conn.execute(f'ALTER TABLE orders ADD COLUMN {_col}')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
 
     try:
         conn.execute('ALTER TABLE users ADD COLUMN password_changed INTEGER DEFAULT 0')
@@ -357,9 +371,17 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         active INTEGER DEFAULT 1,
+        role TEXT DEFAULT 'empleado',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
     ''')
+
+    # Rol del empleado: 'gerente' (semanal fijo ÷ 6 días) o 'empleado'
+    # (tarifa por día: $200 lun–jue, $300 vie–dom).
+    try:
+        conn.execute("ALTER TABLE employees ADD COLUMN role TEXT DEFAULT 'empleado'")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     conn.execute('''
     CREATE TABLE IF NOT EXISTS employee_schedules (
@@ -536,6 +558,7 @@ def admin_dashboard():
                            low_stock_count=low_stock_count,
                            pending_prints=pending_prints,
                            printer_name=printer_name,
+                           usd_rate=_usd_rate(),
                            users_with_default=users_with_default,
                            app_version=app_version)
 
@@ -1445,6 +1468,7 @@ def cash_payment():
     total_price = money(total_price)
 
     return render_template('cash_payment.html', total_price=total_price,
+                           usd_rate=_usd_rate(),
                            ticket_token=_issue_ticket_token())
 
 def _api_autorizada():
@@ -1535,10 +1559,27 @@ def ticket():
     total_price = money(total_price)
 
     payment_method = request.form.get('payment_method', 'card')
+
+    # Moneda del efectivo recibido. El total, el cambio y lo guardado en la
+    # orden siempre quedan en MXN; si pagaron en USD se convierte con el tipo
+    # de cambio configurado y se conserva el monto original para el ticket.
+    paid_currency = request.form.get('currency', 'mxn').lower()
+    if paid_currency not in ('mxn', 'usd'):
+        paid_currency = 'mxn'
+    paid_amount_usd = 0.0
+    usd_rate_used = 0.0
+
     try:
         amount_paid = money(float(request.form.get('amount_paid', total_price)))
     except (ValueError, TypeError):
         amount_paid = total_price
+        paid_currency = 'mxn'
+
+    if payment_method == 'cash' and paid_currency == 'usd':
+        usd_rate_used = _usd_rate()
+        paid_amount_usd = amount_paid
+        amount_paid = money(paid_amount_usd * usd_rate_used)
+
     change = money(amount_paid - total_price) if payment_method == 'cash' else 0
     # Efectivo: no permitas registrar la venta con un pago menor al total.
     if payment_method == 'cash' and amount_paid < total_price:
@@ -1555,11 +1596,29 @@ def ticket():
         if cash_portion < 0 or card_portion < 0:
             flash('Los montos de pago no pueden ser negativos.', 'error')
             return redirect(url_for('view_cart'))
+        if money(card_portion) > total_price:
+            flash('El monto con tarjeta no puede exceder el total.', 'error')
+            return redirect(url_for('view_cart'))
+        # La porción en efectivo puede venir en USD; la tarjeta siempre es MXN.
+        cash_currency = request.form.get('cash_currency', 'mxn').lower()
+        if cash_currency == 'usd' and cash_portion > 0:
+            usd_rate_used = _usd_rate()
+            paid_amount_usd = money(cash_portion)
+            paid_currency = 'usd'
+            cash_portion = money(paid_amount_usd * usd_rate_used)
+        else:
+            paid_currency = 'mxn'
+            cash_portion = money(cash_portion)
         amount_paid = money(cash_portion + card_portion)
         if amount_paid < total_price:
             flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
             return redirect(url_for('view_cart'))
         change = money(max(0, amount_paid - total_price))
+        split_cash_mxn = cash_portion
+        split_card = money(card_portion)
+    else:
+        split_cash_mxn = None
+        split_card = None
 
     # Order ID for this transaction
     order_id = session.get('order_id')
@@ -1576,7 +1635,7 @@ def ticket():
         for _intento in range(5):
             try:
                 conn.execute(
-                    'INSERT INTO orders (id, items, total, payment_method, amount_paid, change_amount, date, status, customer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    'INSERT INTO orders (id, items, total, payment_method, amount_paid, change_amount, date, status, customer_name, paid_currency, paid_amount_usd, usd_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     (
                         order_id,
                         json.dumps(cart),
@@ -1586,7 +1645,10 @@ def ticket():
                         change,
                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                         'completed',
-                        customer_name
+                        customer_name,
+                        paid_currency,
+                        paid_amount_usd,
+                        usd_rate_used
                     )
                 )
                 break
@@ -1603,7 +1665,10 @@ def ticket():
         # Save receipt file and queue print job
         receipt_file_success = False
         try:
-            receipt_path, receipt_text = print_receipt_physical(cart, total_price, payment_method, amount_paid, change, order_id, customer_name)
+            receipt_path, receipt_text = print_receipt_physical(
+                cart, total_price, payment_method, amount_paid, change, order_id, customer_name,
+                paid_currency=paid_currency, paid_amount_usd=paid_amount_usd, usd_rate=usd_rate_used,
+                split_cash_mxn=split_cash_mxn, split_card=split_card)
             receipt_file_success = True
             # Store job in DB so the bridge can pick it up (survives restarts, works remotely)
             conn.execute(
@@ -1647,7 +1712,9 @@ def ticket():
             conn.rollback()
         return redirect(url_for('view_cart'))
 
-def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0, order_id=None, customer_name=None):
+def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0, order_id=None, customer_name=None,
+                           paid_currency='mxn', paid_amount_usd=0, usd_rate=0,
+                           split_cash_mxn=None, split_card=None):
     """Print receipt using physical printer connected to laptop - UPDATED WITH COMPLEMENTOS"""
     
     # Generate receipt content
@@ -1715,7 +1782,27 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
     
     # Total
     receipt_content.append(f"TOTAL: ${total:.2f}")
-    
+
+    # Pago y cambio (solo ventas en efectivo o mixtas; el cambio siempre en MXN)
+    if payment_method == 'split' and amount_paid:
+        if paid_currency == 'usd' and paid_amount_usd:
+            receipt_content.append(f"EFECTIVO: US${paid_amount_usd:.2f} (TC ${usd_rate:.2f})")
+            receipt_content.append(f"          = ${split_cash_mxn:.2f} MXN")
+        else:
+            receipt_content.append(f"EFECTIVO: ${split_cash_mxn:.2f}")
+        receipt_content.append(f"TARJETA:  ${split_card:.2f}")
+        if change:
+            receipt_content.append(f"CAMBIO (MXN): ${change:.2f}")
+    elif payment_method == 'cash' and amount_paid:
+        if paid_currency == 'usd' and paid_amount_usd:
+            receipt_content.append(f"PAGO: US${paid_amount_usd:.2f} (TC ${usd_rate:.2f})")
+            receipt_content.append(f"      = ${amount_paid:.2f} MXN")
+        else:
+            receipt_content.append(f"PAGO: ${amount_paid:.2f}")
+        if change:
+            receipt_content.append(f"CAMBIO (MXN): ${change:.2f}")
+
+
     # Save receipt to file
     receipt_id = order_id or session.get('order_id')
     receipts_dir = os.path.join(os.getcwd(), 'receipts')
@@ -2000,6 +2087,7 @@ def split_payment():
     cart = session.get('cart', [])
     total_price = money(sum(item['price'] for item in cart))
     return render_template('split_payment.html', total_price=total_price,
+                           usd_rate=_usd_rate(),
                            ticket_token=_issue_ticket_token())
 
 
@@ -2037,15 +2125,46 @@ def get_config(key, default=''):
     return row['value'] if row else default
 
 
+DEFAULT_USD_RATE = 18.0
+
+
+def _usd_rate():
+    """Tipo de cambio USD → MXN configurado; cae al default si está corrupto."""
+    try:
+        rate = float(get_config('usd_rate', str(DEFAULT_USD_RATE)))
+    except (ValueError, TypeError):
+        return DEFAULT_USD_RATE
+    return rate if rate > 0 else DEFAULT_USD_RATE
+
+
 @app.route('/admin/config/update', methods=['POST'])
 @login_required
 @admin_required
 def update_config():
+    conn = get_db_connection()
+
+    if 'usd_rate' in request.form:
+        raw = request.form.get('usd_rate', '').strip()
+        try:
+            rate = float(raw)
+        except ValueError:
+            rate = 0
+        if rate <= 0:
+            flash('El tipo de cambio debe ser un número mayor a 0.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        conn.execute(
+            "INSERT OR REPLACE INTO config (key, value) VALUES ('usd_rate', ?)",
+            (f'{rate:.2f}',)
+        )
+        conn.commit()
+        log_activity('config', f'Tipo de cambio USD actualizado a ${rate:.2f} MXN')
+        flash(f'Tipo de cambio guardado: 1 USD = ${rate:.2f} MXN.', 'success')
+        return redirect(url_for('admin_dashboard'))
+
     printer_name = request.form.get('printer_name', '').strip()
     if not printer_name:
         flash('El nombre de la impresora no puede estar vacío.', 'error')
         return redirect(url_for('admin_dashboard'))
-    conn = get_db_connection()
     conn.execute(
         "INSERT OR REPLACE INTO config (key, value) VALUES ('printer_name', ?)",
         (printer_name,)

@@ -150,6 +150,44 @@ block styles %}
     margin-right: 10px;
   }
 
+  .currency-toggle {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .currency-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #3d3d3d;
+    background: #2d2d2d;
+    color: #ccc;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .currency-btn.active {
+    background: #ff9800;
+    border-color: #ff9800;
+    color: #121212;
+  }
+
+  .rate-hint {
+    font-size: 0.85rem;
+    color: #888;
+    margin: 6px 2px 0;
+  }
+
+  .mxn-equivalent {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #69db7c;
+    margin: -8px 2px 8px;
+  }
+
   /* Hide browser number input controls */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
@@ -178,34 +216,37 @@ block styles %}
   <div class="cash-input-section">
     <h2 class="section-title">¿Cuánto pagó el cliente?</h2>
 
+    <div class="currency-toggle">
+      <button type="button" class="currency-btn active" id="currency-mxn">
+        🇲🇽 Pesos (MXN)
+      </button>
+      <button type="button" class="currency-btn" id="currency-usd">
+        🇺🇸 Dólares (USD)
+      </button>
+    </div>
+    <div class="rate-hint" id="rate-hint" style="display: none">
+      Tipo de cambio: 1 USD = ${{ "%.2f"|format(usd_rate) }} MXN
+    </div>
+
     <div class="cash-input-container">
-      <div class="input-prefix">$</div>
+      <div class="input-prefix" id="input-prefix">$</div>
       <input
         type="number"
         id="amount-given"
         class="cash-input"
-        min="{{ total_price }}"
+        min="0"
         step="1"
         placeholder="Ingresa el monto"
         autofocus
       />
     </div>
+    <div class="mxn-equivalent" id="mxn-equivalent" style="display: none"></div>
 
-    <div class="quick-amounts">
-      {% set quick_amounts = [ total_price|round|int, (total_price|round|int +
-      10 - total_price|round|int % 10), (total_price|round|int + 50 -
-      total_price|round|int % 50), (total_price|round|int + 100 -
-      total_price|round|int % 100) ] %} {% for amount in quick_amounts %} {% if
-      loop.index <= 4 and amount >= total_price %}
-      <button type="button" class="quick-amount-btn" data-amount="{{ amount }}">
-        ${{ amount }}
-      </button>
-      {% endif %} {% endfor %}
-    </div>
+    <div class="quick-amounts" id="quick-amounts"></div>
   </div>
 
   <div class="change-display">
-    <div class="change-label">Cambio a entregar:</div>
+    <div class="change-label">Cambio a entregar (siempre en MXN):</div>
     <div class="change-amount" id="change-due">$0.00</div>
   </div>
 
@@ -219,6 +260,7 @@ block styles %}
     <input type="hidden" name="payment_method" value="cash" />
     <input type="hidden" name="ticket_token" value="{{ ticket_token }}" />
     <input type="hidden" name="amount_paid" id="amount-paid-hidden" value="" />
+    <input type="hidden" name="currency" id="currency-hidden" value="mxn" />
     <button type="submit" class="print-button" id="print-ticket">
       <span class="print-icon">🖨️</span> Imprimir Ticket
     </button>
@@ -233,41 +275,89 @@ block styles %}
 <script>
   (function () {
     var totalPrice = {{ total_price }};
+    var usdRate = {{ usd_rate }};
+    var currency = "mxn";
     var amountInput = document.getElementById("amount-given");
     var changeDue = document.getElementById("change-due");
     var printForm = document.getElementById("print-form");
     var printBtn = document.getElementById("print-ticket");
     var amountHidden = document.getElementById("amount-paid-hidden");
+    var currencyHidden = document.getElementById("currency-hidden");
+    var btnMxn = document.getElementById("currency-mxn");
+    var btnUsd = document.getElementById("currency-usd");
+    var rateHint = document.getElementById("rate-hint");
+    var mxnEquivalent = document.getElementById("mxn-equivalent");
+    var inputPrefix = document.getElementById("input-prefix");
+    var quickWrap = document.getElementById("quick-amounts");
 
     printForm.addEventListener("submit", function () {
       printBtn.disabled = true;
       printBtn.textContent = "Procesando…";
     });
 
-    document.querySelectorAll(".quick-amount-btn").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        amountInput.value = this.getAttribute("data-amount");
-        calculate();
+    function setCurrency(cur) {
+      currency = cur;
+      currencyHidden.value = cur;
+      btnMxn.classList.toggle("active", cur === "mxn");
+      btnUsd.classList.toggle("active", cur === "usd");
+      rateHint.style.display = cur === "usd" ? "block" : "none";
+      inputPrefix.textContent = cur === "usd" ? "US$" : "$";
+      amountInput.value = "";
+      buildQuickAmounts();
+      calculate();
+    }
+    btnMxn.addEventListener("click", function () { setCurrency("mxn"); });
+    btnUsd.addEventListener("click", function () { setCurrency("usd"); });
+
+    function buildQuickAmounts() {
+      quickWrap.innerHTML = "";
+      var totalInCur = currency === "usd" ? totalPrice / usdRate : totalPrice;
+      var steps = currency === "usd" ? [1, 5, 10, 20] : [1, 10, 50, 100];
+      var seen = {};
+      steps.forEach(function (step) {
+        var amount = Math.ceil(totalInCur / step) * step;
+        if (seen[amount]) return;
+        seen[amount] = true;
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "quick-amount-btn";
+        b.textContent = (currency === "usd" ? "US$" : "$") + amount;
+        b.addEventListener("click", function () {
+          amountInput.value = amount;
+          calculate();
+        });
+        quickWrap.appendChild(b);
       });
-    });
+    }
 
     amountInput.addEventListener("input", calculate);
 
     function calculate() {
       var paid = parseFloat(amountInput.value);
-      if (isNaN(paid) || paid < totalPrice) {
+      var paidMxn = currency === "usd" ? paid * usdRate : paid;
+
+      if (currency === "usd" && !isNaN(paid)) {
+        mxnEquivalent.style.display = "block";
+        mxnEquivalent.textContent = "= $" + paidMxn.toFixed(2) + " MXN";
+      } else {
+        mxnEquivalent.style.display = "none";
+      }
+
+      if (isNaN(paid) || paidMxn < totalPrice - 0.005) {
         changeDue.textContent = "$0.00";
         printForm.style.display = "none";
-        if (!isNaN(paid) && paid < totalPrice) {
+        if (!isNaN(paid) && paidMxn < totalPrice) {
           mostrarToast("El monto pagado es menor al total.", "error");
         }
         return;
       }
-      var change = paid - totalPrice;
-      changeDue.textContent = "$" + change.toFixed(2);
+      var change = Math.max(0, paidMxn - totalPrice);
+      changeDue.textContent = "$" + change.toFixed(2) + " MXN";
       printForm.style.display = "block";
       amountHidden.value = paid.toFixed(2);
     }
+
+    buildQuickAmounts();
   })();
 </script>
 {% endblock %}
