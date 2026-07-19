@@ -50,9 +50,20 @@ autoUpdater.on("error", (err) => {
 });
 
 ipcMain.on("install-update", () => {
-  isQuitting = true;
+  // No instalar si en realidad no hay nada descargado — evita reiniciar la
+  // app hacia la nada cuando el mensaje llega por error o fuera de tiempo.
+  if (!updateDownloaded) {
+    console.warn(
+      "[Updater] install-update solicitado pero no hay actualización descargada — ignorando.",
+    );
+    _sendUpdateStatus("error");
+    return;
+  }
+
   // Snapshot the DB right before applying the update so there is always a
   // point-in-time restore available even if today's daily backup is hours old.
+  // El backup es la razón de ser de este paso: si falla, se ABORTA la
+  // actualización (mejor no actualizar que actualizar sin red de seguridad).
   if (app.isPackaged && resolvedDbPath && fs.existsSync(resolvedDbPath)) {
     try {
       const backupsDir = path.join(app.getPath("userData"), "backups");
@@ -62,9 +73,22 @@ ipcMain.on("install-update", () => {
       fs.copyFileSync(resolvedDbPath, dest);
       console.log("[DB] Backup pre-actualización creado:", dest);
     } catch (e) {
-      console.error("[DB] Error en backup pre-actualización:", e.message);
+      console.error(
+        "[DB] Backup pre-actualización FALLÓ — cancelando actualización:",
+        e.message,
+      );
+      _sendUpdateStatus("error");
+      dialog.showErrorBox(
+        "Actualización cancelada",
+        "No se pudo crear una copia de seguridad de la base de datos antes de " +
+          "actualizar. La actualización fue cancelada para proteger tus datos.\n\n" +
+          "Vuelve a intentarlo más tarde o contacta a soporte.",
+      );
+      return;
     }
   }
+
+  isQuitting = true;
   autoUpdater.quitAndInstall(false, true);
 });
 
@@ -87,6 +111,8 @@ let printBridgeProcess = null;
 let inventoryServiceProcess = null;
 let isQuitting = false;
 let resolvedDbPath = null; // set once DB path is known, used for pre-update backup
+let backendDirGlobal = null; // set en 'ready', usado por el botón Reintentar
+let dbPathGlobal = null; // set en 'ready', usado por el botón Reintentar
 let flaskRestarts = 0;
 const MAX_FLASK_RESTARTS = 3;
 let printBridgeRestarts = 0;
@@ -295,6 +321,19 @@ function crearVentana() {
     mainWindow = null;
   });
 
+  // Botón "Reintentar" de las pantallas de error: esas páginas son data: URLs
+  // que navegan a FLASK_URL. Interceptamos SOLO cuando venimos de una pantalla
+  // de error (URL actual data:) para relanzar el flujo de carga con reintentos
+  // (y relanzar Flask si murió) en vez de recargar la propia data: URL, que
+  // dejaba la app atascada aunque Flask ya estuviera sano.
+  mainWindow.webContents.on("will-navigate", (e, url) => {
+    const actual = mainWindow.webContents.getURL();
+    if (actual.startsWith("data:") && url.startsWith(FLASK_URL)) {
+      e.preventDefault();
+      reintentarCargaManual();
+    }
+  });
+
   // Mostrar ventana sólo cuando esté lista (evita el flash blanco)
   // En laptops iniciamos maximizado por defecto para usar toda la pantalla
   mainWindow.once("ready-to-show", () => {
@@ -445,7 +484,9 @@ function iniciarFlask(backendDir, dbPath) {
                     "border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}</style></head>" +
                     "<body><h2>&#9888;&#65039; Error del servidor</h2>" +
                     "<p>El servidor de la aplicaci&#243;n no pudo reiniciarse autom&#225;ticamente.</p>" +
-                    '<button onclick="location.reload()">Reintentar</button>' +
+                    "<button onclick=\"location.href='" +
+                    FLASK_URL +
+                    "'\">Reintentar</button>" +
                     "</body></html>",
                 ),
             )
@@ -493,6 +534,7 @@ function iniciarPrintBridge(backendDir) {
   };
 
   console.log("[PrintBridge] Iniciando bridge de impresión...");
+  const startedAt = Date.now();
   printBridgeProcess = spawn(bin, args, {
     cwd: backendDir,
     env,
@@ -508,18 +550,25 @@ function iniciarPrintBridge(backendDir) {
   printBridgeProcess.on("close", (code) => {
     console.log(`[PrintBridge] Proceso terminó con código ${code}`);
     printBridgeProcess = null;
-    // Reiniciar el bridge si fue un crash, con límite de intentos
-    if (
-      !isQuitting &&
-      code !== 0 &&
-      printBridgeRestarts < MAX_PRINT_BRIDGE_RESTARTS
-    ) {
+
+    // Cierre intencional (la app está saliendo) — no reiniciar.
+    if (isQuitting) return;
+
+    // Reiniciar ante CUALQUIER salida inesperada, incluido código 0: el bridge
+    // no debe terminar por sí solo mientras la app corre. (Antes solo se
+    // reiniciaba con code !== 0, así que una salida silenciosa por un error de
+    // JSON/loop detenía la impresión sin recuperación.)
+    // Si estuvo vivo un buen rato, la caída no es parte de un bucle de crashes:
+    // resetear el contador para no agotar los intentos por fallos espaciados.
+    if (Date.now() - startedAt > 60000) printBridgeRestarts = 0;
+
+    if (printBridgeRestarts < MAX_PRINT_BRIDGE_RESTARTS) {
       printBridgeRestarts++;
       console.log(
         `[PrintBridge] Reiniciando en 5 segundos (intento ${printBridgeRestarts}/${MAX_PRINT_BRIDGE_RESTARTS})...`,
       );
       setTimeout(() => iniciarPrintBridge(backendDir), 5000);
-    } else if (!isQuitting && code !== 0) {
+    } else {
       console.warn(
         "[PrintBridge] Se agotaron los reintentos. La impresora no está disponible.",
       );
@@ -703,7 +752,9 @@ function cargarAppConReintentos() {
                   "border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;}</style></head>" +
                   "<body><h2>⚠️ Error al iniciar</h2>" +
                   "<p>El servidor tardó demasiado en responder. Cierra y vuelve a abrir la aplicación.</p>" +
-                  '<button onclick="location.reload()">Reintentar</button>' +
+                  "<button onclick=\"location.href='" +
+                  FLASK_URL +
+                  "'\">Reintentar</button>" +
                   "</body></html>",
               ),
           );
@@ -714,8 +765,48 @@ function cargarAppConReintentos() {
   intentar();
 }
 
+// Botón "Reintentar" de las pantallas de error. A diferencia de recargar la
+// data: URL (que dejaba la app atascada), esto relanza el flujo real: resetea
+// los contadores de reintentos, relanza Flask si murió, y vuelve a cargar la
+// app con reintentos. Limpia cargaEnProgreso para que un watchdog previo que
+// lo dejó en true no trague permanentemente este intento.
+function reintentarCargaManual() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  flaskRestarts = 0;
+  printBridgeRestarts = 0;
+  cargaEnProgreso = false;
+
+  if (!flaskProcess && backendDirGlobal && dbPathGlobal) {
+    liberarPuerto(FLASK_PORT);
+    iniciarFlask(backendDirGlobal, dbPathGlobal).then(() => {
+      if (!printBridgeProcess) iniciarPrintBridge(backendDirGlobal);
+      cargarAppConReintentos();
+    });
+  } else {
+    cargarAppConReintentos();
+  }
+}
+
+// ── Instancia única ───────────────────────────────────────────────────────────
+// Sin esto, dos instancias de la app significan dos print bridges sondeando la
+// misma cola (tickets DUPLICADOS, no hay lease por job) y dos Flask peleando
+// por el puerto 5001 (cada watchdog termina al otro). Si no obtenemos el lock,
+// esta instancia se cierra y le pasa el foco a la que ya está corriendo.
+const obtuvoLockInstancia = app.requestSingleInstanceLock();
+if (!obtuvoLockInstancia) {
+  isQuitting = true;
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    mostrarVentana();
+  });
+}
+
 // ── Flujo principal de arranque ───────────────────────────────────────────────
 app.on("ready", async () => {
+  // Segunda instancia: ya llamamos app.quit() arriba — no arrancar nada.
+  if (!obtuvoLockInstancia) return;
+
   crearVentana();
 
   // Mostrar pantalla de carga inmediatamente
@@ -788,6 +879,8 @@ app.on("ready", async () => {
   }
 
   resolvedDbPath = dbPath;
+  backendDirGlobal = backendDir;
+  dbPathGlobal = dbPath;
   console.log("[DB] Usando base de datos en:", dbPath);
 
   // ── Paso 1: Flask ─────────────────────────────────────────────────────────

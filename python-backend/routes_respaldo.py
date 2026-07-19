@@ -95,6 +95,17 @@ def register(app):
             # el servicio Java de inventario mantiene handles abiertos; Windows los bloquea).
             backup_db_to_file(tmp_path, db_path)
 
+            # SEGURIDAD/ESTABILIDAD (audit v2.1.1): un respaldo de una versión
+            # anterior puede pasar la validación (tiene orders/users/menu_prices)
+            # pero carecer de tablas/columnas nuevas (print_jobs, config,
+            # users.password_changed…). Sin esto, la próxima petición del admin
+            # tronaría con "no such table" hasta reiniciar el proceso, porque las
+            # migraciones de init_db() solo corren al arrancar. Reejecutamos las
+            # mismas migraciones ahora para dejar la BD restaurada al esquema
+            # actual. Import diferido para evitar import circular al cargar módulo.
+            import app as _app
+            _app.init_db()
+
             # log_activity antes de limpiar la sesión (lee el usuario de la sesión)
             log_activity('respaldo_importado', 'Base de datos restaurada desde un respaldo')
             session.clear()

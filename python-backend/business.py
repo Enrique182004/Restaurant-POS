@@ -26,6 +26,22 @@ def get_week_bounds(reference_date):
     return monday.strftime('%Y-%m-%d'), sunday.strftime('%Y-%m-%d')
 
 
+# Roles de empleado y sus reglas de pago.
+# gerente: pago semanal fijo (default $2000) por 6 días — cada falta descuenta 1/6.
+# empleado: tarifa fija por día trabajado según el día de la semana.
+EMPLOYEE_ROLES = ('empleado', 'gerente')
+GERENTE_BASE_DAYS = 6
+GERENTE_DEFAULT_WEEKLY = 2000.0
+EMPLEADO_RATE_WEEKDAY = 200.0   # lun–jue
+EMPLEADO_RATE_WEEKEND = 300.0   # vie–dom
+
+
+def empleado_day_rate(work_date):
+    """Tarifa de un día trabajado para rol 'empleado' ('YYYY-MM-DD')."""
+    weekday = datetime.strptime(work_date, '%Y-%m-%d').weekday()
+    return EMPLEADO_RATE_WEEKEND if weekday >= 4 else EMPLEADO_RATE_WEEKDAY
+
+
 def resolve_employee_schedule(conn, employee_id, week_start):
     """Returns the employee_schedules row in effect for the week starting on
     week_start ('YYYY-MM-DD', a Monday), or None if no version applies yet."""
@@ -40,20 +56,35 @@ def resolve_employee_schedule(conn, employee_id, week_start):
 def compute_employee_pay(conn, employee_id, week_start, week_end):
     """Returns (total_pay, per_day_rate, days_worked, scheduled_days) for one
     employee for the Mon-Sun week [week_start, week_end]. Any day marked
-    present counts toward pay, not only the employee's scheduled days."""
+    present counts toward pay, not only the employee's scheduled days.
+
+    gerente: per_day_rate = pay_amount / 6 (semana fija de 6 días), sin
+    importar cuántos días estén programados — faltar descuenta 1/6.
+    empleado: $200 por día lun–jue y $300 vie–dom; per_day_rate se reporta
+    como 0 porque la tarifa varía por día."""
     schedule = resolve_employee_schedule(conn, employee_id, week_start)
     if schedule is None:
         return 0.0, 0.0, 0, []
 
     scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',') if x != '']
-    per_day_rate = (schedule['pay_amount'] / len(scheduled_days)) if scheduled_days else 0.0
 
-    days_worked = conn.execute(
-        'SELECT COUNT(*) FROM attendance WHERE employee_id = ? AND work_date BETWEEN ? AND ?',
-        (employee_id, week_start, week_end)
-    ).fetchone()[0]
+    emp = conn.execute('SELECT role FROM employees WHERE id = ?', (employee_id,)).fetchone()
+    role = emp['role'] if emp and emp['role'] in EMPLOYEE_ROLES else 'empleado'
 
-    total_pay = round(per_day_rate * days_worked, 2)
+    worked_dates = [
+        r['work_date'] for r in conn.execute(
+            'SELECT work_date FROM attendance WHERE employee_id = ? AND work_date BETWEEN ? AND ?',
+            (employee_id, week_start, week_end)
+        ).fetchall()
+    ]
+    days_worked = len(worked_dates)
+
+    if role == 'gerente':
+        per_day_rate = schedule['pay_amount'] / GERENTE_BASE_DAYS
+        total_pay = round(per_day_rate * days_worked, 2)
+    else:
+        per_day_rate = 0.0
+        total_pay = round(sum(empleado_day_rate(d) for d in worked_dates), 2)
     return total_pay, per_day_rate, days_worked, scheduled_days
 
 

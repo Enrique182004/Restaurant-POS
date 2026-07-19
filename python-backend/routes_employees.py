@@ -13,7 +13,30 @@ from auth import login_required, admin_required
 from db import (get_db_connection, log_activity, _get_db_path,
                 backup_db_to_file, get_item_price, get_menu_options)
 from business import (money, format_num, get_week_bounds, parse_scheduled_days,
-                      resolve_employee_schedule, compute_employee_pay)
+                      resolve_employee_schedule, compute_employee_pay,
+                      EMPLOYEE_ROLES, GERENTE_BASE_DAYS, GERENTE_DEFAULT_WEEKLY,
+                      EMPLEADO_RATE_WEEKDAY, EMPLEADO_RATE_WEEKEND)
+
+
+def _parse_role_and_pay(form):
+    """Valida rol y pago del formulario de empleado.
+
+    gerente: requiere pago semanal > 0 (se divide entre 6 días fijos).
+    empleado: el pago es por tarifa fija diaria; pay_amount se guarda en 0.
+    Returns (role, pay_amount, error_message)."""
+    role = form.get('role', 'empleado').strip().lower()
+    if role not in EMPLOYEE_ROLES:
+        return None, 0, 'Rol inválido.'
+    if role == 'gerente':
+        raw = form.get('pay_amount', '').strip()
+        try:
+            pay_amount = float(raw) if raw else GERENTE_DEFAULT_WEEKLY
+        except ValueError:
+            pay_amount = 0
+        if pay_amount <= 0:
+            return None, 0, 'El pago semanal debe ser mayor a 0.'
+        return role, pay_amount, None
+    return role, 0, None
 
 
 def register(app):
@@ -23,7 +46,6 @@ def register(app):
     @admin_required
     def add_employee():
         name = request.form.get('name', '').strip()
-        pay_amount_raw = request.form.get('pay_amount', '').strip()
         days_csv = parse_scheduled_days(request.form)
 
         if not name:
@@ -32,16 +54,13 @@ def register(app):
         if not days_csv:
             flash('Selecciona al menos un día de la semana.', 'error')
             return redirect(url_for('employees_manage'))
-        try:
-            pay_amount = float(pay_amount_raw)
-        except ValueError:
-            pay_amount = 0
-        if pay_amount <= 0:
-            flash('El pago semanal debe ser mayor a 0.', 'error')
+        role, pay_amount, error = _parse_role_and_pay(request.form)
+        if error:
+            flash(error, 'error')
             return redirect(url_for('employees_manage'))
 
         conn = get_db_connection()
-        cur = conn.execute('INSERT INTO employees (name) VALUES (?)', (name,))
+        cur = conn.execute('INSERT INTO employees (name, role) VALUES (?, ?)', (name, role))
         employee_id = cur.lastrowid
         week_start, _ = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
         conn.execute(
@@ -65,7 +84,6 @@ def register(app):
             return redirect(url_for('employees_manage'))
 
         name = request.form.get('name', '').strip()
-        pay_amount_raw = request.form.get('pay_amount', '').strip()
         days_csv = parse_scheduled_days(request.form)
 
         if not name:
@@ -74,15 +92,13 @@ def register(app):
         if not days_csv:
             flash('Selecciona al menos un día de la semana.', 'error')
             return redirect(url_for('employees_manage'))
-        try:
-            pay_amount = float(pay_amount_raw)
-        except ValueError:
-            pay_amount = 0
-        if pay_amount <= 0:
-            flash('El pago semanal debe ser mayor a 0.', 'error')
+        role, pay_amount, error = _parse_role_and_pay(request.form)
+        if error:
+            flash(error, 'error')
             return redirect(url_for('employees_manage'))
 
-        conn.execute('UPDATE employees SET name = ? WHERE id = ?', (name, employee_id))
+        conn.execute('UPDATE employees SET name = ?, role = ? WHERE id = ?',
+                     (name, role, employee_id))
 
         today_week_start, _ = get_week_bounds(datetime.now().strftime('%Y-%m-%d'))
         next_week_start = (
@@ -142,8 +158,21 @@ def register(app):
             (employee_id, work_date)
         ).fetchone()
         if existing:
+            # Desmarcar siempre se permite (limpiar un registro previo).
             conn.execute('DELETE FROM attendance WHERE id = ?', (existing['id'],))
         else:
+            # audit v2.1.1: no permitir marcar asistencia en una semana sin
+            # horario vigente. compute_employee_pay devolvería $0 para ese día
+            # (resolve_employee_schedule == None) y quedaría como asistencia
+            # fantasma que paga nada en silencio.
+            try:
+                week_start, _ = get_week_bounds(work_date)
+            except ValueError:
+                flash('Solicitud inválida.', 'error')
+                return redirect(url_for('employees_attendance', week=week_param or work_date))
+            if resolve_employee_schedule(conn, int(employee_id), week_start) is None:
+                flash('El empleado no tiene horario vigente para esta semana.', 'error')
+                return redirect(url_for('employees_attendance', week=week_param or work_date))
             conn.execute(
                 'INSERT OR IGNORE INTO attendance (employee_id, work_date) VALUES (?, ?)',
                 (employee_id, work_date)
@@ -196,6 +225,7 @@ def register(app):
             rows.append({
                 'id': emp['id'],
                 'name': emp['name'],
+                'role': emp['role'] if emp['role'] in EMPLOYEE_ROLES else 'empleado',
                 'days': days,
                 'per_day_rate': per_day_rate,
                 'days_worked': days_worked,
@@ -230,8 +260,9 @@ def register(app):
         for emp in employees:
             schedule = resolve_employee_schedule(conn, emp['id'], today_week_start)
             scheduled_days = [int(x) for x in schedule['scheduled_days'].split(',')] if schedule else []
+            role = emp['role'] if emp['role'] in EMPLOYEE_ROLES else 'empleado'
             pay_amount = schedule['pay_amount'] if schedule else 0
-            per_day_rate = (pay_amount / len(scheduled_days)) if scheduled_days else 0
+            per_day_rate = (pay_amount / GERENTE_BASE_DAYS) if role == 'gerente' else 0
             has_attendance = conn.execute(
                 'SELECT COUNT(*) FROM attendance WHERE employee_id = ?', (emp['id'],)
             ).fetchone()[0] > 0
@@ -239,10 +270,17 @@ def register(app):
                 'id': emp['id'],
                 'name': emp['name'],
                 'active': emp['active'],
+                'role': role,
                 'scheduled_days': scheduled_days,
                 'pay_amount': pay_amount,
                 'per_day_rate': per_day_rate,
                 'has_attendance': has_attendance,
             })
 
-        return render_template('employees_manage.html', rows=rows, day_labels=day_labels)
+        return render_template(
+            'employees_manage.html', rows=rows, day_labels=day_labels,
+            gerente_default_weekly=GERENTE_DEFAULT_WEEKLY,
+            gerente_base_days=GERENTE_BASE_DAYS,
+            empleado_rate_weekday=EMPLEADO_RATE_WEEKDAY,
+            empleado_rate_weekend=EMPLEADO_RATE_WEEKEND,
+        )

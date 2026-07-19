@@ -1,14 +1,14 @@
 def test_update_employee_versions_schedule_for_next_week_only(admin_client, app_module):
     admin_client.post(
         "/admin/employees/add",
-        data={"name": "Ana", "pay_amount": "1000", "days": ["1", "2", "3"]},
+        data={"name": "Ana", "role": "gerente", "pay_amount": "1000", "days": ["1", "2", "3"]},
     )
     conn = app_module.get_db_connection()
     employee_id = conn.execute("SELECT id FROM employees WHERE name='Ana'").fetchone()["id"]
 
     admin_client.post(
         f"/admin/employees/update/{employee_id}",
-        data={"name": "Ana", "pay_amount": "1500", "days": ["4", "5", "6"]},
+        data={"name": "Ana", "role": "gerente", "pay_amount": "1500", "days": ["4", "5", "6"]},
     )
 
     conn = app_module.get_db_connection()
@@ -28,16 +28,35 @@ def test_update_employee_versions_schedule_for_next_week_only(admin_client, app_
 def test_update_employee_renames(admin_client, app_module):
     admin_client.post(
         "/admin/employees/add",
-        data={"name": "Ana", "pay_amount": "1000", "days": ["1"]},
+        data={"name": "Ana", "role": "empleado", "days": ["1"]},
     )
     conn = app_module.get_db_connection()
     employee_id = conn.execute("SELECT id FROM employees WHERE name='Ana'").fetchone()["id"]
 
     admin_client.post(
         f"/admin/employees/update/{employee_id}",
-        data={"name": "Ana Maria", "pay_amount": "1000", "days": ["1"]},
+        data={"name": "Ana Maria", "role": "empleado", "days": ["1"]},
     )
 
     conn = app_module.get_db_connection()
     employee = conn.execute("SELECT * FROM employees WHERE id=?", (employee_id,)).fetchone()
     assert employee["name"] == "Ana Maria"
+
+
+def test_update_employee_changes_role(admin_client, app_module):
+    # El rol aplica de inmediato (vive en employees, no en el horario versionado).
+    admin_client.post(
+        "/admin/employees/add",
+        data={"name": "Ana", "role": "empleado", "days": ["1"]},
+    )
+    conn = app_module.get_db_connection()
+    employee_id = conn.execute("SELECT id FROM employees WHERE name='Ana'").fetchone()["id"]
+
+    admin_client.post(
+        f"/admin/employees/update/{employee_id}",
+        data={"name": "Ana", "role": "gerente", "pay_amount": "2000", "days": ["1"]},
+    )
+
+    conn = app_module.get_db_connection()
+    employee = conn.execute("SELECT * FROM employees WHERE id=?", (employee_id,)).fetchone()
+    assert employee["role"] == "gerente"

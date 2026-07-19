@@ -28,41 +28,53 @@ def register(app):
         return _kuike_respond(text, _run_kuike_tool)
 
 
-    def _period_start(period):
+    def _period_range(period):
+        # audit v2.1.1: cada período ahora tiene límite superior explícito.
+        # Antes solo había cota inferior (date >= start), así 'ayer' incluía hoy
+        # y 'semana'/'mes' incluían el futuro del período. Devuelve (start, end)
+        # inclusivos; el SQL filtra con date >= start AND date <= end.
         now = datetime.now()
+        end = now  # por defecto la cota superior es "ahora"
         if period == 'yesterday':
-            d = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            y = now - timedelta(days=1)
+            start = y.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = y.replace(hour=23, minute=59, second=59, microsecond=0)
         elif period == 'week':
-            d = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+            start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
         elif period == 'month':
-            d = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'year':
+            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         elif period == 'alltime':
-            d = datetime(2000, 1, 1)
-        else:
-            d = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        return d.strftime('%Y-%m-%d %H:%M:%S')
+            start = datetime(2000, 1, 1)
+        else:  # today
+            start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        fmt = '%Y-%m-%d %H:%M:%S'
+        return start.strftime(fmt), end.strftime(fmt)
 
 
     def _run_kuike_tool(name, inputs):
         conn = get_db_connection()
         if name == 'get_sales_summary':
-            start = _period_start(inputs.get('period', 'today'))
+            start, end = _period_range(inputs.get('period', 'today'))
             row = conn.execute(
                 "SELECT COUNT(*) as cnt, COALESCE(SUM(total),0) as rev FROM orders "
-                "WHERE date >= ? AND status != 'voided'", (start,)
+                "WHERE date >= ? AND date <= ? AND status != 'voided'", (start, end)
             ).fetchone()
             voided = conn.execute(
-                "SELECT COUNT(*) FROM orders WHERE date >= ? AND status = 'voided'", (start,)
+                "SELECT COUNT(*) FROM orders WHERE date >= ? AND date <= ? AND status = 'voided'",
+                (start, end)
             ).fetchone()[0]
             avg = (row['rev'] / row['cnt']) if row['cnt'] else 0
             return {"period": inputs.get('period'), "orders": row['cnt'],
                     "revenue": round(row['rev'], 2), "avg_ticket": round(avg, 2), "voided": voided}
 
         elif name == 'get_top_items':
-            start = _period_start(inputs.get('period', 'today'))
+            start, end = _period_range(inputs.get('period', 'today'))
             limit = inputs.get('limit', 10)
             rows = conn.execute(
-                "SELECT items, total FROM orders WHERE date >= ? AND status != 'voided'", (start,)
+                "SELECT items, total FROM orders WHERE date >= ? AND date <= ? AND status != 'voided'",
+                (start, end)
             ).fetchall()
             counts, revenues = {}, {}
             for r in rows:
@@ -96,19 +108,21 @@ def register(app):
             return [dict(r) for r in rows]
 
         elif name == 'get_payment_breakdown':
-            start = _period_start(inputs.get('period', 'today'))
+            start, end = _period_range(inputs.get('period', 'today'))
             rows = conn.execute(
                 "SELECT payment_method, COUNT(*) as cnt, COALESCE(SUM(total),0) as rev "
-                "FROM orders WHERE date >= ? AND status != 'voided' GROUP BY payment_method", (start,)
+                "FROM orders WHERE date >= ? AND date <= ? AND status != 'voided' "
+                "GROUP BY payment_method", (start, end)
             ).fetchall()
             return [{"method": r['payment_method'], "orders": r['cnt'], "revenue": round(r['rev'], 2)} for r in rows]
 
         elif name == 'get_peak_hours':
-            start = _period_start(inputs.get('period', 'today'))
+            start, end = _period_range(inputs.get('period', 'today'))
             rows = conn.execute(
                 "SELECT CAST(substr(date,12,2) AS INTEGER) as hr, COUNT(*) as cnt, "
                 "COALESCE(SUM(total),0) as rev FROM orders "
-                "WHERE date >= ? AND status != 'voided' GROUP BY hr ORDER BY cnt DESC", (start,)
+                "WHERE date >= ? AND date <= ? AND status != 'voided' "
+                "GROUP BY hr ORDER BY cnt DESC", (start, end)
             ).fetchall()
             return [{"hour": f"{r['hr']:02d}:00", "orders": r['cnt'], "revenue": round(r['rev'], 2)} for r in rows]
 

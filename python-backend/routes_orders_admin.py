@@ -103,6 +103,9 @@ def register(app, print_receipt_physical):
         for r in hour_rows:
             if 0 <= r['hr'] <= 23:
                 hourly[r['hr']] = {'cnt': r['cnt'], 'rev': r['rev']}
+        # Re-emit keys in chronological order so late-night / early hours (23, 0–7)
+        # that landed after the pre-seeded 8–22 range don't render out of order.
+        hourly = {h: hourly[h] for h in sorted(hourly)}
 
         # Item popularity — parse JSON items, track qty + revenue
         all_orders = conn.execute(
@@ -148,15 +151,14 @@ def register(app, print_receipt_physical):
     def _order_date_range(period, selected_date, now):
         """Return (start_str, end_str, label) for order history queries.
 
-        Day-specific periods (today / custom) are bounded to business hours
-        16:00–23:59 so only that shift's orders appear.  Week and alltime
-        use an open upper bound (end_str = None).
+        Day-specific periods (today / custom) span the FULL calendar day
+        (00:00:00–23:59:59) so Historial, reports() and the dashboard all agree
+        and no order is ever hidden/unreachable.  Week starts Monday 00:00 and
+        alltime both use an open upper bound (end_str = None).
         """
-        OPEN_H, CLOSE_H = 16, 23
-
         if period == 'week':
             monday = (now - timedelta(days=now.weekday())).replace(
-                hour=OPEN_H, minute=0, second=0, microsecond=0)
+                hour=0, minute=0, second=0, microsecond=0)
             return monday.strftime('%Y-%m-%d %H:%M:%S'), None, 'Esta semana'
 
         if period == 'alltime':
@@ -168,13 +170,13 @@ def register(app, print_receipt_physical):
             except ValueError:
                 day = now
                 selected_date = ''
-            start = day.replace(hour=OPEN_H, minute=0, second=0, microsecond=0)
-            end   = day.replace(hour=CLOSE_H, minute=59, second=59, microsecond=0)
+            start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+            end   = day.replace(hour=23, minute=59, second=59, microsecond=0)
             return start.strftime('%Y-%m-%d %H:%M:%S'), end.strftime('%Y-%m-%d %H:%M:%S'), selected_date or 'Hoy'
 
         # today (default)
-        start = now.replace(hour=OPEN_H, minute=0, second=0, microsecond=0)
-        end   = now.replace(hour=CLOSE_H, minute=59, second=59, microsecond=0)
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end   = now.replace(hour=23, minute=59, second=59, microsecond=0)
         return start.strftime('%Y-%m-%d %H:%M:%S'), end.strftime('%Y-%m-%d %H:%M:%S'), 'Hoy'
 
 
@@ -208,12 +210,31 @@ def register(app, print_receipt_physical):
             conditions.append("status != 'voided'")
 
         where  = 'WHERE ' + ' AND '.join(conditions)
+
+        # Period-wide aggregates over the FULL filtered range (independent of the
+        # 500-row display cap) so summary + per-day totals reflect reality even
+        # when more than 500 orders match.  Voided orders are excluded from the
+        # money totals; the same param bindings are reused (no extra placeholder).
+        totals_where = 'WHERE ' + ' AND '.join(conditions + ["status != 'voided'"])
+        summary = conn.execute(
+            f'SELECT COUNT(*) AS cnt, COALESCE(SUM(total),0) AS rev FROM orders {totals_where}',
+            params
+        ).fetchone()
+        total_orders  = summary['cnt']
+        total_revenue = summary['rev']
+        daily_totals  = {
+            r['day']: r['rev'] for r in conn.execute(
+                f'SELECT substr(date,1,10) AS day, COALESCE(SUM(total),0) AS rev '
+                f'FROM orders {totals_where} GROUP BY day', params
+            ).fetchall()
+        }
+
+        # Rendered list is capped at 500 most-recent rows for performance.
         orders = conn.execute(
             f'SELECT * FROM orders {where} ORDER BY date DESC LIMIT 500', params
         ).fetchall()
 
-        parsed       = []
-        daily_totals = {}
+        parsed = []
         for o in orders:
             items = []
             try:
@@ -221,12 +242,11 @@ def register(app, print_receipt_physical):
             except json.JSONDecodeError:
                 pass
             day = o['date'][:10] if o['date'] else ''
-            if o['status'] != 'voided':
-                daily_totals[day] = daily_totals.get(day, 0) + (o['total'] or 0)
             parsed.append({'order': dict(o), 'items': items, 'day': day})
 
         return render_template('orders.html',
             orders=parsed, daily_totals=daily_totals,
+            total_orders=total_orders, total_revenue=total_revenue,
             q=q, period=period, selected_date=selected_date, estado=estado,
             label=label, today_str=now.strftime('%Y-%m-%d'),
             estado_activas=(estado == 'activas'),
@@ -239,8 +259,11 @@ def register(app, print_receipt_physical):
     @admin_required
     def void_order(order_id):
         conn = get_db_connection()
-        conn.execute("UPDATE orders SET status = 'voided' WHERE id = ?", (order_id,))
+        cursor = conn.execute("UPDATE orders SET status = 'voided' WHERE id = ?", (order_id,))
         conn.commit()
+        if cursor.rowcount == 0:
+            flash('Orden no encontrada.', 'error')
+            return redirect(url_for('order_history'))
         log_activity('orden_anulada', f'Orden #{order_id} anulada')
         flash(f'Orden {order_id} anulada.', 'success')
         return redirect(url_for('order_history'))

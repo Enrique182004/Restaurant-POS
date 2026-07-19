@@ -406,6 +406,67 @@ endblock %} {% block styles %}
     </span>
   </form>
 
+  <!-- Tipo de cambio USD -->
+  <div class="section-heading" style="margin-top: 28px">
+    Tipo de cambio (dólar)
+  </div>
+  <form
+    action="{{ url_for('update_config') }}"
+    method="POST"
+    style="
+      background: #1e1e1e;
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    "
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <label style="color: #aaa; font-size: 0.9rem; white-space: nowrap"
+      >1 USD =</label
+    >
+    <input
+      type="number"
+      name="usd_rate"
+      value="{{ '%.2f'|format(usd_rate) }}"
+      min="0.01"
+      step="0.01"
+      required
+      style="
+        width: 120px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #3d3d3d;
+        background: #2d2d2d;
+        color: #f5f5f5;
+        font-size: 0.95rem;
+      "
+    />
+    <label style="color: #aaa; font-size: 0.9rem; white-space: nowrap"
+      >MXN</label
+    >
+    <button
+      type="submit"
+      style="
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: none;
+        background: #ff9800;
+        color: #121212;
+        font-weight: 700;
+        cursor: pointer;
+      "
+    >
+      Guardar
+    </button>
+    <span style="font-size: 0.82rem; color: #555">
+      Se usa cuando el cliente paga en dólares; el cambio siempre se da en
+      pesos.
+    </span>
+  </form>
+
   <style>
     .low-stock-badge {
       position: absolute;
