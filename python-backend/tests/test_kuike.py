@@ -67,8 +67,9 @@ def test_period_week():
 def test_period_month():
     assert detect_period('este mes') == 'month'
 
-def test_period_alltime():
-    assert detect_period('ventas del año') == 'alltime'
+def test_period_year():
+    # audit v2.1.1: 'año' ahora es el año en curso, no el histórico completo.
+    assert detect_period('ventas del año') == 'year'
 
 
 # ── Intent: greeting ──────────────────────────────────────────────────────────

@@ -589,7 +589,14 @@ def add_menu_option():
         'SELECT id FROM menu_options WHERE category=? AND name=?', (category, name)
     ).fetchone()
     if existing:
-        conn.execute('UPDATE menu_options SET active=1 WHERE id=?', (existing['id'],))
+        # Reactiva y aplica el precio/icono enviados (antes se ignoraban al re-agregar).
+        conn.execute('UPDATE menu_options SET active=1, price=?, icon=? WHERE id=?',
+                     (price, icon, existing['id']))
+        if category == 'beverage':
+            conn.execute(
+                'INSERT OR REPLACE INTO menu_prices (key, label, price) VALUES (?, ?, ?)',
+                (name, name, price)
+            )
     else:
         max_sort = conn.execute(
             'SELECT COALESCE(MAX(sort_order),0) FROM menu_options WHERE category=?', (category,)
@@ -637,6 +644,15 @@ def update_menu_option(option_id):
         flash(f'Ya existe "{name}" en esta categoría', 'error')
         return redirect(url_for('manage_menu_options'))
 
+    # Bebidas cobran por nombre vía menu_prices (key es PRIMARY KEY). Renombrar a
+    # un nombre que ya tiene fila en menu_prices reventaba con IntegrityError (500):
+    # detecta la colisión ANTES de escribir y aborta con un mensaje claro.
+    if option['category'] == 'beverage' and name != option['name']:
+        clash = conn.execute('SELECT 1 FROM menu_prices WHERE key=?', (name,)).fetchone()
+        if clash:
+            flash(f'Ya existe un precio registrado para "{name}". Elige otro nombre.', 'error')
+            return redirect(url_for('manage_menu_options'))
+
     conn.execute('UPDATE menu_options SET name=?, icon=?, price=? WHERE id=?',
                  (name, icon, price, option_id))
     # Las bebidas cobran por nombre vía menu_prices: mantenerlo en sincronía
@@ -672,6 +688,10 @@ def delete_menu_option(option_id):
     option = conn.execute('SELECT * FROM menu_options WHERE id=?', (option_id,)).fetchone()
     if option:
         conn.execute('DELETE FROM menu_options WHERE id=?', (option_id,))
+        # Bebidas: borra también su fila en menu_prices para no dejar un precio
+        # huérfano (seguiría siendo cobrable y provocaba colisiones al renombrar).
+        if option['category'] == 'beverage':
+            conn.execute('DELETE FROM menu_prices WHERE key=?', (option['name'],))
         conn.commit()
         flash(f'"{option["name"]}" eliminado del menú', 'success')
     return redirect(url_for('manage_menu_options'))
@@ -1018,32 +1038,33 @@ def update_quantity(item_index, quantity):
     
     cart = session.get('cart', [])
     if item_index < len(cart):
-        current_quantity = cart[item_index].get('quantity', 1)
-        current_price = cart[item_index]['price']
-        had_promo = 'original_price' in cart[item_index]
+        item = cart[item_index]
+        current_quantity = item.get('quantity', 1)
+        had_promo = 'original_price' in item
 
-        # When a promo was active use the original (pre-discount) price as unit basis
-        if had_promo:
-            cart[item_index]['unit_price'] = cart[item_index]['original_price'] / current_quantity
+        # unit_price es siempre el precio unitario BASE (sin descuento). Si falta,
+        # derívalo del precio base (original_price cuando había promo).
+        if 'unit_price' not in item:
+            base = item['original_price'] if had_promo else item['price']
+            item['unit_price'] = base / max(current_quantity, 1)
 
-        if 'unit_price' not in cart[item_index]:
-            cart[item_index]['unit_price'] = current_price / current_quantity
+        item['quantity'] = quantity
+        item['price'] = money(item['unit_price'] * quantity)
+        # Limpia el descuento de ESTA línea; reapply reevalúa el carrito completo.
+        item.pop('original_price', None)
+        item.pop('discount', None)
 
-        unit_price = cart[item_index]['unit_price']
-        cart[item_index]['quantity'] = quantity
-        cart[item_index]['price'] = money(unit_price * quantity)
-        cart[item_index].pop('original_price', None)
-        cart[item_index].pop('discount', None)
+        reapply_active_coupon(cart)
 
         session['cart'] = cart
         session.modified = True
 
-        new_total = sum(item['price'] for item in cart)
+        new_total = money(sum(i['price'] for i in cart))
         return jsonify({
             'success': True,
             'new_item_price': cart[item_index]['price'],
             'new_total': new_total,
-            'promo_cleared': had_promo,
+            'promo_cleared': had_promo and 'original_price' not in cart[item_index],
         })
 
     return jsonify({'success': False, 'error': 'Índice de producto inválido'})
@@ -1182,7 +1203,13 @@ def update_item(item_index):
             item['price'] = total_price * item.get('quantity', 1)
             item['ostion_cost'] = ostion_price
         
+        # El precio recalculado ES el nuevo precio base: descarta el descuento
+        # viejo de esta línea para que reapply no lo revierta a un base obsoleto.
+        item.pop('original_price', None)
+        item.pop('discount', None)
         cart[item_index] = item
+        # El precio/línea cambió: reevalúa la promo activa contra precios base.
+        reapply_active_coupon(cart)
         session['cart'] = cart
         session.modified = True
         flash('Item actualizado con éxito', 'success')
@@ -1217,18 +1244,107 @@ def remove_item(item_index):
     
     if item_index < len(cart):
         cart.pop(item_index)
+        # Quitar una línea puede invalidar la promo (p.ej. la línea pagada de un
+        # 2x1): reevalúa para no dejar líneas gratis huérfanas ni descuentos rotos.
+        reapply_active_coupon(cart)
         session['cart'] = cart
         session.modified = True
         flash('Item eliminado de la orden', 'success')
-    
+
     return redirect(url_for('view_cart'))
+
+def _reset_cart_prices(cart):
+    """Restaura cada ítem a su precio base (pre-descuento) y borra las
+    insignias de descuento, dejando el carrito en estado limpio."""
+    for item in cart:
+        if 'original_price' in item:
+            item['price'] = item['original_price']
+        item.pop('original_price', None)
+        item.pop('discount', None)
+
+
+def _parse_applicable_items(promo):
+    try:
+        return json.loads(promo['applicable_items']) if promo['applicable_items'] else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+def _apply_promo_to_cart(cart, promo):
+    """Aplica `promo` al carrito partiendo SIEMPRE de precios base limpios.
+    Devuelve True si se aplicó, False si la promoción ya no califica (deja el
+    carrito limpio en ese caso). Centraliza la lógica de descuentos para que
+    cualquier mutación del carrito la pueda reevaluar de forma consistente."""
+    _reset_cart_prices(cart)
+
+    # Asegura unit_price (base) y calcula el total base
+    total_price = 0
+    for item in cart:
+        quantity = item.get('quantity', 1)
+        if 'unit_price' not in item:
+            item['unit_price'] = item['price'] / max(quantity, 1)
+        total_price += item['price']
+
+    if (promo['min_purchase'] or 0) > 0 and total_price < promo['min_purchase']:
+        return False
+
+    applicable_items = _parse_applicable_items(promo)
+
+    if promo['type'] == 'bxgy':
+        buy_qty = int(promo['value']) if promo['value'] else 2
+        get_free = int(promo['get_free'] or 1)
+        return apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free)
+
+    if promo['type'] == 'percentage':
+        for item in cart:
+            if not applicable_items or item['type'] in applicable_items:
+                item['original_price'] = item['price']
+                item['price'] = money(item['original_price'] * (1 - promo['value'] / 100))
+                item['discount'] = f"{format_num(promo['value'])}% off"
+        return True
+
+    # Monto fijo: reduce la ORDEN por exactamente `value` una sola vez,
+    # descontando de las líneas más caras primero (independiente del agrupamiento).
+    remaining = money(promo['value'] or 0)
+    applicable = [item for item in cart if not applicable_items or item['type'] in applicable_items]
+    applicable.sort(key=lambda i: i['price'], reverse=True)
+    badge = f"${format_num(promo['value'])} off"
+    for item in applicable:
+        if remaining <= 0:
+            break
+        reduce_by = min(remaining, item['price'])
+        if reduce_by <= 0:
+            continue
+        item['original_price'] = item['price']
+        item['price'] = money(item['original_price'] - reduce_by)
+        item['discount'] = badge
+        remaining = money(remaining - reduce_by)
+    return True
+
+
+def reapply_active_coupon(cart):
+    """Reevalúa el cupón activo tras mutar el carrito. Deja SIEMPRE el carrito
+    consistente: reaplica desde precios base si la promo sigue válida, o borra
+    todos los descuentos y olvida el cupón si ya no aplica (o no hay cupón)."""
+    code = session.get('coupon_code')
+    if not code:
+        _reset_cart_prices(cart)
+        return
+    conn = get_db_connection()
+    promo = conn.execute(
+        'SELECT * FROM promotions WHERE name = ? AND active = 1', (code,)
+    ).fetchone()
+    if not promo or not _apply_promo_to_cart(cart, promo):
+        _reset_cart_prices(cart)
+        session.pop('coupon_code', None)
+
 
 # Apply Coupon
 @app.route('/apply_coupon', methods=['POST'])
 @login_required
 def apply_coupon():
     coupon_code = request.form.get('coupon_code', '').strip().upper()
-    
+
     if not coupon_code:
         flash('Por favor ingresa un código de promoción', 'error')
         return redirect(url_for('view_cart'))
@@ -1249,50 +1365,27 @@ def apply_coupon():
     for item in cart:
         quantity = item.get('quantity', 1)
         if 'unit_price' not in item:
-            item['unit_price'] = item['price'] / quantity
+            item['unit_price'] = item['price'] / max(quantity, 1)
         total_price += item['price']
 
     # Check minimum purchase requirement
     if (promo['min_purchase'] or 0) > 0 and total_price < promo['min_purchase']:
         flash(f'Se requiere una compra mínima de ${promo["min_purchase"]} para aplicar esta promoción', 'error')
         return redirect(url_for('view_cart'))
-    
-    # Apply discount based on promotion type
-    if promo['type'] == 'bxgy':
-        # NxM promotion: buy `value` units, get `get_free` units free
-        buy_qty = int(promo['value']) if promo['value'] else 2
-        get_free = int(promo['get_free'] or 1)
-        try:
-            applicable_items = json.loads(promo['applicable_items']) if promo['applicable_items'] else []
-        except (json.JSONDecodeError, TypeError):
-            applicable_items = []
 
-        success = apply_bxgy_promotion(cart, applicable_items, buy_qty, get_free)
-        if not success:
+    applied = _apply_promo_to_cart(cart, promo)
+    if not applied:
+        if promo['type'] == 'bxgy':
+            buy_qty = int(promo['value']) if promo['value'] else 2
+            get_free = int(promo['get_free'] or 1)
+            applicable_items = _parse_applicable_items(promo)
             items_label = ', '.join(applicable_items) if applicable_items else 'productos'
             flash(f'Necesitas al menos {buy_qty + get_free} {items_label} para aplicar esta promoción', 'error')
-            return redirect(url_for('view_cart'))
-    else:
-        # Handle regular percentage/fixed discounts
-        try:
-            applicable_items = json.loads(promo['applicable_items']) if promo['applicable_items'] else []
-        except json.JSONDecodeError:
-            applicable_items = []
-        
-        for item in cart:
-            if not applicable_items or item['type'] in applicable_items:
-                # Store original price before discount
-                if 'original_price' not in item:
-                    item['original_price'] = item['price']
-                
-                # Apply discount
-                if promo['type'] == 'percentage':
-                    item['price'] = money(item['original_price'] * (1 - promo['value'] / 100))
-                    item['discount'] = f"{format_num(promo['value'])}% off"
-                else:  # fixed amount
-                    item['price'] = money(max(0, item['original_price'] - promo['value']))
-                    item['discount'] = f"${format_num(promo['value'])} off"
-    
+        else:
+            flash('No se pudo aplicar la promoción a esta orden', 'error')
+        return redirect(url_for('view_cart'))
+
+    session['coupon_code'] = promo['name']
     session['cart'] = cart
     session.modified = True
     flash(f'Promoción "{promo["description"] or promo["name"]}" aplicada con éxito', 'success')
@@ -1304,15 +1397,21 @@ def apply_coupon():
 def remove_coupon():
     cart = session.get('cart', [])
 
-    for item in cart:
-        if 'original_price' in item:
-            item['price'] = item.pop('original_price')
-        item.pop('discount', None)
+    _reset_cart_prices(cart)
 
     session['cart'] = cart
+    session.pop('coupon_code', None)
     session.modified = True
     flash('Promoción eliminada de la orden', 'success')
     return redirect(url_for('view_cart'))
+
+def _issue_ticket_token():
+    """Emite un token de un solo uso para /ticket y lo guarda en sesión.
+    Previene que un doble-submit del mismo carrito registre la venta dos veces."""
+    token = str(uuid.uuid4())
+    session['ticket_token'] = token
+    session.modified = True
+    return token
 
 # Payment selection page
 @app.route('/payment')
@@ -1328,7 +1427,8 @@ def payment():
         total_price += item['price']
     total_price = money(total_price)
 
-    return render_template('payment.html', total_price=total_price)
+    return render_template('payment.html', total_price=total_price,
+                           ticket_token=_issue_ticket_token())
 
 # Cash payment page
 @app.route('/cash_payment')
@@ -1344,7 +1444,8 @@ def cash_payment():
         total_price += item['price']
     total_price = money(total_price)
 
-    return render_template('cash_payment.html', total_price=total_price)
+    return render_template('cash_payment.html', total_price=total_price,
+                           ticket_token=_issue_ticket_token())
 
 def _api_autorizada():
     """Permite acceso desde localhost (bridge de impresión) o sesión activa."""
@@ -1412,6 +1513,21 @@ def ticket():
     # atrás o un prefetch del navegador podían duplicar ventas (y sin CSRF).
     cart = session.get('cart', [])
 
+    # Carrito vacío: no registres una orden de $0. (Igual que /payment.)
+    if not cart:
+        flash('Agrega al menos un ítem antes de proceder al pago.', 'error')
+        return redirect(url_for('home'))
+
+    # Idempotencia: la página de pago sembró un token de un solo uso. Si la
+    # sesión ya tiene un token y el POST no coincide (ya se consumió por un
+    # doble-submit del mismo carrito), no insertes de nuevo.
+    session_token = session.get('ticket_token')
+    if session_token is not None:
+        if request.form.get('ticket_token') != session_token:
+            flash('Esta orden ya fue procesada.', 'error')
+            return redirect(url_for('home'))
+        session.pop('ticket_token', None)
+
     # Calculate total price correctly
     total_price = 0
     for item in cart:
@@ -1424,6 +1540,10 @@ def ticket():
     except (ValueError, TypeError):
         amount_paid = total_price
     change = money(amount_paid - total_price) if payment_method == 'cash' else 0
+    # Efectivo: no permitas registrar la venta con un pago menor al total.
+    if payment_method == 'cash' and amount_paid < total_price:
+        flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
+        return redirect(url_for('view_cart'))
     # Split payment: store cash_portion and card_portion in amount_paid as a JSON string
     if payment_method == 'split':
         try:
@@ -1432,12 +1552,15 @@ def ticket():
         except (ValueError, TypeError):
             cash_portion = 0.0
             card_portion = 0.0
+        if cash_portion < 0 or card_portion < 0:
+            flash('Los montos de pago no pueden ser negativos.', 'error')
+            return redirect(url_for('view_cart'))
         amount_paid = money(cash_portion + card_portion)
         if amount_paid < total_price:
             flash(f'Pago insuficiente. Se recibió ${amount_paid:.2f} de ${total_price:.2f}.', 'error')
             return redirect(url_for('view_cart'))
         change = money(max(0, amount_paid - total_price))
-    
+
     # Order ID for this transaction
     order_id = session.get('order_id')
     
@@ -1496,6 +1619,9 @@ def ticket():
         session['cart'] = []
         session['order_id'] = str(uuid.uuid4())[:8]
         session['customer_name'] = ''  # Clear customer name for next order
+        session.pop('coupon_code', None)  # el cupón no debe cruzar entre órdenes
+        # Token fresco: un re-POST del mismo carrito ya no coincidirá y no duplicará.
+        session['ticket_token'] = str(uuid.uuid4())
         session.modified = True
         
         # Return success page with both statuses
@@ -1873,7 +1999,8 @@ def recent_customers():
 def split_payment():
     cart = session.get('cart', [])
     total_price = money(sum(item['price'] for item in cart))
-    return render_template('split_payment.html', total_price=total_price)
+    return render_template('split_payment.html', total_price=total_price,
+                           ticket_token=_issue_ticket_token())
 
 
 @app.route('/admin/changelog')

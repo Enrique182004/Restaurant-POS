@@ -6,7 +6,9 @@ y reintenta cuando se reconecta. No requiere configuración manual.
 """
 
 import os
+import re
 import time
+import signal
 import subprocess
 import platform
 import tempfile
@@ -225,24 +227,39 @@ class ThermalPrintBridge:
         cleaned = self.clean_text(receipt_content)
         result = bytearray(ESC_INIT)
 
+        def emit(text, double_height=False):
+            data = text.encode('ascii', errors='replace') + b'\n'
+            if double_height:
+                result.extend(ESC_DOBLE_ALTO)
+                result.extend(data)
+                result.extend(ESC_NORMAL)
+            else:
+                result.extend(data)
+
         # Papel en blanco al final para el corte manual (sin cuchilla
         # automática). FEED_LINES ajusta cuánto: suficiente para no llevarse
         # contenido del ticket, sin desperdiciar papel.
         for line in ('\n' + cleaned + '\n' * FEED_LINES).split('\n'):
-            if line.startswith('\x02'):
-                # Línea de nombre de artículo — doble altura
-                contenido = line[1:]
-                margined = margin + contenido
-                if len(margined) > MAX_WIDTH:
-                    margined = margined[:MAX_WIDTH]
-                result += ESC_DOBLE_ALTO
-                result += margined.encode('ascii', errors='replace') + b'\n'
-                result += ESC_NORMAL
+            double_height = line.startswith('\x02')
+            contenido = line[1:] if double_height else line
+            margined = margin + contenido
+
+            if len(margined) <= MAX_WIDTH:
+                emit(margined, double_height)
+                continue
+
+            # La línea excede el ancho del papel. Si termina en un precio
+            # ($NN.NN), truncar solo el nombre y garantizar que el precio se
+            # imprima — en su propia línea, alineado a la derecha.
+            m = re.search(r'(\$\d[\d.,]*)\s*$', contenido)
+            if m:
+                price = m.group(1)
+                name = contenido[:m.start()].rstrip()
+                emit((margin + name)[:MAX_WIDTH], double_height)
+                price_line = price.rjust(MAX_WIDTH) if len(price) < MAX_WIDTH else price
+                emit(price_line, False)
             else:
-                margined = margin + line
-                if len(margined) > MAX_WIDTH:
-                    margined = margined[:MAX_WIDTH]
-                result += margined.encode('ascii', errors='replace') + b'\n'
+                emit(margined[:MAX_WIDTH], double_height)
 
         return bytes(result)
 
@@ -252,7 +269,14 @@ class ThermalPrintBridge:
         try:
             resp = requests.get(f'{SERVER_URL}/api/print_queue', timeout=5)
             if resp.status_code == 200:
-                return resp.json().get('jobs', [])
+                try:
+                    data = resp.json()
+                except ValueError:
+                    # Respuesta 200 pero no-JSON (p. ej. una página de error
+                    # HTML mientras Flask reinicia). No es fatal: seguir sondeando.
+                    print("Respuesta no-JSON de /api/print_queue — se ignora este ciclo.")
+                    return []
+                return data.get('jobs', [])
         except requests.exceptions.RequestException as e:
             print(f"Sin conexión al servidor: {e}")
         return []
@@ -332,8 +356,14 @@ class ThermalPrintBridge:
 
         ciclos_sin_verificar = 0
 
-        try:
-            while True:
+        # El bucle debe ser resiliente: cualquier error de un ciclo (red, JSON
+        # inválido, impresora, etc.) se registra y el sondeo CONTINÚA. Solo se
+        # sale ante una señal explícita de apagado (KeyboardInterrupt / SIGTERM,
+        # que el handler convierte en KeyboardInterrupt). Antes, un ValueError
+        # de resp.json() caía al except global y el proceso terminaba con
+        # código 0, deteniendo la impresión en silencio y sin reinicio.
+        while True:
+            try:
                 # Verificar proactivamente que la impresora sigue habilitada
                 # aunque no haya jobs — evita que CUPS la deje desactivada silenciosamente
                 ciclos_sin_verificar += 1
@@ -375,12 +405,26 @@ class ThermalPrintBridge:
 
                 time.sleep(POLL_INTERVAL)
 
-        except KeyboardInterrupt:
-            print("\nPrint bridge detenido.")
-        except Exception as e:
-            print(f"Error en bridge: {e}")
+            except (KeyboardInterrupt, SystemExit):
+                print("\nPrint bridge detenido.")
+                break
+            except Exception as e:
+                # Error inesperado en este ciclo — registrar y seguir sondeando.
+                print(f"Error en ciclo del bridge (continuando): {e}")
+                time.sleep(POLL_INTERVAL)
+
+
+def _handle_sigterm(signum, frame):
+    # Convertir SIGTERM en KeyboardInterrupt para que el bucle salga limpiamente
+    # (apagado explícito) en vez de ser matado abruptamente.
+    raise KeyboardInterrupt()
 
 
 if __name__ == '__main__':
+    try:
+        signal.signal(signal.SIGTERM, _handle_sigterm)
+    except (ValueError, OSError):
+        # No estamos en el hilo principal o la plataforma no lo soporta.
+        pass
     bridge = ThermalPrintBridge()
     bridge.run()

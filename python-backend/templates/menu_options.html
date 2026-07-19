@@ -537,7 +537,14 @@ block styles %}
         var target = document
           .elementFromPoint(ev.clientX, ev.clientY)
           ?.closest(".opt-wrap");
-        if (!target || target === wrap || target.parentElement !== list) return;
+        if (!target || target === wrap) return;
+        // Restringir el reordenamiento a la MISMA lista/sección: si el puntero
+        // pasa sobre un chip de otra sección (otro .opt-list / data-cat), se
+        // ignora. Así un chip nunca cruza de categoría y el fetch de reorder
+        // solo envía ids que pertenecen a esta lista.
+        var targetList = target.closest(".opt-list");
+        if (targetList !== list || targetList.dataset.cat !== list.dataset.cat)
+          return;
         var box = target.getBoundingClientRect();
         var before =
           ev.clientY < box.top + box.height / 2 ||

@@ -19,10 +19,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 def register(app):
     # ── Forgot Password ───────────────────────────────────────────────────────────
-    # Sin verificación por correo: la app corre localmente y solo es accesible
-    # desde la computadora donde está instalada, así que el acceso físico al
-    # equipo es la autorización (ver subtítulo en forgot_password.html).
+    # SEGURIDAD (audit v2.1.1): antes esta ruta reseteaba la contraseña de
+    # CUALQUIER usuario (admin incluido) sin verificar identidad. Como el
+    # servidor escucha en 0.0.0.0, cualquiera en la Wi-Fi del local podía
+    # tomar la cuenta admin. Ahora exige sesión admin: el restablecimiento de
+    # cuentas ajenas es una tarea de administración (igual que reset_user_password).
+    # Un usuario que olvidó su contraseña debe pedirle a un admin que la
+    # restablezca; no hay auto-servicio sin verificación de identidad.
     @app.route('/forgot_password', methods=['GET', 'POST'])
+    @login_required
+    @admin_required
     def forgot_password():
         if request.method == 'POST':
             username = request.form.get('username', '').strip()

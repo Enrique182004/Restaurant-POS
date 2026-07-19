@@ -55,3 +55,7 @@ docs/superpowers/
 
 # Python backend build output
 python-backend/build/
+
+# SQLite WAL sidecar files (runtime)
+*.db-shm
+*.db-wal

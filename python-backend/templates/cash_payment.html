@@ -217,6 +217,7 @@ block styles %}
   >
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="payment_method" value="cash" />
+    <input type="hidden" name="ticket_token" value="{{ ticket_token }}" />
     <input type="hidden" name="amount_paid" id="amount-paid-hidden" value="" />
     <button type="submit" class="print-button" id="print-ticket">
       <span class="print-icon">🖨️</span> Imprimir Ticket

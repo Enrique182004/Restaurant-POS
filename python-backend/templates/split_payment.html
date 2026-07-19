@@ -217,6 +217,7 @@ styles %}
   <form method="POST" action="{{ url_for('ticket') }}" id="split-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" name="payment_method" value="split" />
+    <input type="hidden" name="ticket_token" value="{{ ticket_token }}" />
     <input type="hidden" name="cash_portion" id="cash-hidden" value="0" />
     <input type="hidden" name="card_portion" id="card-hidden" value="0" />
     <button type="submit" class="split-confirm-btn" id="confirm-btn" disabled>
@@ -325,6 +326,13 @@ styles %}
       recalc();
     });
     cardInput.addEventListener('input', recalc);
+
+    // Evita el doble-submit: deshabilita el botón al confirmar.
+    var splitForm = document.getElementById('split-form');
+    splitForm.addEventListener('submit', function () {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Procesando…';
+    });
 
     recalc();
   })();

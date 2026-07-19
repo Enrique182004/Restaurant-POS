@@ -134,10 +134,16 @@ styles %}
         method="POST"
         action="{{ url_for('ticket') }}"
         class="payment-method-form"
+        id="card-form"
       >
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="payment_method" value="card" />
-        <button type="submit" class="payment-method-card metodo-tarjeta">
+        <input type="hidden" name="ticket_token" value="{{ ticket_token }}" />
+        <button
+          type="submit"
+          class="payment-method-card metodo-tarjeta"
+          id="card-submit"
+        >
           <div class="method-icon">💳</div>
           <div class="method-name">Tarjeta</div>
           <div class="method-description">
@@ -162,4 +168,17 @@ styles %}
     </a>
   </div>
 </div>
+<script>
+  (function () {
+    var cardForm = document.getElementById("card-form");
+    var cardSubmit = document.getElementById("card-submit");
+    if (cardForm && cardSubmit) {
+      cardForm.addEventListener("submit", function () {
+        cardSubmit.disabled = true;
+        cardSubmit.style.pointerEvents = "none";
+        cardSubmit.style.opacity = "0.6";
+      });
+    }
+  })();
+</script>
 {% endblock %}

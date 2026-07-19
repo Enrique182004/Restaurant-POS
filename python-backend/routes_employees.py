@@ -142,8 +142,21 @@ def register(app):
             (employee_id, work_date)
         ).fetchone()
         if existing:
+            # Desmarcar siempre se permite (limpiar un registro previo).
             conn.execute('DELETE FROM attendance WHERE id = ?', (existing['id'],))
         else:
+            # audit v2.1.1: no permitir marcar asistencia en una semana sin
+            # horario vigente. compute_employee_pay devolvería $0 para ese día
+            # (resolve_employee_schedule == None) y quedaría como asistencia
+            # fantasma que paga nada en silencio.
+            try:
+                week_start, _ = get_week_bounds(work_date)
+            except ValueError:
+                flash('Solicitud inválida.', 'error')
+                return redirect(url_for('employees_attendance', week=week_param or work_date))
+            if resolve_employee_schedule(conn, int(employee_id), week_start) is None:
+                flash('El empleado no tiene horario vigente para esta semana.', 'error')
+                return redirect(url_for('employees_attendance', week=week_param or work_date))
             conn.execute(
                 'INSERT OR IGNORE INTO attendance (employee_id, work_date) VALUES (?, ?)',
                 (employee_id, work_date)

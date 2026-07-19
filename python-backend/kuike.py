@@ -11,6 +11,7 @@ _PERIOD_LABELS = {
     'yesterday': 'ayer',
     'week':      'esta semana',
     'month':     'este mes',
+    'year':      'este año',
     'alltime':   'histórico',
 }
 
@@ -30,8 +31,10 @@ def detect_period(text):
         return 'week'
     if any(w in text for w in ['month', 'mensual', 'este mes', 'this month']) or re.search(r'\bmes\b', text):
         return 'month'
+    # audit v2.1.1: 'año'/'this year' antes caía en 'alltime' (histórico completo).
+    # Ahora es un rango real del año en curso (1-ene .. ahora).
     if any(w in text for w in ['año', 'year', 'anual', 'este año', 'this year']):
-        return 'alltime'
+        return 'year'
     return 'today'
 
 
