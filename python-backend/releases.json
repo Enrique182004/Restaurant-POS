@@ -1,5 +1,17 @@
 [
   {
+    "version": "2.2.0",
+    "date": "2026-07-19",
+    "changes": [
+      "Pagos en dólares: al cobrar en efectivo o pago mixto elige MXN o USD, captura cuánto pagó el cliente y el cambio se muestra siempre en pesos",
+      "Tipo de cambio del dólar configurable en el Panel de Admin; se aplica al cobrar en USD y se imprime en el ticket",
+      "El ticket muestra el pago en dólares con su tipo de cambio; el pago mixto desglosa efectivo y tarjeta por separado",
+      "Puestos de empleado: Gerente (pago semanal fijo ÷ 6 días — faltar un día descuenta 1/6) y Empleado (tarifa por día: $200 lun–jue, $300 vie–dom)",
+      "Los empleados existentes quedan como Empleado — cambia el puesto en Gestionar empleados si alguien es Gerente",
+      "Incluye correcciones de auditoría: cobros duplicados bloqueados, promociones consistentes al editar el carrito, reportes e Historial cuadran por día, y accesos de admin protegidos"
+    ]
+  },
+  {
     "version": "2.1.0",
     "date": "2026-07-09",
     "changes": [
