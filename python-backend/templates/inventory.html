@@ -20,18 +20,18 @@ styles %}
     font-size: 2.8rem;
     font-weight: 800;
     line-height: 1;
-    color: #2ecc71;
+    color: var(--success);
   }
   .inv-qty-num.qty-warn {
-    color: #f39c12;
+    color: var(--accent);
   }
   .inv-qty-num.qty-low {
-    color: #e74c3c;
+    color: var(--danger);
   }
 
   .inv-unit {
     font-size: 0.82rem;
-    color: #666;
+    color: var(--text-muted);
     margin-top: 4px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -47,7 +47,7 @@ styles %}
   .inv-bar-track {
     flex: 1;
     height: 6px;
-    background: #2a2a2a;
+    background: var(--border);
     border-radius: 3px;
     overflow: hidden;
   }
@@ -55,19 +55,19 @@ styles %}
   .inv-bar-fill {
     height: 100%;
     border-radius: 3px;
-    background: #2ecc71;
+    background: var(--success);
     transition: width 0.4s ease;
   }
   .inv-bar-fill.bar-warn {
-    background: #f39c12;
+    background: var(--accent);
   }
   .inv-bar-fill.bar-low {
-    background: #e74c3c;
+    background: var(--danger);
   }
 
   .inv-min-label {
     font-size: 0.78rem;
-    color: #555;
+    color: var(--text-muted);
     white-space: nowrap;
   }
 
@@ -90,9 +90,9 @@ styles %}
     text-align: center;
     font-size: 2rem;
     font-weight: 800;
-    color: #ff9800;
-    background: #2a2a2a;
-    border: 2px solid #3d3d3d;
+    color: var(--accent);
+    background: var(--border);
+    border: 2px solid var(--border-strong);
     border-radius: 10px;
     padding: 6px 4px;
     -moz-appearance: textfield;
@@ -103,11 +103,11 @@ styles %}
   }
   .inv-qty-input:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .inv-unit-inline {
     font-size: 0.75rem;
-    color: #555;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -119,12 +119,12 @@ styles %}
     gap: 8px;
     margin-top: 10px;
     padding: 8px 10px;
-    background: #1a1a1a;
+    background: var(--bg);
     border-radius: 8px;
   }
   .inv-min-label-txt {
     font-size: 0.82rem;
-    color: #666;
+    color: var(--text-muted);
     white-space: nowrap;
   }
   .inv-min-input {
@@ -132,9 +132,9 @@ styles %}
     text-align: center;
     font-size: 1rem;
     font-weight: 700;
-    color: #ccc;
-    background: #2a2a2a;
-    border: 1px solid #3d3d3d;
+    color: var(--text-2);
+    background: var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 6px 4px;
     -moz-appearance: textfield;
@@ -145,14 +145,14 @@ styles %}
   }
   .inv-min-input:focus {
     outline: none;
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   /* ── Botones ─────────────────────────────────────────────── */
   .inventory-btn.delete {
-    background-color: #4a1f1f;
-    color: #ff6b6b;
+    background-color: var(--danger-surface);
+    color: var(--danger);
     flex: 0.5;
   }
 
@@ -164,8 +164,8 @@ styles %}
   }
 
   .secondary-button {
-    background-color: #333;
-    color: #f5f5f5;
+    background-color: var(--surface-3);
+    color: var(--text);
   }
 
   .inventory-grid {
@@ -176,11 +176,11 @@ styles %}
   }
 
   .inventory-card {
-    background-color: #1e1e1e;
+    background-color: var(--surface-1);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: 2px solid #3d3d3d;
+    border: 2px solid var(--border-strong);
     transition: transform 0.2s;
   }
 
@@ -189,7 +189,7 @@ styles %}
   }
 
   .inventory-card.low-stock {
-    border-color: #ff9800;
+    border-color: var(--accent);
     background-color: #2a1f00;
   }
 
@@ -199,19 +199,19 @@ styles %}
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #3d3d3d;
+    border-bottom: 1px solid var(--border-strong);
   }
 
   .item-name {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     margin: 0;
   }
 
   .low-stock-badge {
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     padding: 4px 12px;
     border-radius: 12px;
     font-size: 0.85rem;
@@ -229,17 +229,17 @@ styles %}
   }
 
   .detail-label {
-    color: #ccc;
+    color: var(--text-2);
     font-weight: 600;
   }
 
   .detail-value {
-    color: #f5f5f5;
+    color: var(--text);
     font-weight: 700;
   }
 
   .detail-value.quantity {
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1.1rem;
   }
 
@@ -260,8 +260,8 @@ styles %}
   }
 
   .inventory-btn.decrease {
-    background-color: #3f1f1f;
-    color: #ff9090;
+    background-color: var(--danger-surface);
+    color: var(--danger);
   }
 
   .inventory-btn.decrease:hover {
@@ -269,8 +269,8 @@ styles %}
   }
 
   .inventory-btn.increase {
-    background-color: #1b5e20;
-    color: #81c784;
+    background-color: var(--success-bg);
+    color: var(--success);
   }
 
   .inventory-btn.increase:hover {
@@ -290,7 +290,7 @@ styles %}
 
   .empty-message {
     font-size: 1.2rem;
-    color: #ccc;
+    color: var(--text-2);
   }
 
   @media (max-width: 768px) {
@@ -455,16 +455,16 @@ styles %}
 >
   <div
     style="
-      background: #1e1e1e;
+      background: var(--surface-1);
       border-radius: 18px;
       padding: 32px;
       width: 90%;
       max-width: 420px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-      border: 1px solid #3d3d3d;
+      border: 1px solid var(--border-strong);
     "
   >
-    <h2 style="color: #ff9800; margin: 0 0 24px; font-size: 1.4rem">
+    <h2 style="color: var(--accent); margin: 0 0 24px; font-size: 1.4rem">
       Agregar Ingrediente
     </h2>
     <form id="form-agregar">
@@ -472,7 +472,7 @@ styles %}
         <label
           style="
             display: block;
-            color: #aaa;
+            color: var(--text-2);
             font-size: 0.9rem;
             margin-bottom: 6px;
           "
@@ -486,9 +486,9 @@ styles %}
             width: 100%;
             padding: 12px;
             border-radius: 10px;
-            border: 1px solid #3d3d3d;
-            background: #2d2d2d;
-            color: #f5f5f5;
+            border: 1px solid var(--border-strong);
+            background: var(--surface-2);
+            color: var(--text);
             font-size: 1rem;
             box-sizing: border-box;
           "
@@ -507,7 +507,7 @@ styles %}
           <label
             style="
               display: block;
-              color: #aaa;
+              color: var(--text-2);
               font-size: 0.9rem;
               margin-bottom: 6px;
             "
@@ -523,9 +523,9 @@ styles %}
               width: 100%;
               padding: 12px;
               border-radius: 10px;
-              border: 1px solid #3d3d3d;
-              background: #2d2d2d;
-              color: #f5f5f5;
+              border: 1px solid var(--border-strong);
+              background: var(--surface-2);
+              color: var(--text);
               font-size: 1rem;
               box-sizing: border-box;
             "
@@ -536,7 +536,7 @@ styles %}
           <label
             style="
               display: block;
-              color: #aaa;
+              color: var(--text-2);
               font-size: 0.9rem;
               margin-bottom: 6px;
             "
@@ -552,9 +552,9 @@ styles %}
               width: 100%;
               padding: 12px;
               border-radius: 10px;
-              border: 1px solid #3d3d3d;
-              background: #2d2d2d;
-              color: #f5f5f5;
+              border: 1px solid var(--border-strong);
+              background: var(--surface-2);
+              color: var(--text);
               font-size: 1rem;
               box-sizing: border-box;
             "
@@ -566,7 +566,7 @@ styles %}
         <label
           style="
             display: block;
-            color: #aaa;
+            color: var(--text-2);
             font-size: 0.9rem;
             margin-bottom: 6px;
           "
@@ -580,9 +580,9 @@ styles %}
             width: 100%;
             padding: 12px;
             border-radius: 10px;
-            border: 1px solid #3d3d3d;
-            background: #2d2d2d;
-            color: #f5f5f5;
+            border: 1px solid var(--border-strong);
+            background: var(--surface-2);
+            color: var(--text);
             font-size: 1rem;
             box-sizing: border-box;
           "
@@ -596,9 +596,9 @@ styles %}
             flex: 1;
             padding: 14px;
             border-radius: 10px;
-            border: 1px solid #3d3d3d;
+            border: 1px solid var(--border-strong);
             background: none;
-            color: #aaa;
+            color: var(--text-2);
             font-size: 1rem;
             cursor: pointer;
           "
@@ -612,8 +612,8 @@ styles %}
             padding: 14px;
             border-radius: 10px;
             border: none;
-            background: #ff9800;
-            color: #121212;
+            background: var(--accent);
+            color: var(--bg);
             font-size: 1rem;
             font-weight: 700;
             cursor: pointer;

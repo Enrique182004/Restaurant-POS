@@ -31,32 +31,32 @@ block styles %}
     font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid #333;
-    color: #aaa;
-    background: #1e1e1e;
+    border: 1px solid var(--surface-3);
+    color: var(--text-2);
+    background: var(--surface-1);
     transition: all 0.15s;
   }
   .period-tab:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .period-tab.active {
-    background: #ff9800;
-    color: #121212;
-    border-color: #ff9800;
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
   }
   .section-heading {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin: 0 0 12px;
   }
   .emp-roster-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
     margin-bottom: 14px;
     overflow: hidden;
   }
@@ -78,28 +78,28 @@ block styles %}
   }
   .emp-roster-name {
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 1rem;
   }
   .emp-roster-meta {
     font-size: 0.82rem;
-    color: #aaa;
+    color: var(--text-2);
   }
   .inactive-badge {
     font-size: 0.7rem;
     font-weight: 700;
-    color: #ff8a80;
+    color: var(--danger);
     text-transform: uppercase;
     margin-left: 8px;
   }
   .emp-roster-body {
     padding: 0 20px 20px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid var(--border);
   }
   .field-label {
     display: block;
     font-size: 0.78rem;
-    color: #888;
+    color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -109,15 +109,15 @@ block styles %}
   .field-input {
     width: 100%;
     padding: 10px 12px;
-    background: #2d2d2d;
-    border: 1px solid #3d3d3d;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 0.95rem;
   }
   .field-input:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .day-checks,
   .role-checks {
@@ -132,22 +132,22 @@ block styles %}
     gap: 4px;
     padding: 6px 10px;
     border-radius: 8px;
-    background: #2d2d2d;
-    border: 1px solid #3d3d3d;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
     font-size: 0.82rem;
-    color: #ccc;
+    color: var(--text-2);
     cursor: pointer;
     transition: all 0.15s;
   }
   .day-check-label:has(input:checked) {
-    background: #ff9800;
-    border-color: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
     font-weight: 700;
   }
   .save-hint {
     font-size: 0.78rem;
-    color: #888;
+    color: var(--text-muted);
     margin-top: 8px;
   }
   .form-actions {
@@ -158,20 +158,20 @@ block styles %}
   }
   .save-btn {
     padding: 10px 20px;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     border-radius: 10px;
     font-weight: 700;
     cursor: pointer;
   }
   .save-btn:hover {
-    background: #e68900;
+    background: var(--accent-strong);
   }
   .danger-btn {
     padding: 10px 20px;
-    background: #4a1f1f;
-    color: #ff6b6b;
+    background: var(--danger-surface);
+    color: var(--danger);
     border: none;
     border-radius: 10px;
     font-weight: 700;
@@ -181,17 +181,17 @@ block styles %}
     background: #5a2f2f;
   }
   .add-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
     padding: 20px 24px;
     margin-top: 32px;
   }
   .add-btn {
     width: 100%;
     padding: 12px;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     border-radius: 12px;
     font-size: 1rem;
@@ -200,11 +200,11 @@ block styles %}
     margin-top: 14px;
   }
   .add-btn:hover {
-    background: #e68900;
+    background: var(--accent-strong);
   }
   .empty-state {
     text-align: center;
-    color: #888;
+    color: var(--text-muted);
     padding: 40px 20px;
   }
 </style>

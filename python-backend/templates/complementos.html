@@ -4,8 +4,8 @@ styles %}
   /* Complement sauce styling to match other menus */
   .complement-card {
     position: relative;
-    border: 2px solid #3d3d3d;
-    background-color: #2d2d2d;
+    border: 2px solid var(--border-strong);
+    background-color: var(--surface-2);
     border-radius: 12px;
     transition: all 0.2s ease;
   }
@@ -15,8 +15,8 @@ styles %}
   }
 
   .complement-card.selected {
-    border-color: #ff9800;
-    background-color: #3d3d3d;
+    border-color: var(--accent);
+    background-color: var(--border-strong);
   }
 
   .complement-card.selected::after {
@@ -24,8 +24,8 @@ styles %}
     position: absolute;
     top: 8px;
     left: 8px;
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -41,8 +41,8 @@ styles %}
     position: absolute;
     top: 8px;
     right: 8px;
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     font-size: 0.8rem;
     padding: 4px 8px;
     border-radius: 10px;
@@ -55,7 +55,7 @@ styles %}
     text-align: center;
     margin-top: 1rem;
     padding: 15px;
-    background-color: #2a2a2a;
+    background-color: var(--border);
     border-radius: 12px;
     display: flex;
     justify-content: space-between;
@@ -66,24 +66,24 @@ styles %}
 
   .counter-text {
     font-weight: 600;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 1rem;
   }
 
   .counter-cost {
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1.1rem;
   }
 
   #selected-sauce-count {
-    color: #ff9800;
+    color: var(--accent);
     font-weight: 700;
     font-size: 1.1rem;
   }
 
   #sauce-cost {
-    color: #ff9800;
+    color: var(--accent);
     font-weight: 700;
   }
 
@@ -135,7 +135,7 @@ styles %}
   .option-name {
     font-weight: 600;
     font-size: 1rem;
-    color: #f5f5f5;
+    color: var(--text);
     text-align: center;
     line-height: 1.2;
   }
@@ -354,7 +354,7 @@ styles %}
               if (count === 0) {
                   countElement.style.color = '#888';
               } else {
-                  countElement.style.color = '#FF9800';
+                  countElement.style.color = '#ff9f2e';
               }
           }
       }

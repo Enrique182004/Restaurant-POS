@@ -8,7 +8,7 @@ block styles %}
   }
 
   .cash-input-section {
-    background-color: #1e1e1e;
+    background-color: var(--surface-1);
     border-radius: 16px;
     padding: 25px;
     margin: 30px 0;
@@ -19,22 +19,22 @@ block styles %}
     display: flex;
     align-items: center;
     margin: 20px 0;
-    background-color: #2d2d2d;
-    border: 2px solid #3d3d3d;
+    background-color: var(--surface-2);
+    border: 2px solid var(--border-strong);
     border-radius: 12px;
     overflow: hidden;
     transition: border-color 0.2s;
   }
 
   .cash-input-container:focus-within {
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
 
   .input-prefix {
     font-size: 2rem;
     font-weight: 700;
     padding: 0 20px;
-    color: #999;
+    color: var(--text-muted);
   }
 
   .cash-input {
@@ -44,12 +44,12 @@ block styles %}
     padding: 20px 0;
     font-size: 2rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     text-align: left;
   }
 
   .cash-input::placeholder {
-    color: #777;
+    color: var(--text-muted);
   }
 
   .cash-input:focus {
@@ -65,29 +65,29 @@ block styles %}
   }
 
   .quick-amount-btn {
-    background-color: #2d2d2d;
-    border: 2px solid #3d3d3d;
+    background-color: var(--surface-2);
+    border: 2px solid var(--border-strong);
     padding: 15px 25px;
     border-radius: 12px;
     font-size: 1.3rem;
     font-weight: 600;
-    color: #f5f5f5;
+    color: var(--text);
     cursor: pointer;
     transition: all 0.2s;
     min-width: 120px;
   }
 
   .quick-amount-btn:hover {
-    background-color: #ff9800;
-    color: #121212;
-    border-color: #ff9800;
+    background-color: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 159, 46, 0.3);
   }
 
   .quick-amount-btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(255, 159, 46, 0.3);
   }
 
   .change-display {
@@ -104,14 +104,14 @@ block styles %}
   .change-label {
     font-size: 1.3rem;
     font-weight: 600;
-    color: #69db7c;
+    color: var(--success);
     margin-bottom: 10px;
   }
 
   .change-amount {
     font-size: 2.8rem;
     font-weight: 800;
-    color: #69db7c;
+    color: var(--success);
   }
 
   .print-form {
@@ -122,8 +122,8 @@ block styles %}
   .print-button {
     display: block;
     width: 100%;
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     border: none;
     cursor: pointer;
     font-family: inherit;
@@ -133,17 +133,17 @@ block styles %}
     font-size: 1.2rem;
     text-align: center;
     text-decoration: none;
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 159, 46, 0.3);
     transition: all 0.2s ease;
   }
 
   .print-button:hover {
-    background-color: #f57c00;
+    background-color: var(--accent-strong);
   }
 
   .print-button:active {
     transform: translateY(2px);
-    box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(255, 159, 46, 0.3);
   }
 
   .print-icon {
@@ -160,9 +160,9 @@ block styles %}
     flex: 1;
     padding: 12px;
     border-radius: 10px;
-    border: 2px solid #3d3d3d;
-    background: #2d2d2d;
-    color: #ccc;
+    border: 2px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text-2);
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
@@ -170,21 +170,21 @@ block styles %}
   }
 
   .currency-btn.active {
-    background: #ff9800;
-    border-color: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
   }
 
   .rate-hint {
     font-size: 0.85rem;
-    color: #888;
+    color: var(--text-muted);
     margin: 6px 2px 0;
   }
 
   .mxn-equivalent {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #69db7c;
+    color: var(--success);
     margin: -8px 2px 8px;
   }
 

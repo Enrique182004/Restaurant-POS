@@ -20,10 +20,10 @@ styles %}
     font-size: 0.95rem;
   }
   .prices-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 6px 0;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
     overflow: hidden;
   }
   .price-row {
@@ -31,17 +31,17 @@ styles %}
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--border);
     gap: 12px;
   }
   .price-row:last-of-type {
     border-bottom: none;
   }
   .add-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 20px 20px 22px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
   }
   .add-grid {
     display: grid;
@@ -50,7 +50,7 @@ styles %}
   .section-heading {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin: 0 0 14px;
@@ -60,7 +60,7 @@ styles %}
     display: block;
     font-size: 0.78rem;
     font-weight: 700;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 6px;
@@ -69,42 +69,42 @@ styles %}
     width: 100%;
     box-sizing: border-box;
     padding: 9px 12px;
-    border: 1px solid #3d3d3d;
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     font-size: 0.92rem;
-    background: #2d2d2d;
-    color: #f5f5f5;
+    background: var(--surface-2);
+    color: var(--text);
     transition: border-color 0.2s;
   }
   .field-input:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .field-input::placeholder {
-    color: #555;
+    color: var(--text-muted);
   }
   .field-select {
     width: 100%;
     box-sizing: border-box;
     padding: 9px 12px;
-    border: 1px solid #3d3d3d;
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     font-size: 0.92rem;
-    background: #2d2d2d;
-    color: #f5f5f5;
+    background: var(--surface-2);
+    color: var(--text);
     appearance: none;
     cursor: pointer;
     transition: border-color 0.2s;
   }
   .field-select:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .add-btn {
     margin-top: 6px;
     padding: 11px 24px;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     border-radius: 11px;
     font-size: 0.95rem;
@@ -113,7 +113,7 @@ styles %}
     transition: background 0.2s;
   }
   .add-btn:hover {
-    background: #e68900;
+    background: var(--accent-strong);
   }
 </style>
 {% endblock %} {% block body %}
@@ -133,12 +133,12 @@ styles %}
     {% if promotions %} {% for promo in promotions %}
     <div class="price-row" style="flex-wrap: wrap; gap: 10px">
       <div style="flex: 1; min-width: 160px">
-        <div style="font-weight: 700; color: #f5f5f5; font-size: 0.95rem">
+        <div style="font-weight: 700; color: var(--text); font-size: 0.95rem">
           {{ promo.name }}
         </div>
-        <div style="font-size: 0.8rem; color: #888; margin-top: 2px">
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px">
           {{ promo.description or '' }}
-          <span style="color: #555; margin-left: 6px">
+          <span style="color: var(--text-muted); margin-left: 6px">
             {% if promo.type == 'percentage' %}· {{ promo.value|int }}%
             descuento {% elif promo.type == 'fixed' %}· ${{
             "%.2f"|format(promo.value) }} descuento {% elif promo.type in
@@ -152,7 +152,7 @@ styles %}
       </div>
       <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0">
         <span
-          style="font-size:0.8rem;color:{% if promo.active %}#81C784{% else %}#888{% endif %};"
+          style="font-size:0.8rem;color:{% if promo.active %}var(--success){% else %}var(--text-muted){% endif %};"
         >
           {% if promo.active %}● Activa{% else %}○ Inactiva{% endif %}
         </span>
@@ -165,8 +165,8 @@ styles %}
           <button
             type="submit"
             style="padding:5px 12px;border-radius:8px;border:none;cursor:pointer;font-size:0.82rem;font-weight:600;
-                        background:{% if promo.active %}#4A1F1F{% else %}#1B5E20{% endif %};
-                        color:{% if promo.active %}#FF6B6B{% else %}#81C784{% endif %};"
+                        background:{% if promo.active %}var(--danger-surface){% else %}var(--success-bg){% endif %};
+                        color:{% if promo.active %}var(--danger){% else %}var(--success){% endif %};"
           >
             {% if promo.active %}Desactivar{% else %}Activar{% endif %}
           </button>
@@ -187,8 +187,8 @@ styles %}
               cursor: pointer;
               font-size: 0.82rem;
               font-weight: 600;
-              background: #2a2a2a;
-              color: #ff6b6b;
+              background: var(--border);
+              color: var(--danger);
             "
           >
             ✕
@@ -198,7 +198,7 @@ styles %}
     </div>
     {% endfor %} {% else %}
     <div
-      style="padding: 20px; color: #555; text-align: center; font-size: 0.9rem"
+      style="padding: 20px; color: var(--text-muted); text-align: center; font-size: 0.9rem"
     >
       Sin promociones configuradas
     </div>
@@ -281,7 +281,7 @@ styles %}
                 position: absolute;
                 right: 10px;
                 font-size: 0.9rem;
-                color: #aaa;
+                color: var(--text-2);
                 pointer-events: none;
                 font-weight: 600;
               "
@@ -302,7 +302,7 @@ styles %}
               "
               style="
                 width: 100%;
-                accent-color: #ff9800;
+                accent-color: var(--accent);
                 cursor: pointer;
                 height: 4px;
               "
@@ -313,7 +313,7 @@ styles %}
             style="
               margin-top: 6px;
               font-size: 0.82rem;
-              color: #ff9800;
+              color: var(--accent);
               font-weight: 600;
               min-height: 1.1em;
               transition: opacity 0.2s ease;
@@ -352,7 +352,7 @@ styles %}
         <div>
           <label class="field-label"
             >Mínimo de compra
-            <span style="color: #555; font-weight: 400; text-transform: none"
+            <span style="color: var(--text-muted); font-weight: 400; text-transform: none"
               >opcional</span
             ></label
           >
@@ -370,7 +370,7 @@ styles %}
       <div style="margin-bottom: 18px">
         <label class="field-label"
           >Aplica a
-          <span style="color: #555; font-weight: 400; text-transform: none"
+          <span style="color: var(--text-muted); font-weight: 400; text-transform: none"
             >dejar vacío = toda la orden</span
           ></label
         >
@@ -383,10 +383,10 @@ styles %}
               align-items: center;
               gap: 6px;
               font-size: 0.88rem;
-              color: #ccc;
+              color: var(--text-2);
               cursor: pointer;
-              background: #2a2a2a;
-              border: 1px solid #3d3d3d;
+              background: var(--border);
+              border: 1px solid var(--border-strong);
               border-radius: 20px;
               padding: 5px 12px;
             "
@@ -395,7 +395,7 @@ styles %}
               type="checkbox"
               name="applicable_items"
               value="{{ item_type }}"
-              style="accent-color: #ff9800; width: 14px; height: 14px"
+              style="accent-color: var(--accent); width: 14px; height: 14px"
             />
             {{ item_type }}
           </label>

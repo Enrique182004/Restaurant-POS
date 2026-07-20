@@ -1,0 +1,80 @@
+/* ============================================================================
+   Design tokens — single source of truth for the whole app.
+   Modern-refresh palette (cooler charcoal surfaces, refined accent, pill
+   controls). Every stylesheet and page consumes these variables; to restyle
+   the app, edit values here.
+   ============================================================================ */
+:root {
+  /* Surfaces */
+  --bg: #0f1115;
+  --surface-1: #171a21; /* cards */
+  --surface-2: #1f242d; /* elevated / inputs / hover */
+  --surface-3: #262c37; /* strongest raised */
+
+  /* Borders */
+  --border: #232833;
+  --border-strong: #2f3644;
+
+  /* Accent (brand orange, refined) */
+  --accent: #ff9f2e;
+  --accent-strong: #ff8a00;
+  --accent-soft: rgba(255, 159, 46, 0.14);
+  --on-accent: #141414;
+
+  /* Text */
+  --text: #eef0f4;
+  --text-2: #a8adba;
+  --text-muted: #6b7180;
+
+  /* Semantic */
+  --success: #4ecb71;
+  --success-bg: rgba(46, 160, 87, 0.16);
+  --success-border: rgba(78, 203, 113, 0.35);
+  --danger: #f87171;
+  --danger-bg: rgba(220, 60, 60, 0.16);
+  --danger-border: rgba(248, 113, 113, 0.35);
+  --danger-surface: #3a1d1d;
+  --info: var(--accent);
+
+  /* Radius */
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* Spacing scale (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 48px;
+
+  /* Type scale */
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.9rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.6rem;
+  --fs-2xl: 2.2rem;
+
+  /* Font weights — limited palette */
+  --fw-normal: 400;
+  --fw-semibold: 600;
+  --fw-bold: 800;
+
+  /* Shadows (subtle, flat-friendly) */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-accent: 0 6px 20px rgba(255, 159, 46, 0.28);
+
+  /* Motion */
+  --dur: 0.18s;
+  --ease: ease;
+
+  /* Fonts */
+  --font-sans:
+    "SF Pro Display", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}

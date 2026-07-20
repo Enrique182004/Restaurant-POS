@@ -9,6 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <link rel="icon" href="/favicon.ico" type="image/jpeg" />
     <title>{% block title %}Ebi Ball POS{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/tokens.css" />
     <link rel="stylesheet" href="/static/css/tablet.css" />
     <link rel="stylesheet" href="/static/css/shared.css" />
     {% block styles %}{% endblock %}
@@ -26,14 +27,14 @@
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #ff9800, #e65c00);
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
         border: none;
         cursor: pointer;
         font-size: 1.6rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 20px rgba(255, 152, 0, 0.4);
+        box-shadow: 0 4px 20px rgba(255, 159, 46, 0.4);
         z-index: 9990;
         transition:
           transform 0.2s,
@@ -41,7 +42,7 @@
       }
       #kuike-fab:hover {
         transform: scale(1.08);
-        box-shadow: 0 6px 28px rgba(255, 152, 0, 0.55);
+        box-shadow: 0 6px 28px rgba(255, 159, 46, 0.55);
       }
       #kuike-panel {
         position: fixed;
@@ -49,8 +50,8 @@
         right: 24px;
         width: 340px;
         height: 460px;
-        background: #1a1a1a;
-        border: 1px solid #2a2a2a;
+        background: var(--bg);
+        border: 1px solid var(--border);
         border-radius: 20px;
         display: flex;
         flex-direction: column;
@@ -74,14 +75,14 @@
         align-items: center;
         gap: 10px;
         padding: 14px 16px;
-        border-bottom: 1px solid #2a2a2a;
+        border-bottom: 1px solid var(--border);
         flex-shrink: 0;
       }
       #kuike-ph-av {
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #ff9800, #e65c00);
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
         display: flex;
         align-items: center;
         justify-content: center;
@@ -90,20 +91,20 @@
       #kuike-ph-title {
         font-size: 0.9rem;
         font-weight: 700;
-        color: #ff9800;
+        color: var(--accent);
         flex: 1;
       }
       #kuike-x {
         background: none;
         border: none;
-        color: #666;
+        color: var(--text-muted);
         font-size: 1rem;
         cursor: pointer;
         padding: 4px;
         line-height: 1;
       }
       #kuike-x:hover {
-        color: #ccc;
+        color: var(--text-2);
       }
       #kuike-msgs {
         flex: 1;
@@ -118,7 +119,7 @@
         width: 3px;
       }
       #kuike-msgs::-webkit-scrollbar-thumb {
-        background: #333;
+        background: var(--surface-3);
         border-radius: 2px;
       }
       .kb {
@@ -142,10 +143,10 @@
         margin-top: 2px;
       }
       .kb.assistant .kb-av {
-        background: linear-gradient(135deg, #ff9800, #e65c00);
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
       }
       .kb.user .kb-av {
-        background: #2a2a2a;
+        background: var(--border);
       }
       .kb-t {
         padding: 8px 12px;
@@ -158,12 +159,12 @@
       .kb.assistant .kb-t {
         background: #222;
         color: #ddd;
-        border: 1px solid #2a2a2a;
+        border: 1px solid var(--border);
         border-radius: 4px 14px 14px 14px;
       }
       .kb.user .kb-t {
-        background: #ff9800;
-        color: #121212;
+        background: var(--accent);
+        color: var(--bg);
         font-weight: 600;
         border-radius: 14px 4px 14px 14px;
       }
@@ -177,7 +178,7 @@
         width: 5px;
         height: 5px;
         border-radius: 50%;
-        background: #555;
+        background: var(--text-muted);
         animation: kb-b 1.2s infinite;
       }
       .kb-dot:nth-child(2) {
@@ -200,15 +201,15 @@
         display: flex;
         gap: 8px;
         padding: 10px 14px 14px;
-        border-top: 1px solid #2a2a2a;
+        border-top: 1px solid var(--border);
         flex-shrink: 0;
       }
       #kuike-inp {
         flex: 1;
         background: #222;
-        border: 1px solid #2a2a2a;
+        border: 1px solid var(--border);
         border-radius: 10px;
-        color: #f5f5f5;
+        color: var(--text);
         font-size: 0.82rem;
         padding: 8px 11px;
         resize: none;
@@ -220,18 +221,18 @@
         transition: border-color 0.2s;
       }
       #kuike-inp:focus {
-        border-color: #ff9800;
+        border-color: var(--accent);
       }
       #kuike-inp::placeholder {
-        color: #555;
+        color: var(--text-muted);
       }
       #kuike-snd {
         width: 34px;
         height: 34px;
         border-radius: 9px;
         border: none;
-        background: #ff9800;
-        color: #121212;
+        background: var(--accent);
+        color: var(--bg);
         font-size: 0.9rem;
         cursor: pointer;
         flex-shrink: 0;
@@ -393,7 +394,7 @@
       <div
         style="
           background: #1e1e2e;
-          border: 1px solid #333;
+          border: 1px solid var(--surface-3);
           border-radius: 16px;
           padding: 32px 28px 24px;
           max-width: 380px;
@@ -408,7 +409,7 @@
           style="
             width: 48px;
             height: 48px;
-            background: rgba(255, 152, 0, 0.15);
+            background: rgba(255, 159, 46, 0.15);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -422,7 +423,7 @@
         <p
           id="custom-confirm-msg"
           style="
-            color: #e0e0e0;
+            color: var(--text);
             font-size: 1rem;
             line-height: 1.5;
             margin: 0 0 24px;
@@ -435,9 +436,9 @@
               flex: 1;
               padding: 10px 16px;
               border-radius: 10px;
-              border: 1px solid #444;
+              border: 1px solid var(--border-strong);
               background: transparent;
-              color: #aaa;
+              color: var(--text-2);
               font-size: 0.95rem;
               cursor: pointer;
               transition: all 0.15s;
@@ -452,7 +453,7 @@
               padding: 10px 16px;
               border-radius: 10px;
               border: none;
-              background: #e53935;
+              background: var(--danger);
               color: #fff;
               font-size: 0.95rem;
               font-weight: 600;
@@ -486,7 +487,7 @@
         bottom: 90px;
         left: 20px;
         background: #1e1e2e;
-        border: 1px solid #ff9800;
+        border: 1px solid var(--accent);
         border-radius: 14px;
         padding: 14px 16px;
         max-width: 300px;
@@ -499,13 +500,13 @@
         display: block;
       }
       #ls-toast-title {
-        color: #ff9800;
+        color: var(--accent);
         font-weight: 700;
         font-size: 0.88rem;
         margin-bottom: 4px;
       }
       #ls-toast-body {
-        color: #ccc;
+        color: var(--text-2);
         font-size: 0.8rem;
         line-height: 1.5;
       }
@@ -515,16 +516,16 @@
         right: 10px;
         background: none;
         border: none;
-        color: #666;
+        color: var(--text-muted);
         cursor: pointer;
         font-size: 0.9rem;
         line-height: 1;
       }
       #ls-toast-close:hover {
-        color: #ccc;
+        color: var(--text-2);
       }
       #ls-toast-link {
-        color: #ff9800;
+        color: var(--accent);
         text-decoration: none;
         font-weight: 700;
         font-size: 0.78rem;
@@ -535,7 +536,7 @@
         left: 0;
         right: 0;
         background: linear-gradient(90deg, #1a2a1a, #1e2e1e);
-        border-bottom: 1px solid #4caf50;
+        border-bottom: 1px solid var(--success);
         padding: 10px 20px;
         display: none;
         align-items: center;
@@ -548,12 +549,12 @@
         display: flex;
       }
       #update-banner-text {
-        color: #81c784;
+        color: var(--success);
         font-size: 0.88rem;
         font-weight: 600;
       }
       #update-install-btn {
-        background: #4caf50;
+        background: var(--success);
         color: #fff;
         border: none;
         padding: 6px 16px;
@@ -567,8 +568,8 @@
       }
       #update-later-btn {
         background: none;
-        border: 1px solid #4caf50;
-        color: #81c784;
+        border: 1px solid var(--success);
+        color: var(--success);
         padding: 6px 14px;
         border-radius: 8px;
         cursor: pointer;

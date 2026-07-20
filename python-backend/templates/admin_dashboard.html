@@ -18,7 +18,7 @@ endblock %} {% block styles %}
   .admin-title {
     font-size: 2rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
     margin: 0;
     display: flex;
     align-items: center;
@@ -28,18 +28,18 @@ endblock %} {% block styles %}
     font-size: 2rem;
   }
   .logout-btn {
-    color: #aaa;
+    color: var(--text-2);
     text-decoration: none;
     font-size: 0.9rem;
-    border: 1px solid #333;
+    border: 1px solid var(--surface-3);
     padding: 8px 16px;
     border-radius: 10px;
-    background: #1e1e1e;
+    background: var(--surface-1);
     transition: all 0.2s;
   }
   .logout-btn:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
 
   /* ── Flash alerts ────────────────────────────────────────────── */
@@ -58,21 +58,21 @@ endblock %} {% block styles %}
     margin-bottom: 32px;
   }
   .summary-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 24px 20px;
     text-align: center;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
   }
   .summary-value {
     font-size: 2.4rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
     line-height: 1;
   }
   .summary-label {
     font-size: 0.85rem;
-    color: #888;
+    color: var(--text-muted);
     margin-top: 6px;
     font-weight: 500;
   }
@@ -81,7 +81,7 @@ endblock %} {% block styles %}
   .section-heading {
     font-size: 0.78rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin: 0 0 14px;
@@ -96,17 +96,17 @@ endblock %} {% block styles %}
     margin-bottom: 36px;
   }
   .nav-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 22px 16px;
     text-align: center;
     text-decoration: none;
-    color: #f5f5f5;
-    border: 2px solid #2a2a2a;
+    color: var(--text);
+    border: 2px solid var(--border);
     transition: all 0.2s;
   }
   .nav-card:hover {
-    border-color: #ff9800;
+    border-color: var(--accent);
     transform: translateY(-2px);
   }
   .nav-card-icon {
@@ -116,11 +116,11 @@ endblock %} {% block styles %}
   .nav-card-name {
     font-size: 1rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
   }
   .nav-card-desc {
     font-size: 0.8rem;
-    color: #888;
+    color: var(--text-muted);
     margin-top: 4px;
   }
 
@@ -147,9 +147,9 @@ endblock %} {% block styles %}
         style="
           font-size: 0.75rem;
           font-weight: 700;
-          color: #ff9800;
-          background: rgba(255, 152, 0, 0.1);
-          border: 1px solid rgba(255, 152, 0, 0.25);
+          color: var(--accent);
+          background: rgba(255, 159, 46, 0.1);
+          border: 1px solid rgba(255, 159, 46, 0.25);
           padding: 4px 10px;
           border-radius: 20px;
           text-decoration: none;
@@ -164,9 +164,9 @@ endblock %} {% block styles %}
         style="
           font-size: 0.75rem;
           font-weight: 600;
-          color: #888;
+          color: var(--text-muted);
           background: transparent;
-          border: 1px solid #333;
+          border: 1px solid var(--surface-3);
           padding: 4px 10px;
           border-radius: 20px;
           cursor: pointer;
@@ -174,8 +174,8 @@ endblock %} {% block styles %}
           white-space: nowrap;
         "
         onmouseover="
-          this.style.borderColor = '#ff9800';
-          this.style.color = '#ff9800';
+          this.style.borderColor = '#ff9f2e';
+          this.style.color = '#ff9f2e';
         "
         onmouseout="
           if (!this.dataset.active) {
@@ -216,15 +216,15 @@ endblock %} {% block styles %}
       gap: 12px;
     "
   >
-    <span style="color: #ff8a80; font-weight: 600; font-size: 0.95rem">
+    <span style="color: var(--danger); font-weight: 600; font-size: 0.95rem">
       ⚠️ Hay {{ users_with_default }} usuario(s) con contraseña predeterminada.
       Cámbiala por seguridad.
     </span>
     <a
       href="{{ url_for('manage_users') }}"
       style="
-        background: #ff9800;
-        color: #121212;
+        background: var(--accent);
+        color: var(--bg);
         padding: 8px 16px;
         border-radius: 8px;
         text-decoration: none;
@@ -252,7 +252,7 @@ endblock %} {% block styles %}
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: #ff9800;
+        background: var(--accent);
         animation: pulse-dot 1s infinite;
       "
     ></span>
@@ -282,9 +282,9 @@ endblock %} {% block styles %}
     {% if pending_prints > 0 %}
     <div
       class="summary-card"
-      style="border: 1px solid #f39c12; background: rgba(243, 156, 18, 0.08)"
+      style="border: 1px solid var(--accent); background: rgba(243, 156, 18, 0.08)"
     >
-      <div class="summary-value" style="color: #f39c12">
+      <div class="summary-value" style="color: var(--accent)">
         {{ pending_prints }}
       </div>
       <div class="summary-label">🖨 Tickets pendientes</div>
@@ -359,7 +359,7 @@ endblock %} {% block styles %}
     action="{{ url_for('update_config') }}"
     method="POST"
     style="
-      background: #1e1e1e;
+      background: var(--surface-1);
       border-radius: 14px;
       padding: 20px;
       display: flex;
@@ -369,7 +369,7 @@ endblock %} {% block styles %}
     "
   >
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <label style="color: #aaa; font-size: 0.9rem; white-space: nowrap"
+    <label style="color: var(--text-2); font-size: 0.9rem; white-space: nowrap"
       >Nombre de impresora:</label
     >
     <input
@@ -381,9 +381,9 @@ endblock %} {% block styles %}
         min-width: 200px;
         padding: 10px 14px;
         border-radius: 10px;
-        border: 1px solid #3d3d3d;
-        background: #2d2d2d;
-        color: #f5f5f5;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text);
         font-size: 0.95rem;
       "
     />
@@ -393,15 +393,15 @@ endblock %} {% block styles %}
         padding: 10px 20px;
         border-radius: 10px;
         border: none;
-        background: #ff9800;
-        color: #121212;
+        background: var(--accent);
+        color: var(--bg);
         font-weight: 700;
         cursor: pointer;
       "
     >
       Guardar
     </button>
-    <span style="font-size: 0.82rem; color: #555">
+    <span style="font-size: 0.82rem; color: var(--text-muted)">
       Nombre exacto de la impresora en el sistema operativo.
     </span>
   </form>
@@ -414,7 +414,7 @@ endblock %} {% block styles %}
     action="{{ url_for('update_config') }}"
     method="POST"
     style="
-      background: #1e1e1e;
+      background: var(--surface-1);
       border-radius: 14px;
       padding: 20px;
       display: flex;
@@ -424,7 +424,7 @@ endblock %} {% block styles %}
     "
   >
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <label style="color: #aaa; font-size: 0.9rem; white-space: nowrap"
+    <label style="color: var(--text-2); font-size: 0.9rem; white-space: nowrap"
       >1 USD =</label
     >
     <input
@@ -438,13 +438,13 @@ endblock %} {% block styles %}
         width: 120px;
         padding: 10px 14px;
         border-radius: 10px;
-        border: 1px solid #3d3d3d;
-        background: #2d2d2d;
-        color: #f5f5f5;
+        border: 1px solid var(--border-strong);
+        background: var(--surface-2);
+        color: var(--text);
         font-size: 0.95rem;
       "
     />
-    <label style="color: #aaa; font-size: 0.9rem; white-space: nowrap"
+    <label style="color: var(--text-2); font-size: 0.9rem; white-space: nowrap"
       >MXN</label
     >
     <button
@@ -453,15 +453,15 @@ endblock %} {% block styles %}
         padding: 10px 20px;
         border-radius: 10px;
         border: none;
-        background: #ff9800;
-        color: #121212;
+        background: var(--accent);
+        color: var(--bg);
         font-weight: 700;
         cursor: pointer;
       "
     >
       Guardar
     </button>
-    <span style="font-size: 0.82rem; color: #555">
+    <span style="font-size: 0.82rem; color: var(--text-muted)">
       Se usa cuando el cliente paga en dólares; el cambio siempre se da en
       pesos.
     </span>
@@ -473,8 +473,8 @@ endblock %} {% block styles %}
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: #ff9800;
-      color: #121212;
+      background: var(--accent);
+      color: var(--bg);
       font-size: 0.72rem;
       font-weight: 700;
       padding: 2px 8px;
@@ -542,8 +542,8 @@ endblock %} {% block styles %}
     btn.dataset.active = "1";
     btn.disabled = true;
     btn.textContent = "⏳ Buscando...";
-    btn.style.color = "#ff9800";
-    btn.style.borderColor = "#ff9800";
+    btn.style.color = "#ff9f2e";
+    btn.style.borderColor = "#ff9f2e";
 
     function markReady() {
       btn.textContent = "⬆️ Click para instalar";
@@ -573,8 +573,8 @@ endblock %} {% block styles %}
         }, 5000);
       } else if (data.state === "downloading") {
         btn.textContent = "⬇️ Descargando...";
-        btn.style.color = "#ff9800";
-        btn.style.borderColor = "#ff9800";
+        btn.style.color = "#ff9f2e";
+        btn.style.borderColor = "#ff9f2e";
         btn.disabled = true;
         btn.dataset.active = "1";
       } else if (data.state === "ready") {
