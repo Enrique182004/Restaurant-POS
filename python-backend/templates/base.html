@@ -18,7 +18,8 @@
   </head>
   <body>
     {% block body %}{% endblock %} {% block kuike_bubble %} {% if
-    session.get('role') == 'admin' %}
+    session.get('role') == 'admin' and (request.path.startswith('/admin') or
+    request.path.startswith('/inventory')) %}
     <style>
       #kuike-fab {
         position: fixed;
@@ -27,7 +28,11 @@
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        background: linear-gradient(
+          135deg,
+          var(--accent),
+          var(--accent-strong)
+        );
         border: none;
         cursor: pointer;
         font-size: 1.6rem;
@@ -82,7 +87,11 @@
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        background: linear-gradient(
+          135deg,
+          var(--accent),
+          var(--accent-strong)
+        );
         display: flex;
         align-items: center;
         justify-content: center;
@@ -143,7 +152,11 @@
         margin-top: 2px;
       }
       .kb.assistant .kb-av {
-        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        background: linear-gradient(
+          135deg,
+          var(--accent),
+          var(--accent-strong)
+        );
       }
       .kb.user .kb-av {
         background: var(--border);
