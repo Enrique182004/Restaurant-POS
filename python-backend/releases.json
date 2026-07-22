@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.3.0",
+    "date": "2026-07-21",
+    "changes": [
+      "Nuevo diseño: interfaz más moderna y limpia en toda la aplicación, con superficies, colores y controles renovados",
+      "El asistente Kuike ahora aparece solo en el panel de administración, no en las pantallas de toma de pedidos",
+      "Mejoras internas de mantenimiento y estabilidad — sin cambios en tus datos ni en cómo funciona la app"
+    ]
+  },
+  {
     "version": "2.2.0",
     "date": "2026-07-19",
     "changes": [
