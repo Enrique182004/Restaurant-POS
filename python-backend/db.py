@@ -135,3 +135,9 @@ def log_activity(action, description):
         conn.commit()
     except Exception:
         pass
+
+
+def get_config(key, default=''):
+    conn = get_db_connection()
+    row = conn.execute('SELECT value FROM config WHERE key = ?', (key,)).fetchone()
+    return row['value'] if row else default
