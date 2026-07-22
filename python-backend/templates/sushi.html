@@ -2,18 +2,18 @@
 {% block title %}Personaliza tu Sushi{% endblock %}
 {% block styles %}
 <style>
-        .sub-title { font-size: 1.2rem; color: #f5f5f5; margin: 20px 0 15px 0; font-weight: 600; }
+        .sub-title { font-size: 1.2rem; color: var(--text); margin: 20px 0 15px 0; font-weight: 600; }
         .premium-grid { display: grid; grid-template-columns: 1fr; max-width: 300px; margin: 0 auto; }
-        .premium-badge { position: absolute; top: 8px; right: 8px; background-color: #FF9800; color: #121212; font-size: 0.8rem; padding: 4px 8px; border-radius: 10px; font-weight: bold; }
-        .premium-grid .option-card { position: relative; border: 2px solid #3D3D3D; background-color: #2D2D2D; }
-        .premium-grid .option-card.selected { border-color: #FF9800; background-color: #3D3D3D; }
+        .premium-badge { position: absolute; top: 8px; right: 8px; background-color: var(--accent); color: var(--bg); font-size: 0.8rem; padding: 4px 8px; border-radius: 10px; font-weight: bold; }
+        .premium-grid .option-card { position: relative; border: 2px solid var(--border-strong); background-color: var(--surface-2); }
+        .premium-grid .option-card.selected { border-color: var(--accent); background-color: var(--border-strong); }
         .base-options { grid-template-columns: repeat(3, 1fr); }
         .sauce-options { grid-template-columns: repeat(3, 1fr); }
         @media (max-width: 768px) { .premium-grid { max-width: 250px; } .sauce-options { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 480px) { .sauce-options { grid-template-columns: repeat(2, 1fr); } }
-        .live-price-bar { display:flex; justify-content:space-between; align-items:center; background:#1e1e1e; border:2px solid #ff9800; border-radius:12px; padding:12px 20px; margin-bottom:20px; }
-        .live-price-label { color:#ccc; font-size:0.95rem; font-weight:600; }
-        .live-price-value { color:#ff9800; font-size:1.5rem; font-weight:800; }
+        .live-price-bar { display:flex; justify-content:space-between; align-items:center; background:var(--surface-1); border:2px solid var(--accent); border-radius:12px; padding:12px 20px; margin-bottom:20px; }
+        .live-price-label { color:var(--text-2); font-size:0.95rem; font-weight:600; }
+        .live-price-value { color:var(--accent); font-size:1.5rem; font-weight:800; }
     </style>
 {% endblock %}
 {% block body %}

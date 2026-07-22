@@ -14,14 +14,14 @@
     align-items: center;
     gap: 14px;
     padding: 20px 0 16px;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
   .kuike-avatar {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #ff9800, #e65c00);
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -31,27 +31,27 @@
   .kuike-name {
     font-size: 1.3rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
   }
   .kuike-desc {
     font-size: 0.8rem;
-    color: #666;
+    color: var(--text-muted);
     margin-top: 2px;
   }
   .kuike-back {
     margin-left: auto;
-    color: #aaa;
+    color: var(--text-2);
     text-decoration: none;
     font-size: 0.85rem;
-    border: 1px solid #333;
+    border: 1px solid var(--surface-3);
     padding: 7px 14px;
     border-radius: 9px;
-    background: #1e1e1e;
+    background: var(--surface-1);
     white-space: nowrap;
   }
   .kuike-back:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .chat-messages {
     flex: 1;
@@ -69,7 +69,7 @@
     background: transparent;
   }
   .chat-messages::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: var(--border);
     border-radius: 2px;
   }
   .msg {
@@ -93,10 +93,10 @@
     margin-top: 2px;
   }
   .msg.assistant .msg-avatar {
-    background: linear-gradient(135deg, #ff9800, #e65c00);
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   }
   .msg.user .msg-avatar {
-    background: #2a2a2a;
+    background: var(--border);
   }
   .msg-bubble {
     padding: 12px 16px;
@@ -107,14 +107,14 @@
     word-break: break-word;
   }
   .msg.assistant .msg-bubble {
-    background: #1e1e1e;
-    color: #e0e0e0;
+    background: var(--surface-1);
+    color: var(--text);
     border-radius: 4px 16px 16px 16px;
-    border: 1px solid #2a2a2a;
+    border: 1px solid var(--border);
   }
   .msg.user .msg-bubble {
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     font-weight: 600;
     border-radius: 16px 4px 16px 16px;
   }
@@ -128,7 +128,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #555;
+    background: var(--text-muted);
     animation: bounce 1.2s infinite;
   }
   .dot:nth-child(2) {
@@ -155,9 +155,9 @@
     flex-shrink: 0;
   }
   .suggestion-btn {
-    background: #1e1e1e;
-    border: 1px solid #2a2a2a;
-    color: #ccc;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    color: var(--text-2);
     border-radius: 20px;
     padding: 7px 14px;
     font-size: 0.8rem;
@@ -166,9 +166,9 @@
     text-align: left;
   }
   .suggestion-btn:hover {
-    border-color: #ff9800;
-    color: #ff9800;
-    background: rgba(255, 152, 0, 0.06);
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(255, 159, 46, 0.06);
   }
   .chat-input-row {
     display: flex;
@@ -176,14 +176,14 @@
     align-items: flex-end;
     flex-shrink: 0;
     padding: 12px 0 0;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid var(--border);
   }
   .chat-input {
     flex: 1;
-    background: #1e1e1e;
-    border: 1px solid #2a2a2a;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: 12px;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 0.9rem;
     padding: 12px 16px;
     resize: none;
@@ -195,18 +195,18 @@
     transition: border-color 0.2s;
   }
   .chat-input:focus {
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .chat-input::placeholder {
-    color: #555;
+    color: var(--text-muted);
   }
   .send-btn {
     width: 44px;
     height: 44px;
     border-radius: 12px;
     border: none;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     font-size: 1.1rem;
     cursor: pointer;
     flex-shrink: 0;

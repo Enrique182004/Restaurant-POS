@@ -16,12 +16,12 @@
 
   /* Special styling for Naturales option */
   .option-card:has(input[value="Naturales"]) {
-    background: linear-gradient(135deg, #2d2d2d, #3a3a3a);
+    background: linear-gradient(135deg, var(--surface-2), var(--border-strong));
   }
 
   .option-card:has(input[value="Naturales"]).selected {
-    background: linear-gradient(135deg, #3d3d3d, #4a4a4a);
-    border-color: #4caf50;
+    background: linear-gradient(135deg, var(--border-strong), #4a4a4a);
+    border-color: var(--success);
   }
 </style>
 {% endblock %} {% block body %}

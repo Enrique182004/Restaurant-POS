@@ -17,11 +17,11 @@ styles %}
   .respaldo-title {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
     margin: 0;
   }
   .respaldo-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 14px;
     padding: 24px;
     margin-bottom: 20px;
@@ -29,18 +29,18 @@ styles %}
   .respaldo-card-title {
     font-size: 1.15rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     margin: 0 0 14px;
   }
   .respaldo-meta {
-    color: #888;
+    color: var(--text-muted);
     font-size: 0.88rem;
     margin-top: 12px;
   }
   .respaldo-export-btn {
     display: inline-block;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     font-weight: 700;
     font-size: 1rem;
     padding: 13px 24px;
@@ -51,7 +51,7 @@ styles %}
     transition: background 0.2s;
   }
   .respaldo-export-btn:hover {
-    background: #f57c00;
+    background: var(--accent-strong);
   }
   .respaldo-import-form {
     display: flex;
@@ -62,17 +62,17 @@ styles %}
   .respaldo-file-input {
     flex: 1;
     min-width: 220px;
-    background: #2d2d2d;
-    border: 2px solid #3d3d3d;
+    background: var(--surface-2);
+    border: 2px solid var(--border-strong);
     border-radius: 12px;
-    color: #f5f5f5;
+    color: var(--text);
     padding: 10px 12px;
     font-size: 0.9rem;
   }
   .respaldo-import-btn {
-    background: #333;
-    color: #f5f5f5;
-    border: 1px solid #444;
+    background: var(--surface-3);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
     font-weight: 700;
     font-size: 1rem;
     padding: 12px 22px;
@@ -83,18 +83,18 @@ styles %}
       color 0.2s;
   }
   .respaldo-import-btn:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .respaldo-warning {
-    color: #f87171;
+    color: var(--danger);
     font-size: 0.85rem;
     margin-top: 14px;
   }
   .respaldo-steps {
     margin: 0;
     padding-left: 22px;
-    color: #ccc;
+    color: var(--text-2);
     font-size: 0.95rem;
     line-height: 1.7;
   }
@@ -102,7 +102,7 @@ styles %}
     margin-bottom: 8px;
   }
   .respaldo-steps li::marker {
-    color: #ff9800;
+    color: var(--accent);
     font-weight: 700;
   }
 </style>

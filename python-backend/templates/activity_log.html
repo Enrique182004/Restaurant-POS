@@ -17,7 +17,7 @@
   .log-title {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
     margin: 0;
   }
   .log-table {
@@ -28,21 +28,21 @@
     text-align: left;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     padding: 0 14px 12px;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--border);
   }
   .log-table td {
     padding: 12px 14px;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid var(--surface-1);
     font-size: 0.88rem;
-    color: #e0e0e0;
+    color: var(--text);
     vertical-align: top;
   }
   .log-table tr:hover td {
-    background: #1e1e1e;
+    background: var(--surface-1);
   }
   .log-table tr:last-child td {
     border-bottom: none;
@@ -57,11 +57,11 @@
   }
   .log-action.orden_completada {
     background: rgba(78, 203, 113, 0.15);
-    color: #4ecb71;
+    color: var(--success);
   }
   .log-action.orden_anulada {
     background: rgba(248, 113, 113, 0.15);
-    color: #f87171;
+    color: var(--danger);
   }
   .log-action.usuario_creado,
   .log-action.usuario_eliminado {
@@ -78,21 +78,21 @@
   }
   .log-action.other {
     background: rgba(255, 255, 255, 0.06);
-    color: #aaa;
+    color: var(--text-2);
   }
   .log-ts {
-    color: #555;
+    color: var(--text-muted);
     font-size: 0.8rem;
     white-space: nowrap;
   }
   .log-actor {
-    color: #888;
+    color: var(--text-muted);
     font-size: 0.82rem;
   }
   .empty-log {
     text-align: center;
     padding: 60px 20px;
-    color: #555;
+    color: var(--text-muted);
   }
 </style>
 {% endblock %} {% block body %}

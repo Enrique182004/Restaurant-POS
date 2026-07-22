@@ -20,9 +20,9 @@ block styles %}
     font-size: 0.95rem;
   }
   .menu-section {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 14px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
     margin-bottom: 10px;
     overflow: hidden;
   }
@@ -30,7 +30,7 @@ block styles %}
     padding: 14px 18px;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     cursor: pointer;
     user-select: none;
     list-style: none;
@@ -40,7 +40,7 @@ block styles %}
     transition: background 0.15s;
   }
   .menu-section-title:hover {
-    background: #252525;
+    background: var(--surface-2);
   }
   .menu-section-title::-webkit-details-marker {
     display: none;
@@ -48,26 +48,26 @@ block styles %}
   .menu-section-title::after {
     content: "›";
     font-size: 1.3rem;
-    color: #555;
+    color: var(--text-muted);
     transition: transform 0.2s;
     line-height: 1;
   }
   details[open] > .menu-section-title::after {
     transform: rotate(90deg);
-    color: #ff9800;
+    color: var(--accent);
   }
   details[open] > .menu-section-title {
-    color: #ff9800;
+    color: var(--accent);
   }
   .opt-count {
-    color: #555;
+    color: var(--text-muted);
     font-weight: 500;
     font-size: 0.82rem;
     margin-left: 8px;
   }
   .menu-section-body {
     padding: 4px 18px 16px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid var(--border);
   }
   .opt-list {
     display: flex;
@@ -80,8 +80,8 @@ block styles %}
     display: flex;
     align-items: center;
     gap: 6px;
-    background: #2a2a2a;
-    border: 1px solid #3d3d3d;
+    background: var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 20px;
     padding: 5px 10px 5px 8px;
     font-size: 0.88rem;
@@ -91,18 +91,18 @@ block styles %}
     line-height: 1;
   }
   .opt-name {
-    color: #e0e0e0;
+    color: var(--text);
     font-weight: 500;
   }
   .opt-price {
-    color: #ff9800;
+    color: var(--accent);
     font-size: 0.8rem;
     font-weight: 600;
   }
   .opt-del-btn {
     background: none;
     border: none;
-    color: #555;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 0.75rem;
     padding: 0 0 0 4px;
@@ -110,7 +110,7 @@ block styles %}
     transition: color 0.15s;
   }
   .opt-del-btn:hover {
-    color: #ff6b6b;
+    color: var(--danger);
   }
   .opt-toggle-btn {
     background: none;
@@ -122,16 +122,16 @@ block styles %}
     transition: color 0.15s;
   }
   .opt-toggle-active {
-    color: #4caf50;
+    color: var(--success);
   }
   .opt-toggle-active:hover {
-    color: #888;
+    color: var(--text-muted);
   }
   .opt-toggle-inactive {
-    color: #555;
+    color: var(--text-muted);
   }
   .opt-toggle-inactive:hover {
-    color: #4caf50;
+    color: var(--success);
   }
   .opt-item-inactive {
     opacity: 0.45;
@@ -151,7 +151,7 @@ block styles %}
   }
   .opt-drag-handle {
     cursor: grab;
-    color: #555;
+    color: var(--text-muted);
     font-size: 0.85rem;
     padding-right: 2px;
     touch-action: none;
@@ -159,15 +159,15 @@ block styles %}
     -webkit-user-select: none;
   }
   .opt-drag-handle:hover {
-    color: #ff9800;
+    color: var(--accent);
   }
   .opt-edit-form {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
-    background: #252525;
-    border: 1px solid #3a3a3a;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     padding: 10px;
     margin: 4px 0 8px;
@@ -177,8 +177,8 @@ block styles %}
     text-align: center;
   }
   .opt-save-btn {
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     border-radius: 8px;
     font-weight: 700;
@@ -187,25 +187,25 @@ block styles %}
     cursor: pointer;
   }
   .opt-save-btn:hover {
-    background: #f57c00;
+    background: var(--accent-strong);
   }
   .opt-cancel-btn {
     background: none;
-    color: #999;
-    border: 1px solid #444;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     font-size: 0.85rem;
     padding: 8px 14px;
     cursor: pointer;
   }
   .opt-cancel-btn:hover {
-    color: #f5f5f5;
-    border-color: #666;
+    color: var(--text);
+    border-color: var(--text-muted);
   }
   .opt-sold-out {
     font-size: 0.68rem;
     font-weight: 700;
-    color: #ff6b6b;
+    color: var(--danger);
     background: rgba(255, 107, 107, 0.15);
     border-radius: 8px;
     padding: 2px 6px;
@@ -220,19 +220,19 @@ block styles %}
   }
   .opt-input {
     padding: 8px 12px;
-    border: 1px solid #3d3d3d;
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     font-size: 0.9rem;
-    background: #2d2d2d;
-    color: #f5f5f5;
+    background: var(--surface-2);
+    color: var(--text);
     transition: border-color 0.2s;
   }
   .opt-input:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .opt-input::placeholder {
-    color: #555;
+    color: var(--text-muted);
   }
   .opt-icon-input {
     width: 62px;
@@ -248,8 +248,8 @@ block styles %}
   }
   .opt-add-btn {
     padding: 8px 18px;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     border-radius: 10px;
     font-size: 0.9rem;
@@ -259,7 +259,7 @@ block styles %}
     transition: background 0.2s;
   }
   .opt-add-btn:hover {
-    background: #e68900;
+    background: var(--accent-strong);
   }
   @media (max-width: 520px) {
     .add-opt-form {
@@ -415,7 +415,7 @@ block styles %}
           </form>
         </div>
         {% endfor %} {% if not opts %}
-        <span style="color: #555; font-size: 0.85rem; padding: 4px 0"
+        <span style="color: var(--text-muted); font-size: 0.85rem; padding: 4px 0"
           >Sin opciones — agrega una abajo</span
         >
         {% endif %}

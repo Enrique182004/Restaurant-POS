@@ -1,34 +1,39 @@
+/* Admin-surface overrides — token-driven (see tokens.css). */
+
 /* ── Back / secondary nav button ──────────────────────────────── */
 .back-btn {
-  color: #aaa;
+  color: var(--text-2);
   text-decoration: none;
-  font-size: 0.9rem;
-  border: 1px solid #333;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--border-strong);
   padding: 8px 16px;
-  border-radius: 10px;
-  background: #1e1e1e;
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  transition:
+    border-color var(--dur),
+    color var(--dur);
 }
 .back-btn:hover {
-  border-color: #ff9800;
-  color: #ff9800;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ── Flash alert colors (transparent admin variant) ────────────── */
 .alert-success {
-  background: rgba(43, 138, 62, 0.2);
-  color: #81c784;
-  border: 1px solid rgba(43, 138, 62, 0.35);
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 }
 .alert-error {
-  background: rgba(231, 76, 60, 0.2);
-  color: #ff8a80;
-  border: 1px solid rgba(231, 76, 60, 0.35);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
 }
 
 /* ── Admin page title text ─────────────────────────────────────── */
 .page-title-txt {
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #ff9800;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--accent);
   margin: 0;
 }

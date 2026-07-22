@@ -6,17 +6,17 @@ styles %}
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    background-color: #2a2a2a;
+    background-color: var(--border);
     padding: 12px 20px;
     border-radius: 10px;
     margin-bottom: 20px;
   }
   .user-welcome {
-    color: #f5f5f5;
+    color: var(--text);
     font-weight: 600;
   }
   .logout-link {
-    color: #ff9800;
+    color: var(--accent);
     text-decoration: none;
     font-weight: 600;
     padding: 6px 12px;
@@ -24,15 +24,15 @@ styles %}
     transition: background-color 0.2s;
   }
   .logout-link:hover {
-    background-color: rgba(255, 152, 0, 0.1);
+    background-color: rgba(255, 159, 46, 0.1);
   }
   .promo-section {
-    background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
-    border: 2px solid #ff9800;
+    background: linear-gradient(135deg, var(--surface-1), var(--border));
+    border: 2px solid var(--accent);
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 25px rgba(255, 152, 0, 0.2);
+    box-shadow: 0 8px 25px rgba(255, 159, 46, 0.2);
     position: relative;
     overflow: hidden;
   }
@@ -54,13 +54,13 @@ styles %}
   }
   .promo-title {
     font-size: 1.8rem;
-    color: #ff9800;
+    color: var(--accent);
     margin: 0 0 8px 0;
     font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
   .promo-subtitle {
-    color: #ccc;
+    color: var(--text-2);
     font-size: 1rem;
     font-weight: 500;
   }
@@ -76,28 +76,28 @@ styles %}
     width: 100%;
     padding: 15px 50px 15px 20px;
     border-radius: 15px;
-    border: 2px solid #3d3d3d;
-    background: #2d2d2d;
-    color: #f5f5f5;
+    border: 2px solid var(--border-strong);
+    background: var(--surface-2);
+    color: var(--text);
     font-size: 1.1rem;
     font-weight: 500;
     transition: all 0.3s ease;
   }
   .promo-search-input::placeholder {
-    color: #888;
+    color: var(--text-muted);
   }
   .promo-search-input:focus {
     outline: none;
-    border-color: #ff9800;
-    background: #3d3d3d;
-    box-shadow: 0 0 20px rgba(255, 152, 0, 0.2);
+    border-color: var(--accent);
+    background: var(--border-strong);
+    box-shadow: 0 0 20px rgba(255, 159, 46, 0.2);
   }
   .search-icon {
     position: absolute;
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: #888;
+    color: var(--text-muted);
     font-size: 1.2rem;
     pointer-events: none;
   }
@@ -106,7 +106,7 @@ styles %}
     top: 100%;
     left: 0;
     right: 0;
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     z-index: 1000;
@@ -116,7 +116,7 @@ styles %}
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    border: 1px solid #333;
+    border: 1px solid var(--surface-3);
   }
   .promo-dropdown.show {
     transform: translateY(5px);
@@ -128,18 +128,18 @@ styles %}
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    border-bottom: 1px solid #333;
-    background: #2a2a2a;
+    border-bottom: 1px solid var(--surface-3);
+    background: var(--border);
     border-radius: 15px 15px 0 0;
   }
   .dropdown-title {
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1.1rem;
   }
   .dropdown-close {
-    background: #444;
-    color: #f5f5f5;
+    background: var(--border-strong);
+    color: var(--text);
     width: 30px;
     height: 30px;
     border-radius: 50%;
@@ -151,7 +151,7 @@ styles %}
     font-size: 1.2rem;
   }
   .dropdown-close:hover {
-    background: #666;
+    background: var(--text-muted);
   }
   .promo-list {
     padding: 10px;
@@ -161,19 +161,19 @@ styles %}
     align-items: center;
     padding: 15px;
     margin-bottom: 10px;
-    background: #2d2d2d;
+    background: var(--surface-2);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     border: 2px solid transparent;
   }
   .promo-item:hover {
-    background: #333;
+    background: var(--surface-3);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
   .promo-item.featured {
-    border-color: #ff9800;
+    border-color: var(--accent);
     background: linear-gradient(135deg, #2a1f00, #3d2f00);
   }
   .promo-item.featured:hover {
@@ -191,17 +191,17 @@ styles %}
   .promo-item-code {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
     margin-bottom: 5px;
   }
   .promo-item-description {
-    color: #f5f5f5;
+    color: var(--text);
     margin-bottom: 3px;
     font-weight: 600;
   }
   .promo-item-action {
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     padding: 8px 15px;
     border-radius: 8px;
     font-weight: 600;
@@ -209,19 +209,19 @@ styles %}
     transition: background-color 0.2s;
   }
   .promo-item:hover .promo-item-action {
-    background: #f57c00;
+    background: var(--accent-strong);
   }
   .manual-entry-section {
-    border-top: 1px solid #333;
+    border-top: 1px solid var(--surface-3);
     padding: 15px 20px;
-    background: #252525;
+    background: var(--surface-2);
     border-radius: 0 0 15px 15px;
   }
   .manual-entry-header {
     margin-bottom: 10px;
   }
   .manual-entry-header span {
-    color: #ccc;
+    color: var(--text-2);
     font-size: 0.95rem;
     font-weight: 600;
   }
@@ -233,19 +233,19 @@ styles %}
     flex: 1;
     padding: 12px 15px;
     border-radius: 10px;
-    border: 2px solid #3d3d3d;
-    background-color: #2d2d2d;
-    color: #f5f5f5;
+    border: 2px solid var(--border-strong);
+    background-color: var(--surface-2);
+    color: var(--text);
     font-size: 1rem;
     transition: border-color 0.2s;
   }
   .manual-coupon-input:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent);
   }
   .manual-apply-btn {
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     border: none;
     padding: 12px 20px;
     border-radius: 10px;
@@ -255,7 +255,7 @@ styles %}
     white-space: nowrap;
   }
   .manual-apply-btn:hover {
-    background: #f57c00;
+    background: var(--accent-strong);
   }
   .quick-promos {
     display: flex;
@@ -265,11 +265,11 @@ styles %}
     z-index: 2;
   }
   .quick-promo-btn {
-    background: #2d2d2d;
-    border: 2px solid #3d3d3d;
+    background: var(--surface-2);
+    border: 2px solid var(--border-strong);
     border-radius: 12px;
     padding: 12px 20px;
-    color: #f5f5f5;
+    color: var(--text);
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -278,10 +278,10 @@ styles %}
     font-weight: 600;
   }
   .quick-promo-btn:hover {
-    background: #3d3d3d;
-    border-color: #ff9800;
+    background: var(--border-strong);
+    border-color: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 159, 46, 0.3);
   }
   .quick-promo-icon {
     font-size: 1.3rem;
@@ -290,7 +290,7 @@ styles %}
     font-size: 0.95rem;
   }
   .cost-detail {
-    color: #ff9800;
+    color: var(--accent);
     font-weight: 600;
     font-size: 0.9rem;
     margin-left: 5px;
@@ -299,7 +299,7 @@ styles %}
     margin: 20px 0;
   }
   .cart-item {
-    background-color: #1e1e1e;
+    background-color: var(--surface-1);
     border-radius: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     padding: 20px;
@@ -317,18 +317,18 @@ styles %}
     font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 8px;
-    color: #f5f5f5;
+    color: var(--text);
   }
   .item-customizations {
     font-size: 0.95rem;
-    color: #bbb;
+    color: var(--text-2);
   }
   .customization {
     margin-bottom: 4px;
   }
   .custom-label {
     font-weight: 600;
-    color: #ccc;
+    color: var(--text-2);
   }
   .notes {
     margin-top: 8px;
@@ -342,7 +342,7 @@ styles %}
   .quantity-label {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #ccc;
+    color: var(--text-2);
     margin-bottom: 5px;
   }
   .quantity-controls {
@@ -355,8 +355,8 @@ styles %}
     height: 36px;
     border-radius: 50%;
     border: none;
-    background-color: #333;
-    color: #f5f5f5;
+    background-color: var(--surface-3);
+    color: var(--text);
     font-size: 1.2rem;
     font-weight: bold;
     display: flex;
@@ -366,7 +366,7 @@ styles %}
     transition: background-color 0.2s;
   }
   .quantity-btn:active {
-    background-color: #444;
+    background-color: var(--border-strong);
   }
   .quantity-btn:disabled {
     opacity: 0.35;
@@ -378,10 +378,10 @@ styles %}
     justify-content: space-between;
     align-items: center;
     padding: 14px 20px;
-    background: #1e1e1e;
-    border: 2px solid #ff9800;
+    background: var(--surface-1);
+    border: 2px solid var(--accent);
     border-radius: 14px;
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
@@ -389,7 +389,7 @@ styles %}
     transition: background 0.2s;
   }
   .promo-toggle-btn:hover {
-    background: rgba(255, 152, 0, 0.08);
+    background: rgba(255, 159, 46, 0.08);
   }
   .promo-applied-bar {
     width: 100%;
@@ -399,10 +399,10 @@ styles %}
     gap: 12px;
     flex-wrap: wrap;
     padding: 14px 20px;
-    background: rgba(255, 152, 0, 0.08);
-    border: 2px solid #ff9800;
+    background: rgba(255, 159, 46, 0.08);
+    border: 2px solid var(--accent);
     border-radius: 14px;
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 16px;
@@ -414,15 +414,15 @@ styles %}
     flex-wrap: wrap;
   }
   .promo-applied-detail {
-    color: #f5f5f5;
+    color: var(--text);
     font-weight: 500;
     font-size: 0.95rem;
   }
   .promo-remove-btn {
     background: transparent;
-    border: 1px solid #555;
+    border: 1px solid var(--text-muted);
     border-radius: 10px;
-    color: #aaa;
+    color: var(--text-2);
     padding: 8px 14px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -432,8 +432,8 @@ styles %}
       color 0.2s;
   }
   .promo-remove-btn:hover {
-    border-color: #e53935;
-    color: #e53935;
+    border-color: var(--danger);
+    color: var(--danger);
   }
   .quantity-input {
     width: 50px;
@@ -442,9 +442,9 @@ styles %}
     font-size: 1.1rem;
     font-weight: 600;
     margin: 0 8px;
-    background-color: #2d2d2d;
-    color: #f5f5f5;
-    border-color: #3d3d3d;
+    background-color: var(--surface-2);
+    color: var(--text);
+    border-color: var(--border-strong);
   }
   .item-price {
     grid-area: price;
@@ -455,22 +455,22 @@ styles %}
   }
   .price-original {
     text-decoration: line-through;
-    color: #aaa;
+    color: var(--text-2);
     font-size: 0.9rem;
   }
   .price-discounted {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
   }
   .price-normal {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #ff9800;
+    color: var(--accent);
   }
   .discount-badge {
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     font-size: 0.8rem;
     padding: 3px 8px;
     border-radius: 12px;
@@ -493,14 +493,14 @@ styles %}
     transition: background-color 0.2s;
   }
   .item-action.edit {
-    background-color: #333;
-    color: #f5f5f5;
+    background-color: var(--surface-3);
+    color: var(--text);
     cursor: pointer;
     border: none;
   }
   .item-action.delete {
-    background-color: #3f1f1f;
-    color: #ff9090;
+    background-color: var(--danger-surface);
+    color: var(--danger);
   }
   .order-total {
     display: flex;
@@ -508,19 +508,19 @@ styles %}
     align-items: baseline;
     margin: 30px 0;
     padding: 15px;
-    background-color: #232323;
+    background-color: var(--surface-2);
     border-radius: 12px;
   }
   .total-label {
     font-size: 1.3rem;
     font-weight: 700;
     margin-right: 10px;
-    color: #f5f5f5;
+    color: var(--text);
   }
   .total-amount {
     font-size: 1.8rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
   }
   .order-actions {
     display: flex;
@@ -545,12 +545,12 @@ styles %}
     transform: translateY(2px);
   }
   .order-action.secondary {
-    background-color: #424242;
-    color: #f5f5f5;
+    background-color: var(--surface-2);
+    color: var(--text);
   }
   .order-action.primary {
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
   }
   .action-icon {
     margin: 0 8px;
@@ -559,8 +559,8 @@ styles %}
     width: 100%;
     padding: 12px;
     background: none;
-    border: 1px solid #4a1f1f;
-    color: #ff6b6b;
+    border: 1px solid var(--danger-surface);
+    color: var(--danger);
     border-radius: 12px;
     font-size: 0.95rem;
     font-weight: 600;
@@ -600,17 +600,17 @@ styles %}
   .empty-icon {
     font-size: 5rem;
     margin-bottom: 20px;
-    color: #555;
+    color: var(--text-muted);
   }
   .empty-message {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     margin-bottom: 30px;
   }
   .empty-action {
-    background-color: #ff9800;
-    color: #121212;
+    background-color: var(--accent);
+    color: var(--bg);
     padding: 15px 30px;
     border-radius: 12px;
     font-weight: 700;
@@ -618,11 +618,11 @@ styles %}
     transition: background-color 0.2s;
   }
   .empty-action:active {
-    background-color: #f57c00;
+    background-color: var(--accent-strong);
   }
   .loading-indicator {
     font-size: 0.8rem;
-    color: #888;
+    color: var(--text-muted);
     margin-top: 5px;
     animation: blink 1s infinite;
   }
@@ -636,9 +636,9 @@ styles %}
     }
   }
   .order-id-badge {
-    background: rgba(255, 152, 0, 0.15);
-    border: 1px solid rgba(255, 152, 0, 0.4);
-    color: #ff9800;
+    background: rgba(255, 159, 46, 0.15);
+    border: 1px solid rgba(255, 159, 46, 0.4);
+    color: var(--accent);
     font-weight: 700;
     font-size: 0.9rem;
     padding: 4px 12px;
@@ -659,9 +659,9 @@ styles %}
     display: flex;
   }
   .edit-modal-box {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 18px;
-    border: 2px solid #3d3d3d;
+    border: 2px solid var(--border-strong);
     width: 100%;
     max-width: 680px;
     max-height: 90vh;
@@ -675,18 +675,18 @@ styles %}
     justify-content: space-between;
     align-items: center;
     padding: 14px 20px;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
   .edit-modal-title {
     font-weight: 700;
     font-size: 1rem;
-    color: #ff9800;
+    color: var(--accent);
   }
   .edit-modal-close {
     background: none;
     border: none;
-    color: #888;
+    color: var(--text-muted);
     font-size: 1.2rem;
     cursor: pointer;
     padding: 4px 8px;
@@ -694,13 +694,13 @@ styles %}
     transition: color 0.15s;
   }
   .edit-modal-close:hover {
-    color: #f5f5f5;
+    color: var(--text);
   }
   .edit-modal-iframe {
     flex: 1;
     border: none;
     min-height: 500px;
-    background: #121212;
+    background: var(--bg);
   }
   @media (max-width: 768px) {
     .cart-item {
@@ -820,7 +820,7 @@ styles %}
             <div class="promo-item-action">Aplicar</div>
           </div>
           {% endfor %} {% else %}
-          <div style="padding: 20px; text-align: center; color: #888">
+          <div style="padding: 20px; text-align: center; color: var(--text-muted)">
             No hay promociones activas.
           </div>
           {% endif %}
@@ -1299,7 +1299,7 @@ styles %}
 
     const message = document.createElement("div");
     message.style.cssText =
-      "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#FF9800;color:#121212;padding:25px 35px;border-radius:15px;z-index:9999;font-weight:bold;font-size:1.3rem;box-shadow:0 10px 30px rgba(255,152,0,0.4);text-align:center;min-width:250px;";
+      "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#ff9f2e;color:#121212;padding:25px 35px;border-radius:15px;z-index:9999;font-weight:bold;font-size:1.3rem;box-shadow:0 10px 30px rgba(255, 159, 46,0.4);text-align:center;min-width:250px;";
     message.textContent = "Aplicando " + promoCode + "...";
     document.body.appendChild(message);
 

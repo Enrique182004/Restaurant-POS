@@ -6,24 +6,24 @@ styles %}
     margin: 0 auto;
   }
   .split-summary {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 22px 24px;
     margin: 20px 0;
     display: flex;
     align-items: center;
     gap: 18px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
   }
   .split-total-label {
     font-size: 0.9rem;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 4px;
   }
   .split-total-amount {
     font-size: 2rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
   }
   .split-sections {
     display: grid;
@@ -32,15 +32,15 @@ styles %}
     margin: 24px 0;
   }
   .split-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 20px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
   }
   .split-card-title {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 12px;
@@ -51,16 +51,16 @@ styles %}
   .split-input-wrap {
     display: flex;
     align-items: center;
-    background: #2d2d2d;
+    background: var(--surface-2);
     border-radius: 10px;
-    border: 1px solid #3d3d3d;
+    border: 1px solid var(--border-strong);
     overflow: hidden;
   }
   .split-prefix {
     padding: 0 12px;
     font-size: 1.3rem;
     font-weight: 700;
-    color: #666;
+    color: var(--text-muted);
   }
   .split-input {
     flex: 1;
@@ -69,53 +69,53 @@ styles %}
     padding: 14px 4px;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     width: 100%;
   }
   .split-input:focus {
     outline: none;
   }
   .split-remaining {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
     padding: 18px 24px;
     margin: 0 0 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border: 2px dashed #2a2a2a;
+    border: 2px dashed var(--border);
     transition: border-color 0.2s;
   }
   .split-remaining.balanced {
-    border-color: #4ecb71;
+    border-color: var(--success);
   }
   .split-remaining.over {
-    border-color: #f87171;
+    border-color: var(--danger);
   }
   .split-remaining-label {
     font-size: 0.9rem;
-    color: #888;
+    color: var(--text-muted);
     font-weight: 600;
   }
   .split-remaining-value {
     font-size: 1.6rem;
     font-weight: 800;
-    color: #aaa;
+    color: var(--text-2);
     transition: color 0.2s;
   }
   .split-remaining-value.balanced {
-    color: #4ecb71;
+    color: var(--success);
   }
   .split-remaining-value.over {
-    color: #f87171;
+    color: var(--danger);
   }
   .split-confirm-btn {
     width: 100%;
     padding: 18px;
     border-radius: 14px;
     border: none;
-    background: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    color: var(--bg);
     font-size: 1.1rem;
     font-weight: 800;
     cursor: pointer;
@@ -136,9 +136,9 @@ styles %}
     flex-wrap: wrap;
   }
   .quick-btn {
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
-    color: #ccc;
+    background: var(--border);
+    border: 1px solid var(--border-strong);
+    color: var(--text-2);
     border-radius: 8px;
     padding: 6px 12px;
     font-size: 0.85rem;
@@ -147,9 +147,9 @@ styles %}
     transition: all 0.15s;
   }
   .quick-btn:hover {
-    background: #ff9800;
-    color: #121212;
-    border-color: #ff9800;
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
   }
   .cash-currency-toggle {
     display: flex;
@@ -160,28 +160,28 @@ styles %}
     flex: 1;
     padding: 6px 10px;
     border-radius: 8px;
-    border: 1px solid #3a3a3a;
-    background: #2a2a2a;
-    color: #ccc;
+    border: 1px solid var(--border-strong);
+    background: var(--border);
+    color: var(--text-2);
     font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s;
   }
   .mini-currency-btn.active {
-    background: #ff9800;
-    border-color: #ff9800;
-    color: #121212;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
   }
   .cash-mxn-eq {
     font-size: 0.85rem;
     font-weight: 700;
-    color: #4ecb71;
+    color: var(--success);
     margin-top: 6px;
   }
   .split-rate-hint {
     font-size: 0.8rem;
-    color: #777;
+    color: var(--text-muted);
     text-align: center;
     margin: -12px 0 16px;
   }
@@ -197,13 +197,13 @@ styles %}
   }
   .split-change-label {
     font-size: 0.9rem;
-    color: #69db7c;
+    color: var(--success);
     font-weight: 600;
   }
   .split-change-value {
     font-size: 1.4rem;
     font-weight: 800;
-    color: #69db7c;
+    color: var(--success);
   }
   @media (max-width: 480px) {
     .split-sections {

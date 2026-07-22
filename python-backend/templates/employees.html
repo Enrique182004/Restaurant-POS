@@ -31,19 +31,19 @@
     font-size: 0.9rem;
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid #333;
-    color: #aaa;
-    background: #1e1e1e;
+    border: 1px solid var(--surface-3);
+    color: var(--text-2);
+    background: var(--surface-1);
     transition: all 0.15s;
   }
   .period-tab:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .period-tab.active {
-    background: #ff9800;
-    color: #121212;
-    border-color: #ff9800;
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
   }
   .week-nav {
     display: flex;
@@ -54,26 +54,26 @@
     flex-wrap: wrap;
   }
   .week-nav-btn {
-    color: #aaa;
+    color: var(--text-2);
     text-decoration: none;
     font-size: 0.9rem;
-    border: 1px solid #333;
+    border: 1px solid var(--surface-3);
     padding: 8px 14px;
     border-radius: 10px;
-    background: #1e1e1e;
+    background: var(--surface-1);
   }
   .week-nav-btn:hover {
-    border-color: #ff9800;
-    color: #ff9800;
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .week-label {
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 1rem;
   }
   .week-total-card {
-    background: #1e1e1e;
-    border: 2px solid #ff9800;
+    background: var(--surface-1);
+    border: 2px solid var(--accent);
     border-radius: 16px;
     padding: 18px;
     text-align: center;
@@ -82,18 +82,18 @@
   .week-total-value {
     font-size: 2rem;
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
   }
   .week-total-label {
     font-size: 0.8rem;
-    color: #aaa;
+    color: var(--text-2);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
   .emp-card {
-    background: #1e1e1e;
+    background: var(--surface-1);
     border-radius: 16px;
-    border: 2px solid #2a2a2a;
+    border: 2px solid var(--border);
     padding: 18px 20px;
     margin-bottom: 16px;
   }
@@ -107,12 +107,12 @@
   }
   .emp-name {
     font-weight: 700;
-    color: #f5f5f5;
+    color: var(--text);
     font-size: 1.05rem;
   }
   .emp-total {
     font-weight: 800;
-    color: #ff9800;
+    color: var(--accent);
     font-size: 1.1rem;
   }
   .day-row {
@@ -127,32 +127,32 @@
     width: 100%;
     padding: 10px 4px;
     border-radius: 10px;
-    border: 1px solid #3d3d3d !important;
-    background: #2d2d2d !important;
-    color: #888 !important;
+    border: 1px solid var(--border-strong) !important;
+    background: var(--surface-2) !important;
+    color: var(--text-muted) !important;
     font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s;
   }
   .day-toggle-btn.scheduled {
-    border: 2px dashed #ff9800 !important;
-    background: rgba(255, 152, 0, 0.08) !important;
+    border: 2px dashed var(--accent) !important;
+    background: rgba(255, 159, 46, 0.08) !important;
     color: #ffcc80 !important;
   }
   .day-toggle-btn.present {
-    background: #1b5e20 !important;
-    border-color: #2e7d32 !important;
-    color: #81c784 !important;
+    background: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+    color: var(--success) !important;
   }
   .day-toggle-btn.scheduled.present {
-    background: #ff9800 !important;
-    border-color: #ff9800 !important;
-    color: #121212 !important;
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: var(--bg) !important;
   }
   .empty-state {
     text-align: center;
-    color: #888;
+    color: var(--text-muted);
     padding: 40px 20px;
   }
   @media (max-width: 520px) {
@@ -211,7 +211,7 @@
     <div class="emp-card-header">
       <div class="emp-name">
         {{ row.name }}
-        <span style="font-size: 0.75rem; color: #888; font-weight: 600"
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600"
           >· {{ 'Gerente' if row.role == 'gerente' else 'Empleado' }}</span
         >
       </div>
