@@ -24,37 +24,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="customization-step">
-                <h2 class="step-title">1. Selecciona la Base</h2>
-                <div class="option-grid base-options">
-                    <div class="option-card {% if item and 'Queso Crema' in item.base %}selected{% endif %}">
-                        <input type="checkbox" id="queso_crema" name="base" value="Queso Crema"
-                            {% if item and "Queso Crema" in item.base %} checked {% endif %} class="hidden-input">
-                        <label for="queso_crema" class="card-content">
-                            <div class="option-icon">🧀</div>
-                            <div class="option-name">Queso Crema</div>
-                        </label>
-                    </div>
-                    <div class="option-card {% if item and 'Aguacate' in item.base %}selected{% endif %}">
-                        <input type="checkbox" id="aguacate" name="base" value="Aguacate"
-                            {% if item and "Aguacate" in item.base %} checked {% endif %} class="hidden-input">
-                        <label for="aguacate" class="card-content">
-                            <div class="option-icon">🥑</div>
-                            <div class="option-name">Aguacate</div>
-                        </label>
-                    </div>
-                    <div class="option-card {% if item and not item.base %}selected{% endif %}">
-                        <input type="checkbox" id="none_base" name="base" value="Sin Base"
-                            {% if item and not item.base %} checked {% endif %} class="hidden-input">
-                        <label for="none_base" class="card-content">
-                            <div class="option-icon">🚫</div>
-                            <div class="option-name">Sin Base</div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="customization-step">
-                <h2 class="step-title">2. Selecciona de 1 a 3 ingredientes + Ostión opcional</h2>
+                <h2 class="step-title">1. Selecciona de 1 a 3 ingredientes + Ostión opcional</h2>
                 <h3 class="sub-title">Ingredientes Regulares</h3>
                 <div class="option-grid ingredients-grid">
                     {% for ingredient in sushi_ingredients %}
@@ -84,7 +54,7 @@
             </div>
 
             <div class="customization-step">
-                <h2 class="step-title">3. ¿Frío o Empanizado?</h2>
+                <h2 class="step-title">2. ¿Frío o Empanizado?</h2>
                 <div class="option-grid style-options">
                     <div class="option-card radio-card {% if item and item.style == 'Frío' %}selected{% endif %}">
                         <input type="radio" id="frio" name="style" value="Frío" required
@@ -106,7 +76,7 @@
             </div>
 
             <div class="customization-step">
-                <h2 class="step-title">4. ¿Preparado?</h2>
+                <h2 class="step-title">3. ¿Preparado?</h2>
                 <div class="option-grid preparation-options">
                     {% set preps = [
                         {"id": "sushi_preparado",     "name": "Sushi Preparado",     "icon": "🍱"},
@@ -129,7 +99,7 @@
             </div>
 
             <div class="customization-step">
-                <h2 class="step-title">5. ¿En qué salsa? (Opcional)</h2>
+                <h2 class="step-title">4. ¿En qué salsa? (Opcional)</h2>
                 <div class="option-grid sauce-options">
                     {% for sauce in sushi_sauces %}
                     {% set sauce_id = 'sushi_sauce_' ~ (sauce.name | lower | replace(' ', '_')) %}
@@ -146,7 +116,7 @@
             </div>
 
             <div class="customization-step">
-                <h2 class="step-title">6. ¿Toppings? (Opcional)</h2>
+                <h2 class="step-title">5. ¿Toppings? (Opcional)</h2>
                 <div class="option-grid topping-options">
                     <div class="option-card {% if item and 'Mango' in item.toppings %}selected{% endif %}">
                         <input type="checkbox" id="mango" name="toppings" value="Mango"

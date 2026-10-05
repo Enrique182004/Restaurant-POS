@@ -820,7 +820,9 @@ styles %}
             <div class="promo-item-action">Aplicar</div>
           </div>
           {% endfor %} {% else %}
-          <div style="padding: 20px; text-align: center; color: var(--text-muted)">
+          <div
+            style="padding: 20px; text-align: center; color: var(--text-muted)"
+          >
             No hay promociones activas.
           </div>
           {% endif %}
@@ -906,12 +908,7 @@ styles %}
             cart[i].accompaniment }}
           </div>
           {% endif %} {% elif cart[i].type in ['Bola de Arroz', 'Sushi'] %} {%
-          if cart[i].base is defined %}
-          <div class="customization">
-            <span class="custom-label">Base:</span>
-            {{ cart[i].base|reject('equalto','None')|join(', ') or 'Sin Base' }}
-          </div>
-          {% endif %} {% if cart[i].ingredients %}
+          if cart[i].ingredients %}
           <div class="customization">
             <span class="custom-label">Ingredientes:</span> {{
             cart[i].ingredients|join(', ') }} {% if cart[i].get('ostion_cost',

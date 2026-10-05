@@ -124,7 +124,6 @@ def register(app):
     @login_required
     def customize_rice_ball():
         if request.method == 'POST':
-            base       = request.form.getlist('base')
             ingredients = request.form.getlist('ingredients')
             style      = request.form.get('style')
             sauce      = request.form.get('sauce')
@@ -155,7 +154,7 @@ def register(app):
             item = {
                 'name': 'Bola de Arroz', 'type': 'Bola de Arroz',
                 'price': total_price, 'unit_price': total_price, 'quantity': 1,
-                'base': base, 'ingredients': ingredients, 'style': style,
+                'ingredients': ingredients, 'style': style,
                 'sauce': sauce, 'toppings': toppings, 'notes': notes,
                 'ostion_cost': ostion_price,
             }
@@ -174,7 +173,6 @@ def register(app):
     @login_required
     def customize_sushi():
         if request.method == 'POST':
-            base       = request.form.getlist('base')
             ingredients = request.form.getlist('ingredients')
             style      = request.form.get('style')
             prepared   = request.form.get('prepared')
@@ -206,7 +204,7 @@ def register(app):
             item = {
                 'name': 'Sushi', 'type': 'Sushi',
                 'price': total_price, 'unit_price': total_price, 'quantity': 1,
-                'base': base, 'ingredients': ingredients, 'style': style,
+                'ingredients': ingredients, 'style': style,
                 'prepared': prepared, 'sauce': sauce, 'toppings': toppings,
                 'notes': notes, 'ostion_cost': ostion_price,
             }

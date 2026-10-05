@@ -194,7 +194,6 @@ def register(app):
                     flash('Solo puedes agregar un Ostión', 'error')
                     return render_template('rice_ball.html', **_rice_template_ctx(item, item_index))
 
-                item['base'] = request.form.getlist('base')
                 item['ingredients'] = ingredients
                 item['style'] = request.form.get('style')
                 item['sauce'] = request.form.get('sauce')
@@ -221,7 +220,6 @@ def register(app):
                     flash('Solo puedes agregar un Ostión', 'error')
                     return render_template('sushi.html', **_sushi_template_ctx(item, item_index))
 
-                item['base'] = request.form.getlist('base')
                 item['ingredients'] = ingredients
                 item['style'] = request.form.get('style')
                 item['prepared'] = prepared

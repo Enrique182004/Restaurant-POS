@@ -73,10 +73,8 @@ def print_receipt_physical(cart, total, payment_method, amount_paid=0, change=0,
                 receipt_content.append(f"  {sauce_count} x ${sauce_price:.0f} = ${sauce_count * sauce_price:.2f}")
 
         elif item['type'] in ('Bola de Arroz', 'Sushi'):
-            _skip = {'queso', 'aguacate'}
             if 'ingredients' in item:
-                filtered = [i for i in item['ingredients'] if i.lower() not in _skip]
-                abbr = [i[:3] for i in filtered] if filtered else []
+                abbr = [i[:3] for i in item['ingredients']] if item['ingredients'] else []
                 if abbr:
                     receipt_content.append(f"  {', '.join(abbr)}")
                 if item.get('ostion_cost', 0) > 0:
