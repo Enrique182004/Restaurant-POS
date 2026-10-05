@@ -1,5 +1,12 @@
 [
   {
+    "version": "2.3.1",
+    "date": "2026-10-04",
+    "changes": [
+      "Se eliminó la selección de base (aguacate / queso crema) del sushi y la bola de arroz — el proceso de personalización es ahora más rápido y directo"
+    ]
+  },
+  {
     "version": "2.3.0",
     "date": "2026-07-21",
     "changes": [
@@ -182,9 +189,7 @@
   {
     "version": "1.0.25",
     "date": "2026-07-03",
-    "changes": [
-      "Fixed held orders not printing the kitchen ticket"
-    ]
+    "changes": ["Fixed held orders not printing the kitchen ticket"]
   },
   {
     "version": "1.0.24",
