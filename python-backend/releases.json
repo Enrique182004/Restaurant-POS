@@ -1,5 +1,12 @@
 [
   {
+    "version": "2.3.2",
+    "date": "2026-11-08",
+    "changes": [
+      "La pantalla de Método de Pago ahora muestra el total en pesos y en dólares, junto con el tipo de cambio — el cobro funciona igual que antes"
+    ]
+  },
+  {
     "version": "2.3.1",
     "date": "2026-10-04",
     "changes": [
@@ -189,7 +196,9 @@
   {
     "version": "1.0.25",
     "date": "2026-07-03",
-    "changes": ["Fixed held orders not printing the kitchen ticket"]
+    "changes": [
+      "Fixed held orders not printing the kitchen ticket"
+    ]
   },
   {
     "version": "1.0.24",
