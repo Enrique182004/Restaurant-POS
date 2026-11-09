@@ -33,6 +33,17 @@ styles %}
     font-weight: 800;
     color: var(--accent);
   }
+  .summary-total-usd {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 4px;
+  }
+  .summary-rate {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
   .section-title {
     font-size: 1.5rem;
     margin: 30px 0 20px;
@@ -103,6 +114,9 @@ styles %}
     .summary-total {
       font-size: 1.8rem;
     }
+    .summary-total-usd {
+      font-size: 1.3rem;
+    }
   }
 </style>
 {% endblock %} {% block body %}
@@ -113,7 +127,11 @@ styles %}
     <div class="summary-icon">💰</div>
     <div class="summary-details">
       <div class="summary-label">Total a Pagar:</div>
-      <div class="summary-total">${{ "%.2f"|format(total_price) }}</div>
+      <div class="summary-total">${{ "%.2f"|format(total_price) }} MXN</div>
+      <div class="summary-total-usd">US${{ "%.2f"|format(total_usd) }} USD</div>
+      <div class="summary-rate">
+        Tipo de cambio: 1 USD = ${{ "%.2f"|format(usd_rate) }} MXN
+      </div>
     </div>
   </div>
 

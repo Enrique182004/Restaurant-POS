@@ -1,5 +1,6 @@
 """Payment, ticket processing, receipt printing, and print queue."""
 import json
+import math
 import os
 import sqlite3
 import uuid
@@ -28,6 +29,12 @@ def _usd_rate():
     except (ValueError, TypeError):
         return DEFAULT_USD_RATE
     return rate if rate > 0 else DEFAULT_USD_RATE
+
+
+def _usd_display_total(total_mxn, rate):
+    """Round UP to the cent so paying the shown USD amount never falls short of the MXN total."""
+    cents = math.ceil(round(total_mxn * 100 / rate, 6))
+    return cents / 100
 
 
 def _issue_ticket_token():
@@ -132,7 +139,10 @@ def register(app, csrf):
             flash('Agrega al menos un ítem antes de proceder al pago.', 'error')
             return redirect(url_for('home'))
         total_price = money(sum(item['price'] for item in cart))
+        usd_rate = _usd_rate()
         return render_template('payment.html', total_price=total_price,
+                               usd_rate=usd_rate,
+                               total_usd=_usd_display_total(total_price, usd_rate),
                                ticket_token=_issue_ticket_token())
 
     @app.route('/cash_payment')
