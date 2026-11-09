@@ -241,3 +241,28 @@ def test_printer_config_still_works(admin_client, app_module):
     conn = app_module.get_db_connection()
     row = conn.execute("SELECT value FROM config WHERE key = 'printer_name'").fetchone()
     assert row["value"] == "MiImpresora"
+
+
+def test_payment_screen_shows_total_in_mxn_and_usd(client, app_module):
+    _seed_cart(client, app_module)
+    _set_rate(app_module, 20.0)
+    resp = client.get("/payment")
+    assert resp.status_code == 200
+    assert b"$105.00" in resp.data
+    assert b"US$5.25" in resp.data
+    assert b"1 USD = $20.00 MXN" in resp.data
+
+
+def test_payment_screen_usd_total_rounds_up_to_cover_mxn_total(client, app_module):
+    # 105 / 18 = 5.8333…; rounding down to 5.83 would leave the order short when paid in USD.
+    _seed_cart(client, app_module)
+    _set_rate(app_module, 18.0)
+    resp = client.get("/payment")
+    assert b"US$5.84" in resp.data
+
+
+def test_payment_screen_usd_total_exact_division_not_bumped(client, app_module):
+    _seed_cart(client, app_module)
+    _set_rate(app_module, 21.0)
+    resp = client.get("/payment")
+    assert b"US$5.00" in resp.data
